@@ -106,6 +106,88 @@
             font-weight: 600;
         }
 
+        /* ===== Radar Meteorológico SATMA ===== */
+        .radar-satma-titulo {
+            margin: 0 0 6px 0;
+            padding: 5px 7px;
+            border-radius: 5px;
+            background: #0d47a1;
+            color: #fff;
+            text-align: center;
+            font-size: .72rem;
+            font-weight: 900;
+            letter-spacing: .45px;
+        }
+        .radar-animacion-row {
+            display: grid;
+            grid-template-columns: 34px 1fr 34px;
+            gap: 5px;
+            align-items: center;
+            margin-top: 7px;
+        }
+        .radar-animacion-row button {
+            min-height: 31px;
+            border: 1px solid #607d8b;
+            border-radius: 5px;
+            background: #263238;
+            color: #fff;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .radar-animacion-row button:hover { background: #37474f; }
+        #radar-play { background: #1565c0; border-color: #64b5f6; }
+        #radar-play.reproduciendo { background: #c62828; border-color: #ef9a9a; }
+        .radar-frame-indice {
+            text-align: center;
+            color: #cfd8dc;
+            font-size: .66rem;
+            font-weight: 700;
+        }
+        .radar-escala {
+            margin-top: 8px;
+            padding-top: 7px;
+            border-top: 1px solid #455a64;
+        }
+        .radar-escala-titulo {
+            margin-bottom: 4px;
+            text-align: center;
+            color: #eceff1;
+            font-size: .64rem;
+            font-weight: 800;
+        }
+        .radar-barra {
+            height: 9px;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,.55);
+            background: linear-gradient(90deg,
+                #64b5f6 0%, #00bcd4 15%, #00c853 30%, #ffeb3b 48%,
+                #ff9800 63%, #f44336 78%, #ad1457 90%, #7b1fa2 100%);
+        }
+        .radar-escala-valores {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2px;
+            color: #cfd8dc;
+            font-size: .52rem;
+        }
+        .radar-fuente {
+            margin-top: 6px;
+            text-align: center;
+            color: #9e9e9e;
+            font-size: .52rem;
+            line-height: 1.2;
+        }
+        @media (max-width: 768px) {
+            .radar-satma-titulo { font-size: .53rem; padding: 4px 3px; }
+            .radar-animacion-row { grid-template-columns: 27px 1fr 27px; gap: 3px; margin-top: 4px; }
+            .radar-animacion-row button { min-height: 25px; padding: 2px; font-size: .58rem; }
+            .radar-frame-indice { font-size: .48rem; }
+            .radar-escala { margin-top: 5px; padding-top: 4px; }
+            .radar-escala-titulo { font-size: .48rem; }
+            .radar-barra { height: 6px; }
+            .radar-escala-valores, .radar-fuente { font-size: .42rem; }
+        }
+
     
         /* ===== Adaptación móvil ===== */
         #btn-paneles {
@@ -1067,6 +1149,29 @@
         }
 
     </style>
+
+<style id="satma-panel-derecho-compacto">
+/* Panel derecho compacto SATMA */
+#panel-derecho{
+  width:185px !important;
+  right:10px !important;
+  bottom:22px !important;
+  border-right-width:3px !important;
+  border-radius:6px !important;
+}
+#btn-analisis{padding:7px 9px !important;font-size:.82rem !important;}
+#contenido-analisis{padding:5px 7px 8px !important;max-height:62vh;overflow-y:auto;}
+#panel-derecho .btn-modo{font-size:.72rem !important;padding:6px 5px !important;margin:3px 0 !important;min-height:0 !important;}
+#panel-derecho .radar-control-extra{padding:5px !important;margin-top:4px !important;}
+#panel-derecho .radar-satma-titulo{font-size:.65rem !important;line-height:1.15 !important;margin-bottom:5px !important;}
+#panel-derecho .radar-opacity-row{font-size:.62rem !important;gap:3px !important;}
+#panel-derecho #radar-opacidad{width:70px !important;}
+#panel-derecho .radar-animacion-row button{font-size:.65rem !important;padding:4px 5px !important;}
+#panel-derecho .radar-frame-indice,#panel-derecho #radar-hora,#panel-derecho .radar-fuente{font-size:.58rem !important;}
+#panel-derecho .radar-escala-titulo,#panel-derecho .radar-escala-valores{font-size:.52rem !important;}
+#panel-derecho #status-actualizacion{font-size:.60rem !important;margin-top:5px !important;line-height:1.15 !important;}
+@media (max-width:768px){#panel-derecho{width:165px !important;right:6px !important;bottom:12px !important;}#contenido-analisis{max-height:55vh;}}
+</style>
 </head>
 <body>
 
@@ -1127,15 +1232,28 @@
         <button id="btn-12h" class="btn-modo" onclick="cambiarModo('12h')">Lluvia 12 h (mm)</button>
         <button id="btn-24h" class="btn-modo" onclick="cambiarModo('24h')">Lluvias 24h (mm)</button>
         <button id="btn-filtro" class="btn-modo activo" onclick="toggleFiltro()">Solo con Lluvias</button>
-        <button id="btn-radar" class="btn-modo activo" onclick="toggleRadar()">Radar de Lluvias</button>
+        <button id="btn-radar" class="btn-modo activo" onclick="toggleRadar()">📡 Radar Meteorológico</button>
         <div class="radar-control-extra">
+            <div class="radar-satma-titulo">RADAR METEOROLÓGICO · SATMA</div>
             <div class="radar-opacity-row">
                 <span>Opacidad</span>
                 <input id="radar-opacidad" type="range" min="20" max="100" value="65"
                        oninput="cambiarOpacidadRadar(this.value)">
                 <span id="radar-opacidad-valor">65%</span>
             </div>
+            <div class="radar-animacion-row">
+                <button type="button" onclick="radarAnterior()" title="Cuadro anterior">◀</button>
+                <button id="radar-play" type="button" onclick="toggleAnimacionRadar()" title="Reproducir/Pausar radar">▶ Animar</button>
+                <button type="button" onclick="radarSiguiente()" title="Cuadro siguiente">▶</button>
+            </div>
+            <div id="radar-frame-indice" class="radar-frame-indice">Cuadro --/--</div>
             <div id="radar-hora">Radar: cargando...</div>
+            <div class="radar-escala">
+                <div class="radar-escala-titulo">REFLECTIVIDAD / INTENSIDAD RADAR</div>
+                <div class="radar-barra" aria-hidden="true"></div>
+                <div class="radar-escala-valores"><span>Débil</span><span>Moderada</span><span>Fuerte</span><span>Muy fuerte</span></div>
+            </div>
+            <div class="radar-fuente">Datos radar: RainViewer · Visualización SATMA</div>
         </div>
         <div id="status-actualizacion" style="font-size: 0.75rem; color: #9e9e9e; margin-top: 10px;">Cargando...</div>
     </div>
@@ -1189,6 +1307,12 @@
     let radarHost = null;
     let radarPathActual = null;
     let radarTimeActual = null;
+    let radarFrames = [];
+    let radarFrameIndice = -1;
+    let radarAnimando = false;
+    let radarTimerAnimacion = null;
+    const RADAR_MAX_FRAMES = 10;
+    const RADAR_INTERVALO_MS = 850;
     const RAINVIEWER_API = "https://api.rainviewer.com/public/weather-maps.json";
     const USGS_SISMOS_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
     const UASD_SISMOS_URL = "https://sismologico.uasd.edu.do/";
@@ -2029,70 +2153,148 @@ let datosEstaciones = [];
         el.style.color = error ? '#ef9a9a' : '#90caf9';
     }
 
+    function actualizarIndiceRadar() {
+        const el = document.getElementById('radar-frame-indice');
+        if (!el) return;
+        if (!radarFrames.length || radarFrameIndice < 0) {
+            el.innerText = 'Cuadro --/--';
+            return;
+        }
+        el.innerText = `Cuadro ${radarFrameIndice + 1}/${radarFrames.length}`;
+    }
+
+    function traerCapasOperativasAlFrente() {
+        // Las capas vectoriales, estaciones, ríos y sismos quedan por encima del radar.
+        mapa.eachLayer(l => {
+            if (l instanceof L.CircleMarker || l instanceof L.Marker || l instanceof L.Polyline || l instanceof L.Polygon) {
+                if (typeof l.bringToFront === 'function') l.bringToFront();
+            }
+        });
+    }
+
+    function crearCapaRadar(frame) {
+        const opacidad = Number(document.getElementById('radar-opacidad')?.value || 65) / 100;
+        const urlTiles = `${radarHost}${frame.path}/512/{z}/{x}/{y}/2/1_0.png`;
+        return L.tileLayer(urlTiles, {
+            tileSize: 512,
+            zoomOffset: -1,
+            minZoom: 1,
+            maxNativeZoom: 7,
+            maxZoom: 18,
+            opacity: opacidad,
+            attribution: 'Datos radar © RainViewer',
+            zIndex: 250,
+            crossOrigin: true,
+            updateWhenIdle: false,
+            keepBuffer: 3
+        });
+    }
+
+    function mostrarFrameRadar(indice, forzar = false) {
+        if (!radarFrames.length) return;
+        const total = radarFrames.length;
+        radarFrameIndice = ((indice % total) + total) % total;
+        const frame = radarFrames[radarFrameIndice];
+
+        if (!forzar && capaRadar && radarPathActual === frame.path) {
+            radarTimeActual = frame.time;
+            actualizarTextoRadar('Radar: ' + formatearHoraRadar(radarTimeActual));
+            actualizarIndiceRadar();
+            return;
+        }
+
+        const nuevaCapa = crearCapaRadar(frame);
+        const capaAnterior = capaRadar;
+        capaRadar = nuevaCapa;
+        radarPathActual = frame.path;
+        radarTimeActual = frame.time;
+
+        if (radarVisible) {
+            // Añadir primero el nuevo cuadro. Al cargar, retirar el anterior para reducir parpadeo.
+            nuevaCapa.once('load', () => {
+                if (capaAnterior && mapa.hasLayer(capaAnterior)) mapa.removeLayer(capaAnterior);
+                traerCapasOperativasAlFrente();
+            });
+            nuevaCapa.addTo(mapa);
+            setTimeout(() => {
+                if (capaAnterior && capaAnterior !== capaRadar && mapa.hasLayer(capaAnterior)) mapa.removeLayer(capaAnterior);
+            }, 1800);
+            traerCapasOperativasAlFrente();
+        } else if (capaAnterior && mapa.hasLayer(capaAnterior)) {
+            mapa.removeLayer(capaAnterior);
+        }
+
+        actualizarTextoRadar('Radar: ' + formatearHoraRadar(radarTimeActual));
+        actualizarIndiceRadar();
+    }
+
     async function cargarRadarRainViewer() {
         try {
-            actualizarTextoRadar("Radar: actualizando...");
-            const respuesta = await fetch(RAINVIEWER_API, { cache: "no-store" });
-            if (!respuesta.ok) throw new Error("HTTP " + respuesta.status);
+            actualizarTextoRadar('Radar: actualizando...');
+            const respuesta = await fetch(RAINVIEWER_API, { cache: 'no-store' });
+            if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
             const data = await respuesta.json();
 
-            const frames = data?.radar?.past || [];
-            if (!data?.host || !frames.length) {
-                throw new Error("RainViewer no devolvió frames de radar.");
-            }
+            const disponibles = data?.radar?.past || [];
+            if (!data?.host || !disponibles.length) throw new Error('RainViewer no devolvió cuadros de radar.');
 
-            const ultimo = frames[frames.length - 1];
-            const nuevoHost = data.host;
-            const nuevoPath = ultimo.path;
-            const nuevoTime = ultimo.time;
+            radarHost = data.host;
+            radarFrames = disponibles.slice(-RADAR_MAX_FRAMES);
+            const ultimo = radarFrames.length - 1;
 
-            // No reconstruir la capa si seguimos en el mismo frame.
-            if (capaRadar && radarPathActual === nuevoPath) {
-                radarTimeActual = nuevoTime;
-                actualizarTextoRadar("Radar: " + formatearHoraRadar(radarTimeActual));
-                return;
-            }
+            // En cada actualización se posiciona en el cuadro más reciente, salvo si está animando.
+            if (!radarAnimando) mostrarFrameRadar(ultimo, true);
+            else if (radarFrameIndice >= radarFrames.length) radarFrameIndice = ultimo;
 
-            const opacidad = Number(document.getElementById('radar-opacidad')?.value || 65) / 100;
-            const urlTiles = `${nuevoHost}${nuevoPath}/512/{z}/{x}/{y}/2/1_0.png`;
-
-            const nuevaCapa = L.tileLayer(urlTiles, {
-                tileSize: 512,
-                zoomOffset: -1,
-                minZoom: 1,
-                maxNativeZoom: 7,
-                maxZoom: 18,
-                opacity: opacidad,
-                attribution: 'Radar © RainViewer',
-                zIndex: 250,
-                crossOrigin: true
-            });
-
-            if (capaRadar && mapa.hasLayer(capaRadar)) {
-                mapa.removeLayer(capaRadar);
-            }
-
-            capaRadar = nuevaCapa;
-            radarHost = nuevoHost;
-            radarPathActual = nuevoPath;
-            radarTimeActual = nuevoTime;
-
-            if (radarVisible) {
-                capaRadar.addTo(mapa);
-                // Provincias and circle markers remain above the radar.
-                if (capaProvincias && provinciasVisibles) {
-                    capaProvincias.bringToBack();
-                }
-                mapa.eachLayer(l => {
-                    if (l instanceof L.CircleMarker) l.bringToFront();
-                });
-            }
-
-            actualizarTextoRadar("Radar: " + formatearHoraRadar(radarTimeActual));
+            actualizarIndiceRadar();
         } catch (e) {
-            console.warn("Error cargando radar RainViewer:", e);
-            actualizarTextoRadar("Radar: no disponible", true);
+            console.warn('Error cargando radar RainViewer:', e);
+            actualizarTextoRadar('Radar: no disponible', true);
         }
+    }
+
+    function detenerAnimacionRadar() {
+        radarAnimando = false;
+        if (radarTimerAnimacion) {
+            clearInterval(radarTimerAnimacion);
+            radarTimerAnimacion = null;
+        }
+        const btn = document.getElementById('radar-play');
+        if (btn) {
+            btn.textContent = '▶ Animar';
+            btn.classList.remove('reproduciendo');
+        }
+    }
+
+    function iniciarAnimacionRadar() {
+        if (!radarVisible || radarFrames.length < 2) return;
+        detenerAnimacionRadar();
+        radarAnimando = true;
+        const btn = document.getElementById('radar-play');
+        if (btn) {
+            btn.textContent = '⏸ Pausar';
+            btn.classList.add('reproduciendo');
+        }
+        radarTimerAnimacion = setInterval(() => {
+            if (!radarVisible || !radarFrames.length) return detenerAnimacionRadar();
+            const siguiente = (radarFrameIndice + 1) % radarFrames.length;
+            mostrarFrameRadar(siguiente);
+        }, RADAR_INTERVALO_MS);
+    }
+
+    function toggleAnimacionRadar() {
+        if (radarAnimando) detenerAnimacionRadar();
+        else iniciarAnimacionRadar();
+    }
+
+    function radarAnterior() {
+        detenerAnimacionRadar();
+        if (radarFrames.length) mostrarFrameRadar(radarFrameIndice - 1);
+    }
+
+    function radarSiguiente() {
+        detenerAnimacionRadar();
+        if (radarFrames.length) mostrarFrameRadar(radarFrameIndice + 1);
     }
 
 
@@ -2117,23 +2319,21 @@ let datosEstaciones = [];
         const btn = document.getElementById('btn-radar');
         if (btn) btn.classList.toggle('activo', radarVisible);
 
-        if (!capaRadar) {
-            if (radarVisible) cargarRadarRainViewer();
+        if (!radarVisible) {
+            detenerAnimacionRadar();
+            if (capaRadar && mapa.hasLayer(capaRadar)) mapa.removeLayer(capaRadar);
+            actualizarTextoRadar('Radar: oculto');
             return;
         }
 
-        if (radarVisible) {
-            capaRadar.addTo(mapa);
-            if (capaProvincias && provinciasVisibles) {
-                capaProvincias.bringToBack();
-            }
-            mapa.eachLayer(l => {
-                if (l instanceof L.CircleMarker) l.bringToFront();
-            });
-        } else if (mapa.hasLayer(capaRadar)) {
-            mapa.removeLayer(capaRadar);
+        if (!radarFrames.length) {
+            cargarRadarRainViewer();
+            return;
         }
+
+        mostrarFrameRadar(radarFrameIndice >= 0 ? radarFrameIndice : radarFrames.length - 1, true);
     }
+
 
     function cambiarOpacidadRadar(valor) {
         const opacidad = Number(valor) / 100;
@@ -2432,7 +2632,7 @@ let datosEstaciones = [];
         ).length;
 
         document.getElementById('status-actualizacion').innerText =
-            `Ult. Act: ${new Date().toLocaleTimeString()} | Auto: 5 min | Vista: lluvia 1 h reciente | ${datosEstaciones.length}/${ESTACIONES.length + NOAA_ESTACIONES.length} estaciones con datos | ${conLluvia} con lluvia | WU + NOAA`;
+            `Ult. Act: ${new Date().toLocaleTimeString()} | Auto: 1 min | Vista: lluvia 1 h reciente | ${datosEstaciones.length}/${ESTACIONES.length + NOAA_ESTACIONES.length} estaciones con datos | ${conLluvia} con lluvia | WU + NOAA`;
         cargaEstacionesEnCurso = false;
     }
 
@@ -2449,7 +2649,7 @@ let datosEstaciones = [];
         setTimeout(() => mapa.invalidateSize(), 200);
     }
 
-    setInterval(cargar, 300000);
+    setInterval(cargar, 60000);
     setInterval(cargarRadarRainViewer, 300000);
     setInterval(cargarSismosCombinados, 300000);
 
@@ -3304,7 +3504,7 @@ let datosEstaciones = [];
 
 
 
-    // ===== Inicio SATMA: acceso mediante usuario y contraseña =====
+    // ===== Inicio SATMA: acceso por usuarios autorizados =====
     (function iniciarAccesoSATMA() {
         const splash = document.getElementById('satma-splash');
         const login = document.getElementById('satma-login');
@@ -3312,89 +3512,73 @@ let datosEstaciones = [];
         const usuarioInput = document.getElementById('satma-usuario');
         const passwordInput = document.getElementById('satma-password');
         const loginBtn = document.getElementById('satma-login-btn');
-        const error = document.getElementById('satma-login-error');
+        const loginError = document.getElementById('satma-login-error');
         const usuarioActivo = document.getElementById('satma-usuario-activo');
-        const cerrarSesion = document.getElementById('satma-cerrar-sesion');
+        const cerrarBtn = document.getElementById('satma-cerrar-sesion');
 
-        const USUARIOS_SATMA = Object.freeze({
+        const accesosSATMA = {
             'Admin': 'Nube2244',
             'EOlivares': 'Comando#COE..',
             'BBenited': 'RojaCruz#CR**',
             'COEGR16': 'supervisor#COE..',
             'WGARCIA02': '02wgpp#dc..',
-            'VERONPC': 'peguero02p#pc.',
-            'PJACOBO03': 'scbombero#pc..',
+            'VERONPC': 'peguero02p#pc..',
+            'PJACOBO03': 'scbombero#pc',
             'WILFREDOLR': 'bayahibew05',
             'WILLIAM': 'willianadm05',
-            'alexanderfm': 'farmacia#06'
-        });
-
-        function ocultarSplashYMostrarAcceso() {
-            if (!splash) {
-                mostrarEstadoInicial();
-                return;
-            }
-            splash.classList.add('ocultar');
-            setTimeout(() => {
-                splash.style.display = 'none';
-                mostrarEstadoInicial();
-            }, 350);
-        }
-
-        function abrirVisor(usuario) {
-            sessionStorage.setItem('satma_usuario', usuario);
-            if (login) login.style.display = 'none';
-            if (sesion) sesion.style.display = 'flex';
-            if (usuarioActivo) usuarioActivo.textContent = usuario;
-            if (error) error.textContent = '';
-            if (passwordInput) passwordInput.value = '';
-            setTimeout(() => {
-                if (typeof mapa !== 'undefined' && mapa) mapa.invalidateSize();
-            }, 100);
-        }
+            'alexanderfm': 'farmacia#06',
+            'ManeGonte08': 'agromet#analisis'
+        };
 
         function mostrarLogin() {
-            if (sesion) sesion.style.display = 'none';
             if (login) login.style.display = 'flex';
-            if (error) error.textContent = '';
-            setTimeout(() => usuarioInput?.focus(), 50);
+            if (sesion) sesion.style.display = 'none';
+            if (passwordInput) passwordInput.value = '';
+            if (loginError) loginError.textContent = '';
+            setTimeout(() => { if (usuarioInput) usuarioInput.focus(); }, 50);
         }
 
-        function mostrarEstadoInicial() {
-            const usuarioGuardado = sessionStorage.getItem('satma_usuario');
-            if (usuarioGuardado && Object.prototype.hasOwnProperty.call(USUARIOS_SATMA, usuarioGuardado)) {
-                abrirVisor(usuarioGuardado);
-            } else {
-                sessionStorage.removeItem('satma_usuario');
-                mostrarLogin();
-            }
-        }
-
-        function intentarLogin() {
+        function entrar() {
             const usuario = (usuarioInput?.value || '').trim();
             const clave = passwordInput?.value || '';
-            if (Object.prototype.hasOwnProperty.call(USUARIOS_SATMA, usuario) && USUARIOS_SATMA[usuario] === clave) {
-                abrirVisor(usuario);
-                return;
-            }
-            if (error) error.textContent = 'Usuario o contraseña incorrectos.';
-            if (passwordInput) {
-                passwordInput.value = '';
-                passwordInput.focus();
+            if (Object.prototype.hasOwnProperty.call(accesosSATMA, usuario) && accesosSATMA[usuario] === clave) {
+                if (login) login.style.display = 'none';
+                if (sesion) sesion.style.display = 'flex';
+                if (usuarioActivo) usuarioActivo.textContent = usuario;
+                if (loginError) loginError.textContent = '';
+                sessionStorage.setItem('satmaUsuario', usuario);
+                if (typeof mapa !== 'undefined' && mapa) setTimeout(() => mapa.invalidateSize(), 100);
+            } else {
+                if (loginError) loginError.textContent = 'Usuario o contraseña incorrectos.';
+                if (passwordInput) { passwordInput.value = ''; passwordInput.focus(); }
             }
         }
 
-        loginBtn?.addEventListener('click', intentarLogin);
-        usuarioInput?.addEventListener('keydown', e => { if (e.key === 'Enter') intentarLogin(); });
-        passwordInput?.addEventListener('keydown', e => { if (e.key === 'Enter') intentarLogin(); });
-        cerrarSesion?.addEventListener('click', () => {
-            sessionStorage.removeItem('satma_usuario');
-            if (usuarioActivo) usuarioActivo.textContent = '';
-            if (passwordInput) passwordInput.value = '';
+        if (loginBtn) loginBtn.addEventListener('click', entrar);
+        if (passwordInput) passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+        if (usuarioInput) usuarioInput.addEventListener('keydown', e => { if (e.key === 'Enter') passwordInput?.focus(); });
+        if (cerrarBtn) cerrarBtn.addEventListener('click', () => {
+            sessionStorage.removeItem('satmaUsuario');
             mostrarLogin();
         });
 
-        setTimeout(ocultarSplashYMostrarAcceso, 700);
+        setTimeout(() => {
+            if (splash) {
+                splash.classList.add('ocultar');
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    const guardado = sessionStorage.getItem('satmaUsuario');
+                    if (guardado && Object.prototype.hasOwnProperty.call(accesosSATMA, guardado)) {
+                        if (login) login.style.display = 'none';
+                        if (sesion) sesion.style.display = 'flex';
+                        if (usuarioActivo) usuarioActivo.textContent = guardado;
+                    } else {
+                        mostrarLogin();
+                    }
+                    if (typeof mapa !== 'undefined' && mapa) mapa.invalidateSize();
+                }, 350);
+            }
+        }, 700);
     })();
 
 
