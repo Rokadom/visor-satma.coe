@@ -2432,7 +2432,7 @@ let datosEstaciones = [];
         ).length;
 
         document.getElementById('status-actualizacion').innerText =
-            `Ult. Act: ${new Date().toLocaleTimeString()} | Auto: 1 min | Vista: lluvia 1 h reciente | ${datosEstaciones.length}/${ESTACIONES.length + NOAA_ESTACIONES.length} estaciones con datos | ${conLluvia} con lluvia | WU + NOAA`;
+            `Ult. Act: ${new Date().toLocaleTimeString()} | Auto: 5 min | Vista: lluvia 1 h reciente | ${datosEstaciones.length}/${ESTACIONES.length + NOAA_ESTACIONES.length} estaciones con datos | ${conLluvia} con lluvia | WU + NOAA`;
         cargaEstacionesEnCurso = false;
     }
 
@@ -2449,7 +2449,7 @@ let datosEstaciones = [];
         setTimeout(() => mapa.invalidateSize(), 200);
     }
 
-    setInterval(cargar, 60000);
+    setInterval(cargar, 300000);
     setInterval(cargarRadarRainViewer, 300000);
     setInterval(cargarSismosCombinados, 300000);
 
@@ -3304,25 +3304,97 @@ let datosEstaciones = [];
 
 
 
-    // ===== Inicio SATMA: acceso directo sin contraseña =====
+    // ===== Inicio SATMA: acceso mediante usuario y contraseña =====
     (function iniciarAccesoSATMA() {
         const splash = document.getElementById('satma-splash');
         const login = document.getElementById('satma-login');
         const sesion = document.getElementById('satma-sesion');
+        const usuarioInput = document.getElementById('satma-usuario');
+        const passwordInput = document.getElementById('satma-password');
+        const loginBtn = document.getElementById('satma-login-btn');
+        const error = document.getElementById('satma-login-error');
+        const usuarioActivo = document.getElementById('satma-usuario-activo');
+        const cerrarSesion = document.getElementById('satma-cerrar-sesion');
 
-        // El visor queda disponible directamente, sin solicitar credenciales.
-        if (login) login.style.display = 'none';
-        if (sesion) sesion.style.display = 'none';
+        const USUARIOS_SATMA = Object.freeze({
+            'Admin': 'Nube2244',
+            'EOlivares': 'Comando#COE..',
+            'BBenited': 'RojaCruz#CR**',
+            'COEGR16': 'supervisor#COE..',
+            'WGARCIA02': '02wgpp#dc..',
+            'VERONPC': 'peguero02p#pc.',
+            'PJACOBO03': 'scbombero#pc..',
+            'WILFREDOLR': 'bayahibew05',
+            'WILLIAM': 'willianadm05',
+            'alexanderfm': 'farmacia#06'
+        });
 
-        setTimeout(() => {
-            if (splash) {
-                splash.classList.add('ocultar');
-                setTimeout(() => {
-                    splash.style.display = 'none';
-                    if (typeof mapa !== 'undefined' && mapa) mapa.invalidateSize();
-                }, 350);
+        function ocultarSplashYMostrarAcceso() {
+            if (!splash) {
+                mostrarEstadoInicial();
+                return;
             }
-        }, 700);
+            splash.classList.add('ocultar');
+            setTimeout(() => {
+                splash.style.display = 'none';
+                mostrarEstadoInicial();
+            }, 350);
+        }
+
+        function abrirVisor(usuario) {
+            sessionStorage.setItem('satma_usuario', usuario);
+            if (login) login.style.display = 'none';
+            if (sesion) sesion.style.display = 'flex';
+            if (usuarioActivo) usuarioActivo.textContent = usuario;
+            if (error) error.textContent = '';
+            if (passwordInput) passwordInput.value = '';
+            setTimeout(() => {
+                if (typeof mapa !== 'undefined' && mapa) mapa.invalidateSize();
+            }, 100);
+        }
+
+        function mostrarLogin() {
+            if (sesion) sesion.style.display = 'none';
+            if (login) login.style.display = 'flex';
+            if (error) error.textContent = '';
+            setTimeout(() => usuarioInput?.focus(), 50);
+        }
+
+        function mostrarEstadoInicial() {
+            const usuarioGuardado = sessionStorage.getItem('satma_usuario');
+            if (usuarioGuardado && Object.prototype.hasOwnProperty.call(USUARIOS_SATMA, usuarioGuardado)) {
+                abrirVisor(usuarioGuardado);
+            } else {
+                sessionStorage.removeItem('satma_usuario');
+                mostrarLogin();
+            }
+        }
+
+        function intentarLogin() {
+            const usuario = (usuarioInput?.value || '').trim();
+            const clave = passwordInput?.value || '';
+            if (Object.prototype.hasOwnProperty.call(USUARIOS_SATMA, usuario) && USUARIOS_SATMA[usuario] === clave) {
+                abrirVisor(usuario);
+                return;
+            }
+            if (error) error.textContent = 'Usuario o contraseña incorrectos.';
+            if (passwordInput) {
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        loginBtn?.addEventListener('click', intentarLogin);
+        usuarioInput?.addEventListener('keydown', e => { if (e.key === 'Enter') intentarLogin(); });
+        passwordInput?.addEventListener('keydown', e => { if (e.key === 'Enter') intentarLogin(); });
+        cerrarSesion?.addEventListener('click', () => {
+            sessionStorage.removeItem('satma_usuario');
+            if (usuarioActivo) usuarioActivo.textContent = '';
+            if (passwordInput) passwordInput.value = '';
+            mostrarLogin();
+        });
+
+        setTimeout(ocultarSplashYMostrarAcceso, 700);
     })();
 
 
