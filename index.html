@@ -1172,6 +1172,20 @@
 #panel-derecho #status-actualizacion{font-size:.60rem !important;margin-top:5px !important;line-height:1.15 !important;}
 @media (max-width:768px){#panel-derecho{width:165px !important;right:6px !important;bottom:12px !important;}#contenido-analisis{max-height:55vh;}}
 </style>
+
+<style id="satma-gfs-simulacion-estilos">
+#btn-gfs.activo{background:#5e35b1;border-color:#b39ddb;box-shadow:0 0 8px rgba(126,87,194,.55)}
+#gfs-panel{position:absolute;left:50%;bottom:103px;transform:translateX(-50%);z-index:1660;display:none;width:min(590px,90vw);padding:8px 10px;border-radius:9px;background:rgba(18,18,18,.96);border:1px solid #7e57c2;box-shadow:0 4px 15px rgba(0,0,0,.5);color:#fff}
+#gfs-panel.visible{display:block}.gfs-cabecera{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}.gfs-titulo{font-size:.72rem;font-weight:900;color:#d1c4e9;letter-spacing:.35px}.gfs-cerrar{border:0;background:#424242;color:white;border-radius:5px;padding:3px 7px;cursor:pointer;font-weight:800}.gfs-horas{display:grid;grid-template-columns:repeat(9,1fr);gap:4px}.gfs-hora{border:1px solid #616161;background:#303030;color:#eee;border-radius:5px;padding:6px 3px;font-size:.62rem;font-weight:800;cursor:pointer}.gfs-hora.activo{background:#5e35b1;border-color:#d1c4e9;color:#fff}.gfs-info{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:6px;font-size:.56rem;color:#bdbdbd;line-height:1.2}.gfs-escala{display:flex;align-items:center;gap:4px;white-space:nowrap}.gfs-gradiente{width:118px;height:7px;border-radius:4px;border:1px solid rgba(255,255,255,.45);background:linear-gradient(90deg,#64b5f6,#00c853,#ffeb3b,#ff9800,#f44336,#ad1457)}.gfs-etiqueta-tiempo{color:#fff;font-weight:800}#gfs-corrida-texto,#gfs-validez-texto,#gfs-acumulado-texto{color:#fff;font-size:.74rem;font-weight:800;line-height:1.35}
+@media(max-width:768px){#gfs-panel{bottom:84px;width:min(94vw,520px);padding:6px 7px}.gfs-horas{grid-template-columns:repeat(5,1fr);gap:3px}.gfs-hora{font-size:.52rem;padding:5px 2px}.gfs-titulo{font-size:.58rem}.gfs-info{font-size:.47rem;flex-direction:column;align-items:flex-start;gap:3px}.gfs-gradiente{width:90px;height:6px}#gfs-corrida-texto,#gfs-validez-texto,#gfs-acumulado-texto{font-size:.60rem}}
+</style>
+
+
+<style id="satma-boton-modelo-verde">
+#btn-gfs { background:#2e7d32 !important; color:#fff !important; border-color:#66bb6a !important; }
+#btn-gfs:hover { background:#388e3c !important; }
+#btn-gfs.activo { background:#1b5e20 !important; border-color:#a5d6a7 !important; box-shadow:0 0 8px rgba(76,175,80,.55) !important; }
+</style>
 </head>
 <body>
 
@@ -1286,6 +1300,17 @@
     <button id="btn-verde" class="producto-btn activo" type="button" onclick="toggleVerde()" title="Activar o desactivar la capa de provincias">
         <span class="producto-estado"></span>Provincias
     </button>
+    <button id="btn-gfs" class="producto-btn" type="button" onclick="toggleGFS()" title="Pronóstico real de lluvias del modelo GFS hasta 24 horas">
+        <span class="producto-estado"></span>Modelo
+    </button>
+</div>
+
+<div id="gfs-panel" aria-label="Pronóstico real de lluvias del modelo GFS">
+  <div class="gfs-cabecera"><div class="gfs-titulo">Pronóstico de lluvias del modelo</div><button class="gfs-cerrar" type="button" onclick="toggleGFS(false)" aria-label="Cerrar">×</button></div>
+  <div class="gfs-horas">
+    <button class="gfs-hora activo" data-h="0" onclick="seleccionarHoraGFS(0)">Ahora</button><button class="gfs-hora" data-h="3" onclick="seleccionarHoraGFS(3)">+3 h</button><button class="gfs-hora" data-h="6" onclick="seleccionarHoraGFS(6)">+6 h</button><button class="gfs-hora" data-h="9" onclick="seleccionarHoraGFS(9)">+9 h</button><button class="gfs-hora" data-h="12" onclick="seleccionarHoraGFS(12)">+12 h</button><button class="gfs-hora" data-h="15" onclick="seleccionarHoraGFS(15)">+15 h</button><button class="gfs-hora" data-h="18" onclick="seleccionarHoraGFS(18)">+18 h</button><button class="gfs-hora" data-h="21" onclick="seleccionarHoraGFS(21)">+21 h</button><button class="gfs-hora" data-h="24" onclick="seleccionarHoraGFS(24)">+24 h</button>
+  </div>
+  <div class="gfs-info"><span><span class="gfs-etiqueta-tiempo" id="gfs-tiempo-texto">Modelo de precipitación: pulse Modelo para cargar</span><br><span id="gfs-corrida-texto">Corrida: —</span> · <span id="gfs-validez-texto">Válido: —</span> · <span id="gfs-acumulado-texto">Lluvia: 1 h</span></span><span class="gfs-escala"><span>Débil</span><span class="gfs-gradiente"></span><span>Fuerte</span></span></div>
 </div>
 
 <div id="mapa"></div>
@@ -1297,6 +1322,72 @@
 
     const mapa = L.map('mapa', {zoomControl: false}).setView([18.7357, -70.1627], 8);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom: 18}).addTo(mapa);
+
+    // Fondo oceánico SATMA con costa de alta resolución.
+    // Se usa Natural Earth 10m para que el azul siga el litoral real de las islas
+    // y no produzca los bordes rectos visibles con la antigua capa 110m.
+    mapa.createPane('satma-oceano');
+    mapa.getPane('satma-oceano').style.zIndex = 210;
+    mapa.getPane('satma-oceano').style.pointerEvents = 'none';
+
+    // Panel exclusivo para el radar, siempre por encima del fondo azul del océano
+    // y por debajo de estaciones, provincias, ríos y sismos.
+    mapa.createPane('satma-radar');
+    mapa.getPane('satma-radar').style.zIndex = 230;
+    mapa.getPane('satma-radar').style.pointerEvents = 'none';
+
+
+    // Orden SATMA de capas meteorológicas y de referencia:
+    // océano (210) < radar (230) < GFS (260) < provincias (420) < ríos (440) < estaciones (460).
+    // Así el campo del modelo queda de fondo y la información operativa permanece legible.
+    mapa.createPane('satma-gfs');
+    mapa.getPane('satma-gfs').style.zIndex = 260;
+    mapa.getPane('satma-gfs').style.pointerEvents = 'none';
+
+    mapa.createPane('satma-provincias');
+    mapa.getPane('satma-provincias').style.zIndex = 420;
+
+    mapa.createPane('satma-rios');
+    mapa.getPane('satma-rios').style.zIndex = 440;
+
+    mapa.createPane('satma-estaciones');
+    mapa.getPane('satma-estaciones').style.zIndex = 460;
+
+    const SATMA_OCEANO_URLS = [
+        'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_10m_ocean.geojson',
+        'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_ocean.geojson'
+    ];
+
+    async function cargarOceanoSATMA() {
+        let ultimoError = null;
+        for (const url of SATMA_OCEANO_URLS) {
+            try {
+                const r = await fetch(url, { cache: 'force-cache' });
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                const oceanos = await r.json();
+                L.geoJSON(oceanos, {
+                    pane: 'satma-oceano',
+                    interactive: false,
+                    smoothFactor: 0.15,
+                    style: {
+                        stroke: false,
+                        color: 'transparent',
+                        weight: 0,
+                        opacity: 0,
+                        fillColor: '#0b4f75',
+                        fillOpacity: 0.92,
+                        fillRule: 'evenodd'
+                    }
+                }).addTo(mapa);
+                return;
+            } catch (err) {
+                ultimoError = err;
+            }
+        }
+        console.warn('SATMA: capa oceánica de alta resolución no disponible.', ultimoError);
+    }
+    cargarOceanoSATMA();
+
     L.control.zoom({ position: 'topright' }).addTo(mapa);
 
     let modoActual = '1h';
@@ -1380,6 +1471,7 @@ let datosEstaciones = [];
     function cargarRios() {
         if (capaRios) return;
         capaRios = L.geoJSON(GEOJSON_RIOS, {
+            pane: 'satma-rios',
             style: function(feature) {
                 const tipo = feature && feature.properties ? feature.properties.waterway : null;
                 return {
@@ -1611,23 +1703,77 @@ let datosEstaciones = [];
             const maxLluvia = valores.length ? Math.max(...valores) : 0;
             const tieneLluvia = maxLluvia > 0;
 
+            const gfsActivo = (typeof gfsVisible !== 'undefined' && gfsVisible);
             layer.setStyle({
-                color: '#FFF8E7',
-                weight: 0.22,
-                opacity: 0.95,
+                color: gfsActivo ? '#ffffff' : '#FFF8E7',
+                weight: gfsActivo ? 1.05 : 0.22,
+                opacity: gfsActivo ? 0.98 : 0.95,
                 fillColor: tieneLluvia
                     ? obtenerColor(maxLluvia, modoActual !== '15m')
                     : "#424242",
-                fillOpacity: tieneLluvia ? 0.62 : 0.08
+                // Con GFS activo, el relleno casi transparente deja ver el modelo
+                // mientras conserva claramente el límite administrativo.
+                fillOpacity: gfsActivo ? (tieneLluvia ? 0.10 : 0.025) : (tieneLluvia ? 0.62 : 0.08)
             });
 
             const p = feature.properties || {};
             const nombre = p.provincia || p.PROVINCIA || p.province || p.Province ||
                            p.name || p.NAME_1 || p.nombre || "Provincia";
-            layer.bindTooltip(
-                `<b>${nombre}</b><br>${modoActual === '15m' ? '15 min' : modoActual}: ${formatearLluvia(maxLluvia)} mm`,
-                {sticky: true}
-            );
+            // Tooltip provincial. Cuando el modelo está activo, el valor mostrado
+            // corresponde al GFS interpolado exactamente en la posición del cursor.
+            const tooltipBase = `<b>${nombre}</b><br>${modoActual === '15m' ? '15 min' : modoActual}: ${formatearLluvia(maxLluvia)} mm`;
+            if (!layer.getTooltip()) {
+                layer.bindTooltip(tooltipBase, {sticky: true, direction: 'auto', opacity: 0.96});
+            } else {
+                layer.setTooltipContent(tooltipBase);
+            }
+
+            if (!layer._satmaGfsHoverConfigurado) {
+                const actualizarTooltipModelo = (e) => {
+                    const pFeat = layer.feature?.properties || {};
+                    const nomProv = pFeat.provincia || pFeat.PROVINCIA || pFeat.province || pFeat.Province ||
+                                    pFeat.name || pFeat.NAME_1 || pFeat.nombre || "Provincia";
+
+                    if (typeof gfsVisible !== 'undefined' && gfsVisible &&
+                        typeof gfsDatosListos !== 'undefined' && gfsDatosListos &&
+                        typeof valorBilinealGFS === 'function' &&
+                        e && e.latlng) {
+
+                        const campo = (gfsCampos && gfsCampos[gfsHora]) ? gfsCampos[gfsHora] : [];
+                        const valorModelo = valorBilinealGFS(campo, e.latlng.lat, e.latlng.lng);
+                        const valido = gfsCorridaUTC
+                            ? new Date(gfsCorridaUTC.getTime() + gfsHora * 3600000)
+                            : null;
+                        const textoValido = valido && typeof fechaUTCTexto === 'function'
+                            ? fechaUTCTexto(valido)
+                            : '';
+
+                        const periodo = gfsHora === 0 ? 'Hora de análisis' : 'Acumulado 3 h';
+                        layer.setTooltipContent(
+                            `<div style="min-width:145px">` +
+                            `<b style="font-size:.86rem">${nomProv}</b>` +
+                            `<br><span style="color:#1565c0;font-weight:800">Modelo: ${formatearLluvia(valorModelo)} mm</span>` +
+                            `<br><span style="font-size:.70rem">${periodo}</span>` +
+                            (textoValido ? `<br><span style="font-size:.68rem">Válido: ${textoValido}</span>` : '') +
+                            `</div>`
+                        );
+                    } else {
+                        const estacionesProv = datosEstaciones.filter(est =>
+                            puntoEnPoligono(est.lat, est.lon, layer.feature.geometry)
+                        );
+                        const valsProv = estacionesProv.map(valorEstacionPorModo);
+                        const maxProv = valsProv.length ? Math.max(...valsProv) : 0;
+                        layer.setTooltipContent(
+                            `<b>${nomProv}</b><br>${modoActual === '15m' ? '15 min' : modoActual}: ${formatearLluvia(maxProv)} mm`
+                        );
+                    }
+                };
+
+                layer.on('mouseover', actualizarTooltipModelo);
+                layer.on('mousemove', actualizarTooltipModelo);
+                layer.on('click', actualizarTooltipModelo); // útil en pantallas táctiles
+                layer._satmaGfsHoverConfigurado = true;
+            }
         });
     }
 
@@ -1639,6 +1785,7 @@ let datosEstaciones = [];
             geojsonProvincias = GEOJSON_PROVINCIAS_INTEGRADO;
 
             capaProvincias = L.geoJSON(geojsonProvincias, {
+                pane: 'satma-provincias',
                 style: {
                     color: "#FFF8E7",
                     weight: 0.22,
@@ -1648,8 +1795,8 @@ let datosEstaciones = [];
                 }
             }).addTo(mapa);
 
-            // Mantener las provincias detrás de los círculos de estaciones.
-            capaProvincias.bringToBack();
+            // Provincias por encima del modelo GFS y por debajo de ríos/estaciones.
+            capaProvincias.bringToFront();
             actualizarColoresProvincias();
         actualizarColorRiosPorLluvia();
             document.getElementById('status-actualizacion').innerText = "Provincias listas";
@@ -1727,6 +1874,7 @@ let datosEstaciones = [];
             if (soloLluvias && vParaMostrar <= 0) return;
             
             const marcador = L.circleMarker([est.lat, est.lon], {
+                pane: 'satma-estaciones',
                 radius: (window.innerWidth <= 768 ? 4 : 5),
                 fillColor: obtenerColor(vParaColor, (modoActual !== '15m')),
                 color: "#fff", weight: 2, fillOpacity: 0.85
@@ -1770,6 +1918,7 @@ let datosEstaciones = [];
             WEATHERLINK_ESTACIONES.forEach(est => {
                 if (!Number.isFinite(est.lat) || !Number.isFinite(est.lon)) return;
                 L.circleMarker([est.lat, est.lon], {
+                    pane: 'satma-estaciones',
                     radius: (window.innerWidth <= 768 ? 4 : 5),
                     fillColor: '#9e9e9e',
                     color: '#fff', weight: 2, fillOpacity: 0.85
@@ -2176,6 +2325,7 @@ let datosEstaciones = [];
         const opacidad = Number(document.getElementById('radar-opacidad')?.value || 65) / 100;
         const urlTiles = `${radarHost}${frame.path}/512/{z}/{x}/{y}/2/1_0.png`;
         return L.tileLayer(urlTiles, {
+            pane: 'satma-radar',
             tileSize: 512,
             zoomOffset: -1,
             minZoom: 1,
@@ -2354,6 +2504,222 @@ let datosEstaciones = [];
         } else {
             mapa.removeLayer(capaProvincias);
         }
+    }
+
+
+
+    // ===== MODELO GFS REAL · PRECIPITACIÓN =====
+    // Datos reales del NOAA GFS servidos/procesados por Open-Meteo.
+    // Se busca automáticamente la corrida GFS más reciente disponible (00/06/12/18 UTC)
+    // y se muestrea una malla regular sobre La Española y aguas adyacentes.
+    let gfsVisible = false;
+    let gfsHora = 0;
+    let gfsCargando = false;
+    let gfsCorridaUTC = null;
+    let gfsOverlay = null;
+    let gfsDatosListos = false;
+    let gfsError = '';
+
+    const GFS_BOUNDS = { latMin: 16.0, latMax: 21.5, lonMin: -72.5, lonMax: -67.0, paso: 0.5 };
+    const GFS_HORAS = [0,3,6,9,12,15,18,21,24];
+    const gfsLats = [];
+    const gfsLons = [];
+    const gfsPuntos = [];
+    const gfsCampos = Object.fromEntries(GFS_HORAS.map(h => [h, []]));
+
+    for(let lat=GFS_BOUNDS.latMax; lat>=GFS_BOUNDS.latMin-1e-6; lat-=GFS_BOUNDS.paso){
+        gfsLats.push(Number(lat.toFixed(2)));
+    }
+    for(let lon=GFS_BOUNDS.lonMin; lon<=GFS_BOUNDS.lonMax+1e-6; lon+=GFS_BOUNDS.paso){
+        gfsLons.push(Number(lon.toFixed(2)));
+    }
+    gfsLats.forEach(lat => gfsLons.forEach(lon => gfsPuntos.push({lat,lon})));
+
+    function dos(n){ return String(n).padStart(2,'0'); }
+    function isoRunUTC(d){
+        return `${d.getUTCFullYear()}-${dos(d.getUTCMonth()+1)}-${dos(d.getUTCDate())}T${dos(d.getUTCHours())}:00`;
+    }
+    function fechaUTCTexto(d){
+        const dias=['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+        return `${dias[d.getUTCDay()]} ${dos(d.getUTCDate())}/${dos(d.getUTCMonth()+1)}/${d.getUTCFullYear()} ${dos(d.getUTCHours())}:00 UTC`;
+    }
+    function candidatosCorridaGFS(){
+        const ahora=new Date();
+        const base=new Date(Date.UTC(ahora.getUTCFullYear(),ahora.getUTCMonth(),ahora.getUTCDate(),Math.floor(ahora.getUTCHours()/6)*6,0,0));
+        const arr=[];
+        for(let i=0;i<5;i++) arr.push(new Date(base.getTime()-i*6*3600000));
+        return arr;
+    }
+    async function probarCorridaGFS(runDate){
+        const run=isoRunUTC(runDate);
+        const url='https://single-runs-api.open-meteo.com/v1/forecast?latitude=18.75&longitude=-70.25&hourly=precipitation&forecast_hours=30&timezone=GMT&cell_selection=nearest&models=ncep_gfs_seamless&run='+encodeURIComponent(run);
+        const r=await fetch(url,{cache:'no-store'});
+        if(!r.ok) return false;
+        const j=await r.json();
+        return !!(j && j.hourly && Array.isArray(j.hourly.time) && Array.isArray(j.hourly.precipitation));
+    }
+    async function encontrarCorridaGFS(){
+        for(const c of candidatosCorridaGFS()){
+            try{ if(await probarCorridaGFS(c)) return c; }catch(e){}
+        }
+        throw new Error('No se encontró una corrida GFS disponible.');
+    }
+    function indicesPrecipitacionPorHora(times, runDate){
+        const mapaIdx=new Map();
+        (times||[]).forEach((t,i)=>mapaIdx.set(String(t).slice(0,13),i));
+        const idx={};
+        GFS_HORAS.forEach(h=>{
+            const valid=new Date(runDate.getTime()+h*3600000);
+            const key=`${valid.getUTCFullYear()}-${dos(valid.getUTCMonth()+1)}-${dos(valid.getUTCDate())}T${dos(valid.getUTCHours())}`;
+            idx[h]=mapaIdx.has(key)?mapaIdx.get(key):-1;
+        });
+        return idx;
+    }
+    function sumaVentanaPrecipitacion(serie, idxFinal, horas){
+        if(idxFinal<0 || !Array.isArray(serie)) return 0;
+        if(horas===0){
+            const v=Number(serie[idxFinal]);
+            return Number.isFinite(v)?Math.max(0,v):0;
+        }
+        let suma=0;
+        const desde=Math.max(0,idxFinal-2); // 3 horas terminando en la hora válida
+        for(let i=desde;i<=idxFinal;i++){
+            const v=Number(serie[i]);
+            if(Number.isFinite(v)) suma+=Math.max(0,v);
+        }
+        return suma;
+    }
+    async function cargarMallaGFS(runDate){
+        GFS_HORAS.forEach(h=>gfsCampos[h]=new Array(gfsPuntos.length).fill(0));
+        const tam=30;
+        for(let inicio=0; inicio<gfsPuntos.length; inicio+=tam){
+            const lote=gfsPuntos.slice(inicio,inicio+tam);
+            const lats=lote.map(p=>p.lat).join(',');
+            const lons=lote.map(p=>p.lon).join(',');
+            const run=isoRunUTC(runDate);
+            const url='https://single-runs-api.open-meteo.com/v1/forecast?latitude='+encodeURIComponent(lats)+'&longitude='+encodeURIComponent(lons)+'&hourly=precipitation&forecast_hours=30&timezone=GMT&cell_selection=nearest&models=ncep_gfs_seamless&run='+encodeURIComponent(run);
+            const r=await fetch(url,{cache:'no-store'});
+            if(!r.ok) throw new Error(`GFS HTTP ${r.status}`);
+            let j=await r.json();
+            if(!Array.isArray(j)) j=[j];
+            j.forEach((loc,k)=>{
+                const pos=inicio+k;
+                if(pos>=gfsPuntos.length || !loc || !loc.hourly) return;
+                const idx=indicesPrecipitacionPorHora(loc.hourly.time,runDate);
+                GFS_HORAS.forEach(h=>{
+                    gfsCampos[h][pos]=sumaVentanaPrecipitacion(loc.hourly.precipitation,idx[h],h);
+                });
+            });
+        }
+    }
+    function colorPrecipitacionGFS(v){
+        // Misma escala de precipitación GFS; solo se refuerza la presencia visual
+        // para que los límites y áreas de lluvia se distingan mejor sobre el mapa.
+        if(v<0.10) return [0,0,0,0];
+        if(v<0.50) return [100,181,246,105];
+        if(v<1.00) return [33,150,243,135];
+        if(v<2.00) return [0,188,212,150];
+        if(v<4.00) return [0,200,83,165];
+        if(v<7.00) return [139,195,74,175];
+        if(v<12.0) return [255,235,59,190];
+        if(v<20.0) return [255,152,0,205];
+        if(v<35.0) return [244,67,54,220];
+        if(v<50.0) return [173,20,87,235];
+        return [123,31,162,245];
+    }
+    function valorBilinealGFS(campo, lat, lon){
+        const nr=gfsLats.length, nc=gfsLons.length;
+        let rf=(GFS_BOUNDS.latMax-lat)/GFS_BOUNDS.paso;
+        let cf=(lon-GFS_BOUNDS.lonMin)/GFS_BOUNDS.paso;
+        rf=Math.max(0,Math.min(nr-1,rf)); cf=Math.max(0,Math.min(nc-1,cf));
+        const r0=Math.floor(rf), c0=Math.floor(cf), r1=Math.min(nr-1,r0+1), c1=Math.min(nc-1,c0+1);
+        const tr=rf-r0, tc=cf-c0;
+        const at=(r,c)=>Number(campo[r*nc+c])||0;
+        const a=at(r0,c0)*(1-tc)+at(r0,c1)*tc;
+        const b=at(r1,c0)*(1-tc)+at(r1,c1)*tc;
+        return a*(1-tr)+b*tr;
+    }
+    function crearRasterGFS(campo){
+        const w=520,h=520;
+        const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+        const ctx=canvas.getContext('2d'); const img=ctx.createImageData(w,h); const d=img.data;
+        for(let y=0;y<h;y++){
+            const lat=GFS_BOUNDS.latMax-(y/(h-1))*(GFS_BOUNDS.latMax-GFS_BOUNDS.latMin);
+            for(let x=0;x<w;x++){
+                const lon=GFS_BOUNDS.lonMin+(x/(w-1))*(GFS_BOUNDS.lonMax-GFS_BOUNDS.lonMin);
+                const v=valorBilinealGFS(campo,lat,lon);
+                const c=colorPrecipitacionGFS(v); const p=(y*w+x)*4;
+                d[p]=c[0]; d[p+1]=c[1]; d[p+2]=c[2]; d[p+3]=c[3];
+            }
+        }
+        ctx.putImageData(img,0,0);
+        return canvas.toDataURL('image/png');
+    }
+    function asegurarCapasReferenciaSobreGFS(){
+        if(capaProvincias && mapa.hasLayer(capaProvincias)) capaProvincias.bringToFront();
+        if(capaRios && mapa.hasLayer(capaRios)) capaRios.bringToFront();
+        mapa.eachLayer(l => { if (l instanceof L.CircleMarker && l.bringToFront) l.bringToFront(); });
+    }
+    function actualizarLeyendaGFS(){
+        const t=document.getElementById('gfs-tiempo-texto');
+        const c=document.getElementById('gfs-corrida-texto');
+        const v=document.getElementById('gfs-validez-texto');
+        const a=document.getElementById('gfs-acumulado-texto');
+        if(gfsCargando){ if(t)t.textContent='Cargando datos reales del GFS…'; return; }
+        if(gfsError){ if(t)t.textContent='Error: '+gfsError; return; }
+        if(!gfsCorridaUTC){ if(t)t.textContent='Modelo de precipitación: pulse Modelo para cargar'; return; }
+        if(t)t.textContent='Modelo de precipitación';
+        if(c)c.textContent='Corrida: '+fechaUTCTexto(gfsCorridaUTC);
+        const valido=new Date(gfsCorridaUTC.getTime()+gfsHora*3600000);
+        if(v)v.textContent='Válido: '+fechaUTCTexto(valido);
+        if(a)a.textContent=gfsHora===0?'Lluvia: hora de análisis':'Lluvia acumulada: 3 h';
+    }
+    function renderGFS(){
+        document.querySelectorAll('.gfs-hora').forEach(b=>b.classList.toggle('activo',Number(b.dataset.h)===gfsHora));
+        actualizarLeyendaGFS();
+        if(!gfsDatosListos || !gfsVisible) return;
+        if(gfsOverlay && mapa.hasLayer(gfsOverlay)) mapa.removeLayer(gfsOverlay);
+        const dataUrl=crearRasterGFS(gfsCampos[gfsHora]||[]);
+        gfsOverlay=L.imageOverlay(dataUrl,[[GFS_BOUNDS.latMin,GFS_BOUNDS.lonMin],[GFS_BOUNDS.latMax,GFS_BOUNDS.lonMax]],{pane:'satma-gfs',opacity:0.94,interactive:false});
+        gfsOverlay.addTo(mapa);
+        actualizarColoresProvincias();
+        if(riosVisibles) actualizarColorRiosPorLluvia();
+        asegurarCapasReferenciaSobreGFS();
+    }
+    async function cargarGFSReal(){
+        if(gfsCargando || gfsDatosListos) return;
+        gfsCargando=true; gfsError=''; actualizarLeyendaGFS();
+        try{
+            gfsCorridaUTC=await encontrarCorridaGFS();
+            await cargarMallaGFS(gfsCorridaUTC);
+            gfsDatosListos=true;
+        }catch(e){
+            console.error('GFS real:',e);
+            gfsError='No fue posible cargar el GFS. Verifique Internet e intente de nuevo.';
+        }finally{
+            gfsCargando=false; actualizarLeyendaGFS();
+            if(gfsDatosListos && gfsVisible) renderGFS();
+        }
+    }
+    function seleccionarHoraGFS(h){
+        gfsHora=Number(h)||0;
+        renderGFS();
+    }
+    async function toggleGFS(forzar){
+        gfsVisible=typeof forzar==='boolean'?forzar:!gfsVisible;
+        const btn=document.getElementById('btn-gfs');
+        const panel=document.getElementById('gfs-panel');
+        if(btn)btn.classList.toggle('activo',gfsVisible);
+        if(panel)panel.classList.toggle('visible',gfsVisible);
+        if(gfsVisible){
+            actualizarLeyendaGFS();
+            if(!gfsDatosListos) await cargarGFSReal(); else renderGFS();
+        }else if(gfsOverlay && mapa.hasLayer(gfsOverlay)){
+            mapa.removeLayer(gfsOverlay);
+        }
+        actualizarColoresProvincias();
+        if(riosVisibles) actualizarColorRiosPorLluvia();
+        asegurarCapasReferenciaSobreGFS();
     }
 
     async function fetchJSONConReintento(url, intentos = 2) {
@@ -3527,8 +3893,11 @@ let datosEstaciones = [];
             'WILFREDOLR': 'bayahibew05',
             'WILLIAM': 'willianadm05',
             'alexanderfm': 'farmacia#06',
-            'ManeGonte08': 'agromet#analisis'
-        };
+            'ManeGonte08': 'agromet#analisis',
+        "Antony09": "Jarabacoa#piton",
+        "AndresHT": "Citricola#056",
+        "Anaesp": "Arcoiris#dn"
+};
 
         function mostrarLogin() {
             if (login) login.style.display = 'flex';
