@@ -1209,6 +1209,8 @@
 }
 </style>
 
+
+
 <style id="satma-nhc-cono-estilos">
 #nhc-estado{
     position:absolute;
@@ -1267,53 +1269,82 @@
 }
 </style>
 
-<style id="satma-nhc-transparencia-control">
-#nhc-controles{
+
+<style id="satma-nhc-intensidad-estilos">
+#nhc-intensidad-control{
     position:absolute;
     left:50%;
     bottom:112px;
     transform:translateX(-50%);
     z-index:1848;
     display:none;
-    width:min(360px,86vw);
-    padding:7px 10px;
-    border-radius:8px;
-    background:rgba(18,18,18,.95);
+    align-items:center;
+    gap:7px;
+    padding:6px 9px;
+    border-radius:7px;
+    background:rgba(18,18,18,.94);
     border:1px solid #ef5350;
     color:#fff;
-    box-shadow:0 3px 10px rgba(0,0,0,.45);
-    box-sizing:border-box;
-}
-.nhc-control-titulo{
-    margin-bottom:5px;
-    text-align:center;
     font-size:.62rem;
-    font-weight:900;
-    color:#ffcdd2;
+    font-weight:800;
+    box-shadow:0 3px 10px rgba(0,0,0,.45);
 }
-.nhc-control-row{
-    display:grid;
-    grid-template-columns:auto 1fr auto auto;
-    align-items:center;
-    gap:6px;
-    font-size:.55rem;
-    color:#ddd;
-}
-.nhc-control-row input[type="range"]{
-    width:100%;
-    min-width:90px;
-    cursor:pointer;
-}
-.nhc-control-valor{
-    min-width:34px;
-    text-align:right;
-    color:#fff;
-    font-weight:900;
-}
+#nhc-intensidad-control.visible{display:flex;}
+#nhc-intensidad-control input[type="range"]{width:115px;cursor:pointer;}
+#nhc-intensidad-control span:first-child{color:#ffb3b3;}
 @media(max-width:768px){
-    #nhc-controles{bottom:86px;width:min(330px,90vw);padding:6px 7px;}
-    .nhc-control-titulo{font-size:.52rem;}
-    .nhc-control-row{font-size:.46rem;gap:4px;}
+    #nhc-intensidad-control{bottom:86px;font-size:.52rem;gap:4px;padding:5px 6px;}
+    #nhc-intensidad-control input[type="range"]{width:82px;}
+}
+</style>
+
+
+<style id="satma-tropical-menu-ecaie-estilos">
+#tropical-panel{
+position:absolute;left:50%;bottom:72px;transform:translateX(-50%);z-index:1860;display:none;
+width:min(440px,92vw);max-height:calc(100vh - 95px);overflow-y:auto;overflow-x:hidden;
+padding:0 10px 10px;border-radius:9px;background:rgba(18,18,18,.97);
+border:1px solid #ef5350;box-shadow:0 4px 15px rgba(0,0,0,.55);color:#fff;
+scrollbar-width:thin;overscroll-behavior:contain
+}
+#tropical-panel.visible{display:block}
+.tropical-cabecera{
+display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 -10px 7px;
+padding:8px 10px 7px;position:sticky;top:0;z-index:5;
+background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
+}
+.tropical-titulo{font-size:.72rem;font-weight:900;color:#ffcdd2;letter-spacing:.3px}
+.tropical-cerrar{border:0;background:#424242;color:#fff;border-radius:5px;padding:3px 7px;cursor:pointer;font-weight:900;flex:0 0 auto}
+.tropical-capas{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+#tropical-panel .ecaie-hora{margin-top:5px}
+#tropical-panel .ecaie-row{margin-top:4px}
+#tropical-panel .ecaie-estado{margin-top:4px}
+#tropical-panel .ecaie-vista{margin-top:5px}
+.tropical-capa-btn{border:1px solid #616161;background:#303030;color:#eee;border-radius:6px;padding:8px 6px;font-size:.67rem;font-weight:900;cursor:pointer}.tropical-capa-btn.activo{background:#b71c1c;border-color:#ffcdd2;color:#fff;box-shadow:0 0 7px rgba(239,83,80,.4)}
+#nhc-controles{display:none;margin-top:8px;padding-top:7px;border-top:1px solid #555}
+.nhc-control-titulo{font-size:.60rem;font-weight:900;color:#ffcdd2;text-align:center;margin-bottom:5px}
+.nhc-control-row{display:flex;align-items:center;gap:6px;font-size:.57rem;color:#ddd}.nhc-control-row input[type=range]{flex:1;min-width:0}.nhc-control-row span:first-child{white-space:nowrap}.nhc-control-valor{min-width:32px;text-align:right;font-weight:900;color:#fff}
+#ecaie-controles{display:none;margin-top:8px;padding-top:7px;border-top:1px solid #555}
+.ecaie-vista{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:7px}
+.ecaie-vista button{border:1px solid #78909c;background:#263238;color:#fff;border-radius:5px;padding:5px 9px;font-size:.56rem;font-weight:900;cursor:pointer}
+.ecaie-vista button:hover{background:#37474f}
+#ecaie-ampliar{background:#1565c0;border-color:#64b5f6}
+#ecaie-vista-anterior{background:#455a64}.ecaie-row{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:.58rem;color:#ddd}.ecaie-row input[type=range]{flex:1;min-width:0}.ecaie-estado{margin-top:6px;font-size:.54rem;line-height:1.25;color:#bdbdbd}.ecaie-aviso{color:#ffcc80}.ecaie-hora{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:7px}.ecaie-hora button{border:1px solid #757575;background:#263238;color:#fff;border-radius:5px;padding:4px 7px;font-size:.58rem;font-weight:800;cursor:pointer}.ecaie-hora span{min-width:58px;text-align:center;font-size:.62rem;font-weight:900;color:#fff}
+#satma-ecaie-overlay{position:absolute;z-index:540;display:none;overflow:visible;pointer-events:none;background:transparent;transform-origin:top left}.leaflet-container #satma-ecaie-overlay iframe{position:absolute;left:0;border:0;pointer-events:none;background:transparent;transform-origin:0 0;width:1320px;height:820px;max-width:none!important}
+#ecens-controles{display:none;margin-top:8px;padding-top:7px;border-top:1px solid #555}
+#satma-ecens-overlay{position:absolute;z-index:535;display:none;overflow:visible;pointer-events:none;background:transparent;transform-origin:top left}
+#satma-gefs-overlay,#satma-genc-overlay{position:absolute;z-index:530;display:none;overflow:visible;pointer-events:none;background:transparent;transform-origin:top left}
+.leaflet-container #satma-gefs-overlay iframe,.leaflet-container #satma-genc-overlay iframe{position:absolute;left:0;border:0;pointer-events:none;background:transparent;transform-origin:0 0;width:1320px;height:820px;max-width:none!important}
+.leaflet-container #satma-ecens-overlay iframe{position:absolute;left:0;border:0;pointer-events:none;background:transparent;transform-origin:0 0;width:1320px;height:820px;max-width:none!important}
+#ecens-ampliar{background:#00695c;border-color:#80cbc4}
+#ecens-vista-anterior{background:#455a64}
+
+@media(max-width:768px){
+#tropical-panel{bottom:55px;width:min(94vw,390px);max-height:calc(100dvh - 70px);padding:0 7px 7px}
+.tropical-cabecera{margin:0 -7px 6px;padding:7px}
+.tropical-titulo{font-size:.58rem}
+.tropical-capa-btn{font-size:.56rem;padding:7px 4px}
+.ecaie-row,.ecaie-estado{font-size:.48rem}
 }
 </style>
 
@@ -1434,7 +1465,7 @@
     <button id="btn-gfs" class="producto-btn" type="button" onclick="toggleGFS()" title="Pronóstico real de lluvias del modelo GFS hasta 24 horas">
         <span class="producto-estado"></span>Modelo
     </button>
-    <button id="btn-ecmwf" class="producto-btn" type="button" onclick="toggleTropicalNHC()" title="Mostrar u ocultar únicamente la Perspectiva Tropical de 7 días del NHC">
+    <button id="btn-ecmwf" class="producto-btn" type="button" onclick="toggleTropicalNHC()" title="Perspectiva Tropical de 7 días del Centro Nacional de Huracanes">
         <span class="producto-estado"></span>Tropical
     </button>
 </div>
@@ -1448,18 +1479,70 @@
 </div>
 
 
-<div id="nhc-controles" aria-label="Transparencia del fondo del cono NHC">
-    <div class="nhc-control-titulo">TRANSPARENCIA DEL FONDO DEL CONO NHC</div>
-    <div class="nhc-control-row">
-        <span>Débil</span>
-        <input id="nhc-intensidad" type="range" min="10" max="100" step="5" value="50" aria-label="Transparencia del relleno del cono NHC">
-        <span>Fuerte</span>
-        <span id="nhc-intensidad-txt" class="nhc-control-valor">50%</span>
+
+
+
+<div id="tropical-panel" aria-label="Capas tropicales">
+  <div class="tropical-cabecera"><div class="tropical-titulo">TROPICAL · Capas integradas</div><button class="tropical-cerrar" type="button" onclick="cerrarPanelTropical()">×</button></div>
+  <div class="tropical-capas">
+    <button id="tropical-btn-nhc" class="tropical-capa-btn" type="button" onclick="alternarNHCTropical()">Cono NHC</button>
+    <button id="tropical-btn-ecaie" class="tropical-capa-btn" type="button" onclick="alternarECAIE()">ECAIE</button>
+    <button id="tropical-btn-ecens" class="tropical-capa-btn" type="button" onclick="alternarECENS()">ECENS</button>
+    <button id="tropical-btn-gefs" class="tropical-capa-btn" type="button" onclick="alternarWNExtra('gefs')">GEFS</button>
+    <button id="tropical-btn-genc" class="tropical-capa-btn" type="button" onclick="alternarWNExtra('genc')">GENC</button>
+  </div>
+  <div id="nhc-controles">
+    <div class="nhc-control-titulo">INTENSIDAD DEL CONO NHC</div>
+    <div class="nhc-control-row"><span>Semitransparente</span><input id="nhc-intensidad" type="range" min="10" max="100" step="5" value="50" aria-label="Intensidad del contorno y relleno del cono NHC"><span>Fuerte</span><span id="nhc-intensidad-txt" class="nhc-control-valor">50%</span></div>
+    <div class="ecaie-estado" style="margin-top:5px">El relleno conserva el mismo color del contorno NHC.</div>
+  </div>
+  <div id="ecaie-controles">
+    <div class="ecaie-hora"><button type="button" onclick="cambiarHoraECAIE(-6)">◀ −6 h</button><span id="ecaie-fhora">F132</span><button type="button" onclick="cambiarHoraECAIE(6)">+6 h ▶</button></div>
+    <div class="ecaie-vista">
+      <button id="ecaie-ampliar" type="button" title="Amplía ECAIE y el mapa juntos para conservar la alineación">🔍 Ampliar ECAIE</button>
+      <button id="ecaie-vista-anterior" type="button" title="Regresar a la vista existente antes de ampliar">Vista anterior</button>
     </div>
+    <div class="ecaie-row"><span>Transparencia</span><input id="ecaie-opacidad" type="range" min="15" max="90" value="55" step="5"><span id="ecaie-opacidad-txt">55%</span></div>
+    <div class="ecaie-row"><span>Ajuste X</span><input id="ecaie-ajuste-x" type="range" min="-120" max="120" value="-34" step="1"><span id="ecaie-ajuste-x-txt">-34</span></div>
+    <div class="ecaie-row"><span>Ajuste Y</span><input id="ecaie-ajuste-y" type="range" min="-80" max="80" value="-3" step="1"><span id="ecaie-ajuste-y-txt">-3</span></div>
+    <div class="ecaie-row" style="justify-content:center"><button id="ecaie-reset-cal" type="button" style="border:1px solid #757575;background:#37474f;color:#fff;border-radius:5px;padding:4px 8px;font-size:.55rem;font-weight:800;cursor:pointer">Restaurar calibración</button></div>
+    <div class="ecaie-estado" id="ecaie-estado">WeatherNerds ECAIE · actualización automática · calibración X −34 / Y −3 · vista ampliable.</div>
+    <div class="ecaie-estado ecaie-aviso">ECAIE calibrado con su rejilla lat/lon; Ajuste X/Y permite corrección fina si cambia el encuadre de WeatherNerds.</div>
+  </div>
+
+  <div id="ecens-controles">
+    <div class="ecaie-hora"><button type="button" onclick="cambiarHoraECENS(-6)">◀ −6 h</button><span id="ecens-fhora">F132</span><button type="button" onclick="cambiarHoraECENS(6)">+6 h ▶</button></div>
+    <div class="ecaie-vista">
+      <button id="ecens-ampliar" type="button" title="Amplía ECENS y el mapa juntos para conservar la alineación">🔍 Ampliar ECENS</button>
+      <button id="ecens-vista-anterior" type="button" title="Regresar a la vista existente antes de ampliar">Vista anterior</button>
+    </div>
+    <div class="ecaie-row"><span>Transparencia</span><input id="ecens-opacidad" type="range" min="15" max="90" value="55" step="5"><span id="ecens-opacidad-txt">55%</span></div>
+    <div class="ecaie-row"><span>Ajuste X</span><input id="ecens-ajuste-x" type="range" min="-120" max="120" value="-34" step="1"><span id="ecens-ajuste-x-txt">-34</span></div>
+    <div class="ecaie-row"><span>Ajuste Y</span><input id="ecens-ajuste-y" type="range" min="-80" max="80" value="-3" step="1"><span id="ecens-ajuste-y-txt">-3</span></div>
+    <div class="ecaie-row" style="justify-content:center"><button id="ecens-reset-cal" type="button" style="border:1px solid #757575;background:#37474f;color:#fff;border-radius:5px;padding:4px 8px;font-size:.55rem;font-weight:800;cursor:pointer">Restaurar calibración</button></div>
+    <div class="ecaie-estado" id="ecens-estado">WeatherNerds ECENS · actualización automática · calibración X −34 / Y −3 · vista ampliable.</div>
+    <div class="ecaie-estado ecaie-aviso">ECENS usa el mismo formato georreferenciado del ECAIE y mantiene ajuste fino X/Y independiente.</div>
+  </div>
+
+  <div id="gefs-controles" style="display:none;margin-top:8px;padding-top:7px;border-top:1px solid #555">
+    <div class="ecaie-hora"><button type="button" onclick="cambiarHoraWNExtra('gefs',-6)">◀ −6 h</button><span id="gefs-fhora">F132</span><button type="button" onclick="cambiarHoraWNExtra('gefs',6)">+6 h ▶</button></div>
+    <div class="ecaie-row"><span>Transparencia</span><input id="gefs-opacidad" type="range" min="15" max="90" value="55" step="5"><span id="gefs-opacidad-txt">55%</span></div>
+    <div class="ecaie-row"><span>Ajuste X</span><input id="gefs-ajuste-x" type="range" min="-120" max="120" value="-34" step="1"><span id="gefs-ajuste-x-txt">-34</span></div>
+    <div class="ecaie-row"><span>Ajuste Y</span><input id="gefs-ajuste-y" type="range" min="-80" max="80" value="-3" step="1"><span id="gefs-ajuste-y-txt">-3</span></div>
+    <div class="ecaie-estado" id="gefs-estado">WeatherNerds GEFS · actualización automática.</div>
+  </div>
+
+  <div id="genc-controles" style="display:none;margin-top:8px;padding-top:7px;border-top:1px solid #555">
+    <div class="ecaie-hora"><button type="button" onclick="cambiarHoraWNExtra('genc',-6)">◀ −6 h</button><span id="genc-fhora">F132</span><button type="button" onclick="cambiarHoraWNExtra('genc',6)">+6 h ▶</button></div>
+    <div class="ecaie-row"><span>Transparencia</span><input id="genc-opacidad" type="range" min="15" max="90" value="55" step="5"><span id="genc-opacidad-txt">55%</span></div>
+    <div class="ecaie-row"><span>Ajuste X</span><input id="genc-ajuste-x" type="range" min="-120" max="120" value="-34" step="1"><span id="genc-ajuste-x-txt">-34</span></div>
+    <div class="ecaie-row"><span>Ajuste Y</span><input id="genc-ajuste-y" type="range" min="-80" max="80" value="-3" step="1"><span id="genc-ajuste-y-txt">-3</span></div>
+    <div class="ecaie-estado" id="genc-estado">WeatherNerds GENC · actualización automática.</div>
+  </div>
 </div>
 
-<div id="nhc-estado" role="status" aria-live="polite"></div>
 
+<div id="nhc-estado" role="status" aria-live="polite"></div>
 <div id="mapa"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -2087,8 +2170,8 @@ let datosEstaciones = [];
     function cambiarModo(m) {
         modoActual = m;
 
-        // Limpiar correctamente el estado activo de TODOS los acumulados,
-        // incluido 12 h. Así nunca quedan dos períodos azules al mismo tiempo.
+        // Corrección definitiva: limpiar TODOS los acumulados, incluido 12 h,
+        // antes de activar únicamente el período seleccionado.
         ['15m','1h','3h','6h','12h','24h'].forEach(x => {
             const boton = document.getElementById('btn-' + x);
             if (boton) boton.classList.remove('activo');
@@ -3605,7 +3688,7 @@ let datosEstaciones = [];
             const anterior = riosProvincia.get(claveRio);
 
             // Si un río aparece en varios segmentos, conservar el mayor valor de lluvia
-            // de la estación responsable para seleccionar los 4 principales.
+            // de la estación responsable para poder seleccionar los 4 principales.
             if (!anterior || lluvia1h > anterior.lluvia1h) {
                 riosProvincia.set(claveRio, { rio: nombreRio, lluvia1h });
             }
@@ -4155,6 +4238,7 @@ let datosEstaciones = [];
 </script>
 
 
+
 <script id="satma-nhc-cono-script">
 /* ===== NHC: Seven-Day Graphical Tropical Weather Outlook =====
    Integrado directamente al mapa, con autoactualización 24/7.
@@ -4339,6 +4423,7 @@ function nhcProbFormateada(v){
 
 function nhcRiesgoEspanol(valor, prob){
     const s = String(valor ?? '').trim().toLowerCase();
+
     if(s){
         if(s.includes('high') || s.includes('alto') || s.includes('alta')) return 'Alto';
         if(s.includes('medium') || s.includes('med') || s.includes('medio') || s.includes('media')) return 'Mediano';
@@ -4351,13 +4436,11 @@ function nhcRiesgoEspanol(valor, prob){
         if(n >= 40) return 'Mediano';
         return 'Bajo';
     }
+
     return 'N/D';
 }
 
 function nhcFechaProductoTexto(p){
-    // El servicio GIS oficial del NHC publica idp_filedate con la fecha/hora
-    // del producto. Se usa primero ese valor; si no está disponible, se usa
-    // la hora de la última actualización recuperada por SATMA.
     const raw = p?.idp_filedate ?? p?.IDP_FILEDATE ??
                 p?.filedate ?? p?.FILEDATE ??
                 p?.validtime ?? p?.VALIDTIME ?? null;
@@ -4367,7 +4450,6 @@ function nhcFechaProductoTexto(p){
     if(raw instanceof Date){
         d = raw;
     } else if(typeof raw === 'number' && Number.isFinite(raw)){
-        // ArcGIS normalmente entrega fechas en milisegundos desde epoch.
         d = new Date(raw);
     } else if(raw){
         const n = Number(raw);
@@ -4585,10 +4667,10 @@ function detenerAutoActualizacionNHC(){
 
 function nhcActualizarIntensidad(valor){
     const n = Math.max(10, Math.min(100, Number(valor) || 50));
-    // El control modifica únicamente la transparencia del FONDO del cono.
-    // El contorno se mantiene estable para conservar la delimitación visible.
-    nhcContornoOpacidad = 0.95;
-    nhcRellenoOpacidad = 0.04 + (n / 100) * 0.61;
+    // El control modifica simultáneamente contorno y relleno,
+    // conservando siempre el mismo color oficial del área NHC.
+    nhcContornoOpacidad = 0.25 + (n / 100) * 0.75;
+    nhcRellenoOpacidad = 0.08 + (n / 100) * 0.52;
 
     const txt=document.getElementById('nhc-intensidad-txt');
     if(txt) txt.textContent=n+'%';
@@ -4669,5 +4751,577 @@ window.addEventListener('online',()=>{
     }
 });
 </script>
+
+
+<script id="satma-tropical-ecaie-integracion-script">
+/* ===== SATMA Tropical: NHC + WeatherNerds ECAIE =====
+   v16_48: reproyección Web Mercator + calibración por rejilla lat/lon de WeatherNerds + ajuste fino X/Y.
+   La página externa contiene una columna de controles antes de la imagen.
+   Se recorta esa interfaz y se georreferencia únicamente el gráfico 1050x428.
+*/
+let ecaieActivo=false, ecaieFHour=132, ecaieTimer=null, ecaieUltimaCarga=null;
+let ecaieCargaId=0;
+// Vista ECAIE ampliable: no escala la capa por separado; amplía Leaflet completo para conservar georreferenciación.
+let ecaieVistaAnterior=null;
+const ECAIE_REFRESH_MS=10*60*1000;
+const ECAIE_BASE='https://www.weathernerds.org/models/ecaie.html';
+
+// Dominio del enlace ECAIE suministrado por el usuario:
+// initrange = Norte : Oeste(0..360) : Sur : Este(0..360)
+const ECAIE_GEO={
+  north:32.189781021900,
+  west:267.988571428532-360,  // -92.011428571468
+  south:4.014598540150,
+  east:350.963809523792-360   // -9.036190476208
+};
+const ECAIE_BOUNDS=L.latLngBounds(
+  [ECAIE_GEO.south,ECAIE_GEO.west],
+  [ECAIE_GEO.north,ECAIE_GEO.east]
+);
+
+// Dimensiones solicitadas al generador WeatherNerds.
+const ECAIE_IMG_W=1050;
+const ECAIE_IMG_H=428;
+
+// Posición del gráfico dentro del documento de WeatherNerds.
+// Importante: NO forma parte de la geografía. Corresponde a la interfaz web.
+// Se elimina mediante recorte antes de aplicar la escala Leaflet.
+// Calibración usando las líneas 90W/80W/... y 10N/20N impresas por WeatherNerds.
+let ECAIE_PLOT_LEFT=147;
+let ECAIE_PLOT_TOP=156;
+const ECAIE_PLOT_LEFT_BASE=147;
+const ECAIE_PLOT_TOP_BASE=156;
+const ECAIE_PAGE_W=1320;
+const ECAIE_PAGE_H=820;
+
+function ecaieUrl(){
+  const fh=String(ecaieFHour).padStart(3,'0');
+  const p=new URLSearchParams({
+    inittype:'zoom', initfield:'SST_Anomaly_Surface', initcycle:'determine', initfhour:fh,
+    initimdimx:String(ECAIE_IMG_W), initimdimy:String(ECAIE_IMG_H),
+    initrange:'32.189781021900:267.988571428532:4.014598540150:350.963809523792',
+    initcx1:'119', initcy1:'249', initcx2:'984', initcy2:'552',
+    initcross:'False', initsound:'False', initsoundx:'114', initsoundy:'244',
+    initloop:'False', initoverlay:'False', initlstart:'000', initlend:'360', initlint:'6',
+    initol1:'SST_Anomaly_Surface', initol2:'null', initol3:'null', initol4:'null', initol5:'null',
+    initcities:'Off', inithgwys:'Off', inittracks:'On', initlows:'On', initlatlon:'On',
+    satma_refresh:String(Date.now())
+  });
+  return ECAIE_BASE+'?'+p.toString();
+}
+
+function asegurarPaneECAIE(){
+  let pane=mapa.getPane('satma-ecaie');
+  if(!pane){
+    pane=mapa.createPane('satma-ecaie');
+    pane.style.zIndex='430'; // debajo del NHC y datos operativos
+    pane.style.pointerEvents='none';
+  }
+  return pane;
+}
+
+// WeatherNerds entrega el gráfico con una rejilla lat/lon prácticamente equirectangular,
+// mientras Leaflet usa Web Mercator. Un único rectángulo produce desfase vertical.
+// Se divide el gráfico en franjas horizontales y cada una se reproyecta a su latitud.
+const ECAIE_MERCATOR_STRIPS=10;
+
+function asegurarOverlayECAIE(){
+  let d=document.getElementById('satma-ecaie-overlay');
+  if(d) return d;
+  d=document.createElement('div');
+  d.id='satma-ecaie-overlay';
+  d.style.position='absolute';
+  d.style.left='0';
+  d.style.top='0';
+  d.style.width='1px';
+  d.style.height='1px';
+  d.style.overflow='visible';
+  d.style.pointerEvents='none';
+  d.style.opacity=String((Number(document.getElementById('ecaie-opacidad')?.value)||55)/100);
+
+  for(let i=0;i<ECAIE_MERCATOR_STRIPS;i++){
+    const strip=document.createElement('div');
+    strip.className='satma-ecaie-strip';
+    strip.dataset.strip=String(i);
+    strip.style.position='absolute';
+    strip.style.overflow='hidden';
+    strip.style.pointerEvents='none';
+
+    const f=document.createElement('iframe');
+    f.className='satma-ecaie-frame';
+    f.dataset.strip=String(i);
+    f.title='Modelo ECAIE WeatherNerds';
+    f.loading='eager';
+    f.referrerPolicy='no-referrer-when-downgrade';
+    f.scrolling='no';
+    f.style.position='absolute';
+    f.style.width=ECAIE_PAGE_W+'px';
+    f.style.height=ECAIE_PAGE_H+'px';
+    f.style.maxWidth='none';
+    f.style.border='0';
+    f.style.transformOrigin='0 0';
+    f.style.pointerEvents='none';
+    strip.appendChild(f);
+    d.appendChild(strip);
+  }
+  asegurarPaneECAIE().appendChild(d);
+  return d;
+}
+
+function posicionarOverlayECAIE(){
+  const d=document.getElementById('satma-ecaie-overlay');
+  if(!d) return;
+
+  const west=ECAIE_GEO.west, east=ECAIE_GEO.east;
+  const north=ECAIE_GEO.north, south=ECAIE_GEO.south;
+  const sourceStripH=ECAIE_IMG_H/ECAIE_MERCATOR_STRIPS;
+
+  // X de Web Mercator es lineal con longitud: una sola escala horizontal es exacta.
+  const pNW=mapa.latLngToLayerPoint([north,west]);
+  const pNE=mapa.latLngToLayerPoint([north,east]);
+  const totalW=Math.max(1,pNE.x-pNW.x);
+  const sx=totalW/ECAIE_IMG_W;
+
+  // El contenedor vive en coordenadas del pane de Leaflet.
+  L.DomUtil.setPosition(d,L.point(0,0));
+
+  for(let i=0;i<ECAIE_MERCATOR_STRIPS;i++){
+    const frac0=i/ECAIE_MERCATOR_STRIPS;
+    const frac1=(i+1)/ECAIE_MERCATOR_STRIPS;
+    // La imagen fuente es lineal en latitud: interpolación directa de latitud.
+    const latTop=north-(north-south)*frac0;
+    const latBot=north-(north-south)*frac1;
+    const ptTop=mapa.latLngToLayerPoint([latTop,west]);
+    const ptBot=mapa.latLngToLayerPoint([latBot,west]);
+    const stripH=Math.max(1,ptBot.y-ptTop.y);
+    const sy=stripH/sourceStripH;
+    const sourceY=i*sourceStripH;
+
+    const strip=d.querySelector(`.satma-ecaie-strip[data-strip="${i}"]`);
+    const f=strip?.querySelector('iframe');
+    if(!strip || !f) continue;
+
+    strip.style.left=ptTop.x+'px';
+    strip.style.top=ptTop.y+'px';
+    strip.style.width=totalW+'px';
+    // +1.5 px evita líneas transparentes entre franjas por redondeo subpíxel.
+    strip.style.height=(stripH+1.5)+'px';
+
+    f.style.left=(-ECAIE_PLOT_LEFT*sx)+'px';
+    f.style.top=(-(ECAIE_PLOT_TOP+sourceY)*sy)+'px';
+    f.style.transform=`scale(${sx},${sy})`;
+  }
+}
+
+function actualizarEstadoECAIE(extra=''){
+  const est=document.getElementById('ecaie-estado');
+  if(!est) return;
+  const hora=ecaieUltimaCarga ? ecaieUltimaCarga.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'}) : '—';
+  est.textContent=`ECAIE F${String(ecaieFHour).padStart(3,'0')} · ${hora} · Web Mercator · rejilla calibrada${extra?' · '+extra:''}`;
+}
+
+function cargarECAIE(auto=false){
+  if(!ecaieActivo) return;
+  const d=asegurarOverlayECAIE();
+  posicionarOverlayECAIE();
+  d.style.display='block';
+  const thisLoad=++ecaieCargaId;
+  actualizarEstadoECAIE('reproyectando…');
+  const url=ecaieUrl();
+  const frames=[...d.querySelectorAll('.satma-ecaie-frame')];
+  let loaded=0;
+  frames.forEach(f=>{
+    f.onload=()=>{
+      if(thisLoad!==ecaieCargaId) return;
+      loaded++;
+      if(loaded===frames.length){
+        ecaieUltimaCarga=new Date();
+        posicionarOverlayECAIE();
+        actualizarEstadoECAIE('rejilla calibrada');
+      }
+    };
+    f.src=url;
+  });
+  ecaieUltimaCarga=new Date();
+}
+
+function iniciarAutoECAIE(){
+  detenerAutoECAIE();
+  ecaieTimer=setInterval(()=>{if(ecaieActivo&&!document.hidden)cargarECAIE(true)},ECAIE_REFRESH_MS);
+}
+function detenerAutoECAIE(){if(ecaieTimer){clearInterval(ecaieTimer);ecaieTimer=null;}}
+
+function alternarECAIE(){
+  ecaieActivo=!ecaieActivo;
+  document.getElementById('tropical-btn-ecaie')?.classList.toggle('activo',ecaieActivo);
+  const c=document.getElementById('ecaie-controles'); if(c)c.style.display=ecaieActivo?'block':'none';
+  if(ecaieActivo){cargarECAIE(false);iniciarAutoECAIE();}
+  else{detenerAutoECAIE();const d=document.getElementById('satma-ecaie-overlay');if(d)d.style.display='none';}
+  actualizarEstadoBotonTropical();
+}
+
+function alternarNHCTropical(){toggleTropicalNHC();sincronizarNHCPanel();actualizarEstadoBotonTropical();}
+function sincronizarNHCPanel(){document.getElementById('tropical-btn-nhc')?.classList.toggle('activo',!!tropicalNHCActivo);}
+function actualizarEstadoBotonTropical(){const b=document.getElementById('btn-ecmwf');b?.classList.toggle('activo',!!tropicalNHCActivo||ecaieActivo||ecensActivo||WN_EXTRA.gefs.active||WN_EXTRA.genc.active);}
+function abrirPanelTropical(){document.getElementById('tropical-panel')?.classList.toggle('visible');sincronizarNHCPanel();actualizarEstadoBotonTropical();}
+function cerrarPanelTropical(){document.getElementById('tropical-panel')?.classList.remove('visible');}
+function cambiarHoraECAIE(delta){
+  ecaieFHour=Math.max(0,Math.min(360,ecaieFHour+delta));
+  ecaieFHour=Math.round(ecaieFHour/6)*6;
+  const el=document.getElementById('ecaie-fhora');if(el)el.textContent='F'+String(ecaieFHour).padStart(3,'0');
+  if(ecaieActivo)cargarECAIE(false);
+}
+
+
+function ampliarVistaECAIE(){
+  if(!ecaieVistaAnterior){
+    const c=mapa.getCenter();
+    ecaieVistaAnterior={lat:c.lat,lng:c.lng,zoom:mapa.getZoom()};
+  }
+  // Cada pulsación amplía un nivel, respetando el zoom máximo de Leaflet.
+  const zActual=mapa.getZoom();
+  const zMax=(typeof mapa.getMaxZoom==='function' && Number.isFinite(mapa.getMaxZoom())) ? mapa.getMaxZoom() : 18;
+  mapa.setZoom(Math.min(zActual+1,zMax),{animate:true});
+  setTimeout(posicionarOverlayECAIE,250);
+}
+
+function restaurarVistaECAIE(){
+  if(!ecaieVistaAnterior) return;
+  mapa.setView([ecaieVistaAnterior.lat,ecaieVistaAnterior.lng],ecaieVistaAnterior.zoom,{animate:true});
+  ecaieVistaAnterior=null;
+  setTimeout(posicionarOverlayECAIE,250);
+}
+
+
+
+/* ===== WeatherNerds GEFS + GENC: formato Tropical común ===== */
+const WN_EXTRA = {
+  gefs:{name:'GEFS',slug:'gefs',active:false,fh:132,timer:null,loadId:0,left:147-34,top:156-(-3)},
+  genc:{name:'GENC',slug:'genc',active:false,fh:132,timer:null,loadId:0,left:147-34,top:156-(-3)}
+};
+const WN_GEO={north:32.189781021900,west:267.988571428532-360,south:4.014598540150,east:350.963809523792-360};
+const WN_W=1050, WN_H=428, WN_PAGE_W=1320, WN_PAGE_H=820, WN_STRIPS=10;
+
+function wnExtraUrl(k){
+  const s=WN_EXTRA[k], fh=String(s.fh).padStart(3,'0');
+  const p=new URLSearchParams({
+    inittype:'zoom',initfield:'SST_Anomaly_Surface',initcycle:'determine',initfhour:fh,
+    initimdimx:String(WN_W),initimdimy:String(WN_H),
+    initrange:'32.189781021900:267.988571428532:4.014598540150:350.963809523792',
+    initcx1:'119',initcy1:'249',initcx2:'984',initcy2:'552',initcross:'False',
+    initsound:'False',initloop:'False',initoverlay:'False',initlstart:'000',initlend:'240',initlint:'6',
+    initol1:'SST_Anomaly_Surface',initol2:'null',initol3:'null',initol4:'null',initol5:'null',
+    initcities:'Off',inithgwys:'Off',inittracks:'On',initlows:'On',initlatlon:'On',satma_refresh:String(Date.now())
+  });
+  return `https://www.weathernerds.org/models/${s.slug}.html?`+p.toString();
+}
+function wnPane(k){
+  let p=mapa.getPane('satma-'+k);
+  if(!p){p=mapa.createPane('satma-'+k);p.style.zIndex='423';p.style.pointerEvents='none';}
+  return p;
+}
+function wnOverlay(k){
+  let d=document.getElementById('satma-'+k+'-overlay'); if(d)return d;
+  d=document.createElement('div');d.id='satma-'+k+'-overlay';
+  Object.assign(d.style,{position:'absolute',left:'0',top:'0',width:'1px',height:'1px',overflow:'visible',pointerEvents:'none'});
+  d.style.opacity=String((Number(document.getElementById(k+'-opacidad')?.value)||55)/100);
+  for(let i=0;i<WN_STRIPS;i++){
+    const strip=document.createElement('div');strip.dataset.strip=i;
+    Object.assign(strip.style,{position:'absolute',overflow:'hidden',pointerEvents:'none'});
+    const f=document.createElement('iframe');f.dataset.strip=i;f.title=WN_EXTRA[k].name+' WeatherNerds';f.scrolling='no';
+    Object.assign(f.style,{position:'absolute',width:WN_PAGE_W+'px',height:WN_PAGE_H+'px',maxWidth:'none',border:'0',transformOrigin:'0 0',pointerEvents:'none'});
+    strip.appendChild(f);d.appendChild(strip);
+  }
+  wnPane(k).appendChild(d);return d;
+}
+function posicionarWNExtra(k){
+  const d=document.getElementById('satma-'+k+'-overlay');if(!d)return;
+  const s=WN_EXTRA[k], sourceH=WN_H/WN_STRIPS;
+  const pNW=mapa.latLngToLayerPoint([WN_GEO.north,WN_GEO.west]),pNE=mapa.latLngToLayerPoint([WN_GEO.north,WN_GEO.east]);
+  const totalW=Math.max(1,pNE.x-pNW.x),sx=totalW/WN_W;L.DomUtil.setPosition(d,L.point(0,0));
+  for(let i=0;i<WN_STRIPS;i++){
+    const a=i/WN_STRIPS,b=(i+1)/WN_STRIPS,lt=WN_GEO.north-(WN_GEO.north-WN_GEO.south)*a,lb=WN_GEO.north-(WN_GEO.north-WN_GEO.south)*b;
+    const pt=mapa.latLngToLayerPoint([lt,WN_GEO.west]),pb=mapa.latLngToLayerPoint([lb,WN_GEO.west]),h=Math.max(1,pb.y-pt.y),sy=h/sourceH;
+    const strip=d.querySelector(`[data-strip="${i}"]`),f=strip?.querySelector('iframe');if(!strip||!f)continue;
+    Object.assign(strip.style,{left:pt.x+'px',top:pt.y+'px',width:totalW+'px',height:(h+1.5)+'px'});
+    f.style.left=(-s.left*sx)+'px';f.style.top=(-(s.top+i*sourceH)*sy)+'px';f.style.transform=`scale(${sx},${sy})`;
+  }
+}
+function cargarWNExtra(k){
+  const s=WN_EXTRA[k];if(!s.active)return;const d=wnOverlay(k);posicionarWNExtra(k);d.style.display='block';
+  const id=++s.loadId,url=wnExtraUrl(k);d.querySelectorAll('iframe').forEach(f=>{f.onload=()=>{if(id===s.loadId)posicionarWNExtra(k)};f.src=url});
+  const st=document.getElementById(k+'-estado');if(st)st.textContent=`WeatherNerds ${s.name} F${String(s.fh).padStart(3,'0')} · actualización automática`;
+}
+function alternarWNExtra(k){
+  const s=WN_EXTRA[k];s.active=!s.active;
+  document.getElementById('tropical-btn-'+k)?.classList.toggle('activo',s.active);
+  const c=document.getElementById(k+'-controles');if(c)c.style.display=s.active?'block':'none';
+  if(s.active){cargarWNExtra(k);if(s.timer)clearInterval(s.timer);s.timer=setInterval(()=>{if(s.active&&!document.hidden)cargarWNExtra(k)},10*60*1000)}
+  else{if(s.timer){clearInterval(s.timer);s.timer=null}const d=document.getElementById('satma-'+k+'-overlay');if(d)d.style.display='none'}
+  actualizarEstadoBotonTropical();
+}
+function cambiarHoraWNExtra(k,d){
+  const s=WN_EXTRA[k];s.fh=Math.max(0,Math.min(240,Math.round((s.fh+d)/6)*6));
+  const e=document.getElementById(k+'-fhora');if(e)e.textContent='F'+String(s.fh).padStart(3,'0');if(s.active)cargarWNExtra(k);
+}
+function configurarWNExtra(k){
+  const s=WN_EXTRA[k],op=document.getElementById(k+'-opacidad'),ax=document.getElementById(k+'-ajuste-x'),ay=document.getElementById(k+'-ajuste-y');
+  op?.addEventListener('input',()=>{const d=document.getElementById('satma-'+k+'-overlay');if(d)d.style.opacity=String(Number(op.value)/100);const t=document.getElementById(k+'-opacidad-txt');if(t)t.textContent=op.value+'%'});
+  const cal=()=>{const x=Number(ax?.value||-34),y=Number(ay?.value||-3);s.left=147+x;s.top=156-y;const tx=document.getElementById(k+'-ajuste-x-txt'),ty=document.getElementById(k+'-ajuste-y-txt');if(tx)tx.textContent=(x>0?'+':'')+x;if(ty)ty.textContent=(y>0?'+':'')+y;posicionarWNExtra(k)};
+  ax?.addEventListener('input',cal);ay?.addEventListener('input',cal);cal();
+  mapa.on('move zoom viewreset resize zoomanim',()=>posicionarWNExtra(k));mapa.on('moveend zoomend',()=>posicionarWNExtra(k));
+}
+
+/* ===== WeatherNerds ECENS integrado con el mismo formato del ECAIE ===== */
+let ecensActivo=false, ecensFHour=132, ecensTimer=null, ecensUltimaCarga=null;
+let ecensCargaId=0;
+let ecensVistaAnterior=null;
+const ECENS_REFRESH_MS=10*60*1000;
+const ECENS_BASE='https://www.weathernerds.org/models/ecens.html';
+
+const ECENS_GEO={
+  north:32.189781021900,
+  west:267.988571428532-360,
+  south:4.014598540150,
+  east:350.963809523792-360
+};
+const ECENS_IMG_W=1050;
+const ECENS_IMG_H=428;
+let ECENS_PLOT_LEFT=147;
+let ECENS_PLOT_TOP=156;
+const ECENS_PLOT_LEFT_BASE=147;
+const ECENS_PLOT_TOP_BASE=156;
+const ECENS_PAGE_W=1320;
+const ECENS_PAGE_H=820;
+const ECENS_MERCATOR_STRIPS=10;
+
+function ecensUrl(){
+  const fh=String(ecensFHour).padStart(3,'0');
+  const p=new URLSearchParams({
+    inittype:'zoom', initfield:'SST_Anomaly_Surface', initcycle:'determine', initfhour:fh,
+    initimdimx:String(ECENS_IMG_W), initimdimy:String(ECENS_IMG_H),
+    initrange:'32.189781021900:267.988571428532:4.014598540150:350.963809523792',
+    initcx1:'119', initcy1:'249', initcx2:'984', initcy2:'552',
+    initcross:'False', initsound:'False', initsoundx:'114', initsoundy:'244',
+    initloop:'False', initoverlay:'False', initlstart:'000', initlend:'240', initlint:'6',
+    initol1:'SST_Anomaly_Surface', initol2:'null', initol3:'null', initol4:'null', initol5:'null',
+    initcities:'Off', inithgwys:'Off', inittracks:'On', initlows:'On', initlatlon:'On',
+    satma_refresh:String(Date.now())
+  });
+  return ECENS_BASE+'?'+p.toString();
+}
+
+function asegurarPaneECENS(){
+  let pane=mapa.getPane('satma-ecens');
+  if(!pane){
+    pane=mapa.createPane('satma-ecens');
+    pane.style.zIndex='425';
+    pane.style.pointerEvents='none';
+  }
+  return pane;
+}
+
+function asegurarOverlayECENS(){
+  let d=document.getElementById('satma-ecens-overlay');
+  if(d) return d;
+  d=document.createElement('div');
+  d.id='satma-ecens-overlay';
+  Object.assign(d.style,{position:'absolute',left:'0',top:'0',width:'1px',height:'1px',overflow:'visible',pointerEvents:'none'});
+  d.style.opacity=String((Number(document.getElementById('ecens-opacidad')?.value)||55)/100);
+
+  for(let i=0;i<ECENS_MERCATOR_STRIPS;i++){
+    const strip=document.createElement('div');
+    strip.className='satma-ecens-strip';
+    strip.dataset.strip=String(i);
+    Object.assign(strip.style,{position:'absolute',overflow:'hidden',pointerEvents:'none'});
+
+    const f=document.createElement('iframe');
+    f.className='satma-ecens-frame';
+    f.dataset.strip=String(i);
+    f.title='Modelo ECENS WeatherNerds';
+    f.loading='eager';
+    f.referrerPolicy='no-referrer-when-downgrade';
+    f.scrolling='no';
+    Object.assign(f.style,{position:'absolute',width:ECENS_PAGE_W+'px',height:ECENS_PAGE_H+'px',maxWidth:'none',border:'0',transformOrigin:'0 0',pointerEvents:'none'});
+    strip.appendChild(f);
+    d.appendChild(strip);
+  }
+  asegurarPaneECENS().appendChild(d);
+  return d;
+}
+
+function posicionarOverlayECENS(){
+  const d=document.getElementById('satma-ecens-overlay');
+  if(!d) return;
+
+  const west=ECENS_GEO.west, east=ECENS_GEO.east, north=ECENS_GEO.north, south=ECENS_GEO.south;
+  const sourceStripH=ECENS_IMG_H/ECENS_MERCATOR_STRIPS;
+  const pNW=mapa.latLngToLayerPoint([north,west]);
+  const pNE=mapa.latLngToLayerPoint([north,east]);
+  const totalW=Math.max(1,pNE.x-pNW.x);
+  const sx=totalW/ECENS_IMG_W;
+  L.DomUtil.setPosition(d,L.point(0,0));
+
+  for(let i=0;i<ECENS_MERCATOR_STRIPS;i++){
+    const frac0=i/ECENS_MERCATOR_STRIPS, frac1=(i+1)/ECENS_MERCATOR_STRIPS;
+    const latTop=north-(north-south)*frac0;
+    const latBot=north-(north-south)*frac1;
+    const ptTop=mapa.latLngToLayerPoint([latTop,west]);
+    const ptBot=mapa.latLngToLayerPoint([latBot,west]);
+    const stripH=Math.max(1,ptBot.y-ptTop.y);
+    const sy=stripH/sourceStripH;
+    const sourceY=i*sourceStripH;
+    const strip=d.querySelector(`.satma-ecens-strip[data-strip="${i}"]`);
+    const f=strip?.querySelector('iframe');
+    if(!strip||!f) continue;
+    Object.assign(strip.style,{left:ptTop.x+'px',top:ptTop.y+'px',width:totalW+'px',height:(stripH+1.5)+'px'});
+    f.style.left=(-ECENS_PLOT_LEFT*sx)+'px';
+    f.style.top=(-(ECENS_PLOT_TOP+sourceY)*sy)+'px';
+    f.style.transform=`scale(${sx},${sy})`;
+  }
+}
+
+function actualizarEstadoECENS(extra=''){
+  const est=document.getElementById('ecens-estado');
+  if(!est) return;
+  const hora=ecensUltimaCarga ? ecensUltimaCarga.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'}) : '—';
+  est.textContent=`ECENS F${String(ecensFHour).padStart(3,'0')} · ${hora} · Web Mercator · rejilla calibrada${extra?' · '+extra:''}`;
+}
+
+function cargarECENS(auto=false){
+  if(!ecensActivo) return;
+  const d=asegurarOverlayECENS();
+  posicionarOverlayECENS();
+  d.style.display='block';
+  const thisLoad=++ecensCargaId;
+  actualizarEstadoECENS('reproyectando…');
+  const url=ecensUrl();
+  const frames=[...d.querySelectorAll('.satma-ecens-frame')];
+  let loaded=0;
+  frames.forEach(f=>{
+    f.onload=()=>{
+      if(thisLoad!==ecensCargaId) return;
+      loaded++;
+      if(loaded===frames.length){
+        ecensUltimaCarga=new Date();
+        posicionarOverlayECENS();
+        actualizarEstadoECENS('rejilla calibrada');
+      }
+    };
+    f.src=url;
+  });
+  ecensUltimaCarga=new Date();
+}
+
+function iniciarAutoECENS(){
+  detenerAutoECENS();
+  ecensTimer=setInterval(()=>{if(ecensActivo&&!document.hidden)cargarECENS(true)},ECENS_REFRESH_MS);
+}
+function detenerAutoECENS(){if(ecensTimer){clearInterval(ecensTimer);ecensTimer=null;}}
+
+function alternarECENS(){
+  ecensActivo=!ecensActivo;
+  document.getElementById('tropical-btn-ecens')?.classList.toggle('activo',ecensActivo);
+  const c=document.getElementById('ecens-controles'); if(c)c.style.display=ecensActivo?'block':'none';
+  if(ecensActivo){cargarECENS(false);iniciarAutoECENS();}
+  else{detenerAutoECENS();const d=document.getElementById('satma-ecens-overlay');if(d)d.style.display='none';}
+  actualizarEstadoBotonTropical();
+}
+
+function cambiarHoraECENS(delta){
+  ecensFHour=Math.max(0,Math.min(240,ecensFHour+delta));
+  ecensFHour=Math.round(ecensFHour/6)*6;
+  const el=document.getElementById('ecens-fhora');if(el)el.textContent='F'+String(ecensFHour).padStart(3,'0');
+  if(ecensActivo)cargarECENS(false);
+}
+
+function ampliarVistaECENS(){
+  if(!ecensVistaAnterior){
+    const c=mapa.getCenter();
+    ecensVistaAnterior={lat:c.lat,lng:c.lng,zoom:mapa.getZoom()};
+  }
+  const zActual=mapa.getZoom();
+  const zMax=(typeof mapa.getMaxZoom==='function' && Number.isFinite(mapa.getMaxZoom())) ? mapa.getMaxZoom() : 18;
+  mapa.setZoom(Math.min(zActual+1,zMax),{animate:true});
+  setTimeout(posicionarOverlayECENS,250);
+}
+
+function restaurarVistaECENS(){
+  if(!ecensVistaAnterior) return;
+  mapa.setView([ecensVistaAnterior.lat,ecensVistaAnterior.lng],ecensVistaAnterior.zoom,{animate:true});
+  ecensVistaAnterior=null;
+  setTimeout(posicionarOverlayECENS,250);
+}
+
+(function configurarTropicalIntegrado(){
+ const b=document.getElementById('btn-ecmwf');
+ if(b){b.removeAttribute('onclick');b.title='Abrir controles Tropical: Cono NHC, ECAIE, ECENS, GEFS y GENC';b.addEventListener('click',abrirPanelTropical);}
+ document.getElementById('ecaie-ampliar')?.addEventListener('click',ampliarVistaECAIE);
+ document.getElementById('ecaie-vista-anterior')?.addEventListener('click',restaurarVistaECAIE);
+ document.getElementById('ecens-ampliar')?.addEventListener('click',ampliarVistaECENS);
+ document.getElementById('ecens-vista-anterior')?.addEventListener('click',restaurarVistaECENS);
+
+ const op=document.getElementById('ecaie-opacidad');
+ if(op)op.addEventListener('input',()=>{
+   const v=Number(op.value)/100;
+   const d=document.getElementById('satma-ecaie-overlay');if(d)d.style.opacity=String(v);
+   const t=document.getElementById('ecaie-opacidad-txt');if(t)t.textContent=op.value+'%';
+ });
+
+ // Ajuste fino sobre la posición del gráfico dentro de la página WeatherNerds.
+ // X positivo mueve el mapa ECAIE a la izquierda; Y positivo lo mueve hacia abajo.
+ const ax=document.getElementById('ecaie-ajuste-x');
+ const ay=document.getElementById('ecaie-ajuste-y');
+ const aplicarCalibracionECAIE=()=>{
+   const vx=Number(ax?.value||0), vy=Number(ay?.value||0);
+   ECAIE_PLOT_LEFT=ECAIE_PLOT_LEFT_BASE+vx;
+   ECAIE_PLOT_TOP=ECAIE_PLOT_TOP_BASE-vy;
+   const tx=document.getElementById('ecaie-ajuste-x-txt'); if(tx)tx.textContent=(vx>0?'+':'')+vx;
+   const ty=document.getElementById('ecaie-ajuste-y-txt'); if(ty)ty.textContent=(vy>0?'+':'')+vy;
+   posicionarOverlayECAIE();
+ };
+ ax?.addEventListener('input',aplicarCalibracionECAIE);
+ ay?.addEventListener('input',aplicarCalibracionECAIE);
+ document.getElementById('ecaie-reset-cal')?.addEventListener('click',()=>{
+   if(ax)ax.value='-34'; if(ay)ay.value='-3'; aplicarCalibracionECAIE();
+ });
+ aplicarCalibracionECAIE();
+
+
+ const opEns=document.getElementById('ecens-opacidad');
+ if(opEns)opEns.addEventListener('input',()=>{
+   const v=Number(opEns.value)/100;
+   const d=document.getElementById('satma-ecens-overlay');if(d)d.style.opacity=String(v);
+   const t=document.getElementById('ecens-opacidad-txt');if(t)t.textContent=opEns.value+'%';
+ });
+
+ const axEns=document.getElementById('ecens-ajuste-x');
+ const ayEns=document.getElementById('ecens-ajuste-y');
+ const aplicarCalibracionECENS=()=>{
+   const vx=Number(axEns?.value||0), vy=Number(ayEns?.value||0);
+   ECENS_PLOT_LEFT=ECENS_PLOT_LEFT_BASE+vx;
+   ECENS_PLOT_TOP=ECENS_PLOT_TOP_BASE-vy;
+   const tx=document.getElementById('ecens-ajuste-x-txt'); if(tx)tx.textContent=(vx>0?'+':'')+vx;
+   const ty=document.getElementById('ecens-ajuste-y-txt'); if(ty)ty.textContent=(vy>0?'+':'')+vy;
+   posicionarOverlayECENS();
+ };
+ axEns?.addEventListener('input',aplicarCalibracionECENS);
+ ayEns?.addEventListener('input',aplicarCalibracionECENS);
+ document.getElementById('ecens-reset-cal')?.addEventListener('click',()=>{
+   if(axEns)axEns.value='-34'; if(ayEns)ayEns.value='-3'; aplicarCalibracionECENS();
+ configurarWNExtra('gefs');
+ configurarWNExtra('genc');
+ });
+ aplicarCalibracionECENS();
+
+ // Leaflet recalcula posición y tamaño durante cada movimiento y zoom.
+ mapa.on('move zoom viewreset resize zoomanim',posicionarOverlayECAIE);
+ mapa.on('move zoom viewreset resize zoomanim',posicionarOverlayECENS);
+ mapa.on('moveend zoomend',posicionarOverlayECAIE);
+ mapa.on('moveend zoomend',posicionarOverlayECENS);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ecaieActivo)cargarECAIE(true);if(!document.hidden&&ecensActivo)cargarECENS(true)});
+})();
+</script>
+
 </body>
 </html>
