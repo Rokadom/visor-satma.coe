@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Visor de Sismos - Últimas 48 horas</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>
+    html, body { height: 100%; margin: 0; font-family: Arial, Helvetica, sans-serif; background:#eef2f5; }
+    #map { height: 100%; width: 100%; }
+    .topbar {
+      position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:1000;
+      background:rgba(255,255,255,.94); border:1px solid #cbd5e1; border-radius:10px;
+      padding:8px 12px; box-shadow:0 2px 8px rgba(0,0,0,.18); text-align:center;
+      max-width:calc(100% - 130px); min-width:300px;
+    }
+    .topbar h1 { margin:0; font-size:16px; color:#111827; }
+    .topbar .sub { margin-top:3px; font-size:12px; color:#475569; }
+    .legend {
+      background:rgba(255,255,255,.95); border:1px solid #cbd5e1; border-radius:8px;
+      padding:8px 10px; line-height:1.35; color:#1f2937; box-shadow:0 1px 5px rgba(0,0,0,.18);
+      font-size:12px;
+    }
+    .legend-title { font-weight:700; margin-bottom:5px; }
+    .legend-row { display:flex; align-items:center; gap:7px; margin:3px 0; }
+    .star { display:inline-block; line-height:1; color:#d7191c; text-shadow:0 0 1px #000; }
+    .status {
+      position:absolute; left:10px; bottom:10px; z-index:1000; background:rgba(255,255,255,.94);
+      border:1px solid #cbd5e1; border-radius:8px; padding:7px 10px; font-size:12px;
+      color:#334155; box-shadow:0 1px 5px rgba(0,0,0,.18); max-width:320px;
+    }
+    .quake-star { text-shadow:0 0 2px #000, 0 0 1px #fff; font-weight:700; }
+    .latest-mag-label {
+      background:#ffffff !important; color:#000000 !important; border:2px solid #000000 !important;
+      border-radius:6px !important; padding:3px 7px !important; font-weight:900 !important;
+      font-size:15px !important; line-height:18px !important; white-space:nowrap !important;
+      box-shadow:0 1px 5px rgba(0,0,0,.75) !important;
+    }
+    .latest-mag-label::before { display:none !important; }
+    .leaflet-popup-content { min-width:230px; }
+    .popup-title { font-weight:700; font-size:14px; margin-bottom:5px; }
+    .popup-line { margin:3px 0; font-size:12px; }
+    .source-badge {
+      display:inline-block; padding:2px 6px; border-radius:999px; font-size:10px; font-weight:700;
+      background:#e2e8f0; color:#334155; margin-top:3px;
+    }
+    .fault-line-label {
+      background: rgba(255,255,255,.88);
+      color: #111;
+      border: 1px solid rgba(0,0,0,.55);
+      border-radius: 3px;
+      box-shadow: none;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 4px;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .fault-line-label:before { display:none; }
+
+    @media (max-width:600px) {
+      .topbar { top:8px; min-width:0; width:calc(100% - 110px); padding:7px 8px; }
+      .topbar h1 { font-size:14px; }
+      .topbar .sub { font-size:11px; }
+      .status { max-width:220px; font-size:11px; }
+      .bulletin-btn { top:auto; bottom:195px; right:8px; padding:8px 11px; font-size:13px; }
+    }
+  
+    .fault-label {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      color: #ffffff !important;
+      font-size: 9px !important;
+      font-weight: 600 !important;
+      padding: 0 !important;
+      white-space: nowrap;
+      text-shadow: 1px 1px 2px #000, -1px -1px 2px #000;
+    }
+    .fault-label::before {
+      display: none !important;
+    }
+
+    .bulletin-btn {
+      position:absolute; bottom:205px; right:10px; z-index:1100;
+      background:#d7191c; color:#fff; border:2px solid #fff; border-radius:8px;
+      padding:9px 14px; font-size:14px; font-weight:800; cursor:pointer;
+      box-shadow:0 2px 8px rgba(0,0,0,.35);
+    }
+    .bulletin-btn:hover { background:#b31217; }
+    .bulletin-overlay { display:none; position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,.62); align-items:center; justify-content:center; padding:16px; box-sizing:border-box; }
+    .bulletin-panel { width:min(760px,96vw); max-height:88vh; overflow:auto; background:#fff; color:#111827; border-radius:12px; box-shadow:0 12px 36px rgba(0,0,0,.45); padding:18px; }
+    .bulletin-head { display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:2px solid #d7191c; padding-bottom:8px; }
+    .bulletin-head h2 { margin:0; font-size:20px; color:#b91c1c; }
+    .bulletin-close { border:0; background:#e5e7eb; border-radius:6px; font-size:20px; width:34px; height:34px; cursor:pointer; }
+    .bulletin-meta { margin:10px 0; font-size:12px; color:#475569; }
+    .bulletin-summary { background:#f8fafc; border-left:4px solid #d7191c; padding:10px 12px; margin:10px 0; line-height:1.45; }
+    .bulletin-events { width:100%; border-collapse:collapse; margin-top:10px; font-size:12px; }
+    .bulletin-events th,.bulletin-events td { border-bottom:1px solid #e5e7eb; padding:6px 5px; text-align:left; vertical-align:top; }
+    .bulletin-events th { background:#f1f5f9; position:sticky; top:0; }
+    .bulletin-analysis { margin-top:14px; padding:12px; border:1px solid #cbd5e1; border-radius:8px; line-height:1.5; background:#fff; }
+    .bulletin-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+    .bulletin-action { border:0; border-radius:7px; padding:9px 12px; font-weight:700; cursor:pointer; }
+    .bulletin-action.primary { background:#111827; color:#fff; }
+    .bulletin-action.secondary { background:#e2e8f0; color:#111827; }
+    .bulletin-note { margin-top:10px; font-size:11px; color:#64748b; }
+
+
+    @media print {
+      @page { size: A4 portrait; margin: 10mm; }
+
+      body * {
+        visibility: hidden !important;
+      }
+
+      #bulletinOverlay,
+      #bulletinOverlay *,
+      .bulletin-panel,
+      .bulletin-panel * {
+        visibility: visible !important;
+      }
+
+      #bulletinOverlay {
+        position: absolute !important;
+        inset: 0 !important;
+        display: block !important;
+        background: #fff !important;
+        padding: 0 !important;
+      }
+
+      .bulletin-panel {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        max-height: none !important;
+        overflow: visible !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        padding: 10mm !important;
+        box-sizing: border-box !important;
+      }
+
+      #bulletinClose,
+      .bulletin-actions {
+        display: none !important;
+      }
+
+      .bulletin-events th {
+        position: static !important;
+      }
+
+      .bulletin-events tr,
+      .bulletin-analysis,
+      .bulletin-summary {
+        break-inside: avoid;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="topbar">
+    <h1>SISMOS DE LAS ÚLTIMAS 48 HORAS</h1>
+    <div class="sub">República Dominicana y zona circundante · Sismos CNS-UASD + Ayiti-Séismes + USGS · Fallas activas GEM/CCAF-DB</div>
+  </div>
+  <div id="status" class="status">Cargando sismos recientes…</div>
+
+  <button id="bulletinBtn" class="bulletin-btn" type="button">Boletín</button>
+  <div id="bulletinOverlay" class="bulletin-overlay" role="dialog" aria-modal="true" aria-labelledby="bulletinTitle">
+    <div class="bulletin-panel">
+      <div class="bulletin-head">
+        <h2 id="bulletinTitle">BOLETÍN SÍSMICO · ÚLTIMAS 6 HORAS</h2>
+        <button id="bulletinClose" class="bulletin-close" type="button" aria-label="Cerrar">×</button>
+      </div>
+      <div id="bulletinContent"></div>
+      <div class="bulletin-actions">
+        <button id="copyBulletin" class="bulletin-action secondary" type="button">Copiar boletín</button>
+        <button id="printBulletin" class="bulletin-action primary" type="button">Imprimir PNG</button>
+      </div>
+      <div class="bulletin-note">El análisis dentro del visor es un resumen técnico automático basado en los eventos registrados durante las últimas 6 horas.</div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    const map = L.map('map', { zoomControl:true }).setView([18.651, -70.615], 8);
+    let currentVisibleEvents = [];
+    let currentBulletinText = '';
+
+    // Mapa base topográfico con relieve sombreado (Esri World Topographic Map)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 20,
+      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+    }).addTo(map);
+
+    const faultLayer = L.layerGroup().addTo(map);
+    const uasdLayer = L.layerGroup().addTo(map);
+    const usgsLayer = L.layerGroup().addTo(map);
+    const ayitiLayer = L.layerGroup().addTo(map);
+    const latestMagLayer = L.layerGroup().addTo(map);
+    L.control.layers(null, {
+      'CNS-UASD · últimas 48 h': uasdLayer,
+      'Ayiti-Séismes · últimas 48 h': ayitiLayer,
+      'USGS · últimas 48 h': usgsLayer
+    }, { collapsed:false }).addTo(map);
+
+    function starSize(mag) {
+      const m = Number.isFinite(mag) ? mag : 0;
+      return Math.max(14, Math.min(46, 10 + m * 6));
+    }
+
+    function quakeColor(timeMs) {
+      const h = Math.max(0, (Date.now() - Number(timeMs)) / 3600000);
+      if (h <= 1) return '#e31a1c'; if (h <= 2) return '#ff7f00'; if (h <= 4) return '#ffd700';
+      if (h <= 6) return '#006400'; if (h <= 8) return '#66cc66'; if (h <= 10) return '#003f8c';
+      if (h <= 24) return '#4da6ff'; return '#7a7a7a';
+    }
+
+    function starIcon(mag, timeMs) {
+      const size=starSize(mag), color=quakeColor(timeMs);
+      return L.divIcon({className:'',html:`<div class=\"quake-star\" style=\"color:${color};font-size:${size}px;width:${size}px;height:${size}px;line-height:${size}px;text-align:center;\">★</div>`,iconSize:[size,size],iconAnchor:[size/2,size/2],popupAnchor:[0,-size/2]});
+    }
+
+    function fmtTime(ms) {
+      return new Intl.DateTimeFormat('es-DO', {
+        dateStyle:'medium', timeStyle:'short', timeZone:'America/Santo_Domingo'
+      }).format(new Date(ms));
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    }
+
+    function firstNumber(text) {
+      const m = String(text ?? '').replace(',', '.').match(/-?\d+(?:\.\d+)?/);
+      return m ? Number(m[0]) : NaN;
+    }
+
+    function parseUasdDate(dateText, timeText) {
+      const d = String(dateText || '').trim().replace(/\//g, '-');
+      const t = String(timeText || '').trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !/^\d{1,2}:\d{2}(?::\d{2})?/.test(t)) return NaN;
+      const normalizedTime = t.match(/^\d{1,2}:\d{2}(?::\d{2})?/)[0].split(':').map((x,i) => i === 0 ? x.padStart(2,'0') : x).join(':');
+      return new Date(`${d}T${normalizedTime}${normalizedTime.length === 5 ? ':00' : ''}Z`).getTime();
+    }
+
+    function normalizeUasdRow(cells) {
+      const c = cells.map(v => String(v || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+      if (c.length < 5) return null;
+      const dateIndex = c.findIndex(v => /^\d{4}[\/-]\d{2}[\/-]\d{2}$/.test(v));
+      if (dateIndex < 0 || !c[dateIndex + 1]) return null;
+
+      const time = parseUasdDate(c[dateIndex], c[dateIndex + 1]);
+      if (!Number.isFinite(time)) return null;
+
+      const rest = c.slice(dateIndex + 2);
+      let lat, lon, depth, mag, place = '';
+
+      // Formato usual UASD: fecha, hora, lat, lon, profundidad, magnitud, comentario.
+      if (rest.length >= 5) {
+        lat = firstNumber(rest[0]);
+        lon = firstNumber(rest[1]);
+        depth = firstNumber(rest[2]);
+        mag = firstNumber(rest[3]);
+        place = rest.slice(4).join(' ');
+      }
+
+      // Formato alternativo: latitud y longitud juntas en una misma celda.
+      if (!(Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180)) {
+        const pair = (rest[0] || '').replace(/,/g, ' ').match(/(-?\d+(?:\.\d+)?)\D+(-?\d+(?:\.\d+)?)/);
+        if (pair) {
+          lat = Number(pair[1]);
+          lon = Number(pair[2]);
+          depth = firstNumber(rest[1]);
+          mag = firstNumber(rest[2]);
+          place = rest.slice(3).join(' ');
+        }
+      }
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(mag)) return null;
+      // Algunas publicaciones muestran Long W sin signo; convertir a longitud oeste.
+      if (lon > 0 && lon >= 60 && lon <= 80) lon = -lon;
+
+      return { lat, lon, depth, mag, time, place: place || 'Evento registrado por CNS-UASD', source:'CNS-UASD' };
+    }
+
+    function parseUasdHtml(html) {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const events = [];
+      const rows = [...doc.querySelectorAll('tr')];
+      for (const row of rows) {
+        const cells = [...row.querySelectorAll('th,td')].map(el => el.textContent);
+        const evt = normalizeUasdRow(cells);
+        if (evt) events.push(evt);
+      }
+      return events;
+    }
+
+    function parseUasdText(text) {
+      const events = [];
+      const lines = String(text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+      for (const line of lines) {
+        if (!/\d{4}[\/-]\d{2}[\/-]\d{2}/.test(line)) continue;
+        // Compatible con tablas Markdown o texto separado por espacios/comas.
+        let cells = line.includes('|')
+          ? line.split('|').map(x => x.trim()).filter(Boolean)
+          : line.split(/\s{2,}|\t|,\s*(?=-?\d)/).map(x => x.trim()).filter(Boolean);
+        const evt = normalizeUasdRow(cells);
+        if (evt) events.push(evt);
+      }
+      return events;
+    }
+
+    async function fetchWithTimeout(url, timeoutMs = 10000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { cache:'no-store', signal:controller.signal });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return await res.text();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function loadUasdEvents(startMs, endMs) {
+      const target = 'https://sismologico.uasd.edu.do/';
+      const candidates = [
+        { url: target, type:'html' },
+        { url: 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target), type:'html' },
+        { url: 'https://corsproxy.io/?' + encodeURIComponent(target), type:'html' },
+        { url: 'https://r.jina.ai/https://sismologico.uasd.edu.do/', type:'text' }
+      ];
+
+      let lastError = null;
+      for (const candidate of candidates) {
+        try {
+          const body = await fetchWithTimeout(candidate.url);
+          let events = candidate.type === 'html' ? parseUasdHtml(body) : parseUasdText(body);
+          // Si un proxy devolvió texto/Markdown aun marcado como html, probar ambos analizadores.
+          if (!events.length) events = parseUasdText(body);
+          events = events.filter(e => e.time >= startMs && e.time <= endMs);
+          if (events.length) return { events, method:candidate.url };
+        } catch (err) {
+          lastError = err;
+          console.warn('UASD intento fallido:', candidate.url, err);
+        }
+      }
+      if (lastError) throw lastError;
+      return { events:[], method:null };
+    }
+
+    async function loadUsgsEvents(start, end) {
+      const params = new URLSearchParams({
+        format: 'geojson',
+        starttime: start.toISOString(),
+        endtime: end.toISOString(),
+        minlatitude: '15.0',
+        maxlatitude: '23.0',
+        minlongitude: '-76.0',
+        maxlongitude: '-63.0',
+        orderby: 'time'
+      });
+      const url = 'https://earthquake.usgs.gov/fdsnws/event/1/query?' + params.toString();
+      const res = await fetch(url, { cache:'no-store' });
+      if (!res.ok) throw new Error('USGS HTTP ' + res.status);
+      const data = await res.json();
+      const out = [];
+      for (const f of data.features || []) {
+        const coords = f.geometry && f.geometry.coordinates;
+        if (!coords || coords.length < 2) continue;
+        const p = f.properties || {};
+        out.push({
+          lon: Number(coords[0]), lat: Number(coords[1]), depth: Number(coords[2]),
+          mag: Number(p.mag), time: Number(p.time), place: p.place || 'Sismo', source:'USGS'
+        });
+      }
+      return out;
+    }
+
+
+    function parseAyitiFdsnText(text) {
+      const events = [];
+      const lines = String(text || '').split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+      for (const line of lines) {
+        if (line.startsWith('#')) continue;
+        const c = line.split('|');
+        // FDSN Event text estándar:
+        // EventID|Time|Latitude|Longitude|Depth|Author|Catalog|Contributor|ContributorID|MagType|Magnitude|MagAuthor|EventLocationName
+        if (c.length < 11) continue;
+        const time = Date.parse(c[1]);
+        const lat = Number(c[2]);
+        const lon = Number(c[3]);
+        const depth = Number(c[4]);
+        const mag = Number(c[10]);
+        const place = (c[12] || 'HAITI REGION').trim();
+        if (![time, lat, lon, mag].every(Number.isFinite)) continue;
+        events.push({ lat, lon, depth, mag, time, place, source:'Ayiti-Séismes' });
+      }
+      return events;
+    }
+
+    function fdsnTime(d) {
+      // Algunos servidores SeisComP/FDSN son más estrictos que USGS y no aceptan milisegundos ni la Z final.
+      return d.toISOString().replace(/\.\d{3}Z$/, '');
+    }
+
+    async function loadAyitiEvents(start, end) {
+      const params = new URLSearchParams({
+        format: 'text',
+        starttime: fdsnTime(start),
+        endtime: fdsnTime(end),
+        minlat: '15.0',
+        maxlat: '23.0',
+        minlon: '-76.0',
+        maxlon: '-63.0'
+      });
+      const endpoint = 'https://ayiti.unice.fr/ayiti-seismes/fdsnws/event/1/query?' + params.toString();
+      const candidates = [
+        endpoint,
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent(endpoint),
+        'https://corsproxy.io/?' + encodeURIComponent(endpoint),
+        'https://r.jina.ai/' + endpoint
+      ];
+
+      let lastError = null;
+      for (const url of candidates) {
+        try {
+          const body = await fetchWithTimeout(url, 15000);
+          const events = parseAyitiFdsnText(body).filter(e => e.time >= start.getTime() && e.time <= end.getTime());
+          // Una respuesta vacía es válida: significa que Ayiti no tiene eventos en esta ventana de 48 h.
+          return { events, method:url, responded:true };
+        } catch (err) {
+          lastError = err;
+          console.warn('Ayiti-Séismes intento fallido:', url, err);
+        }
+      }
+      throw lastError || new Error('Ayiti-Séismes no respondió');
+    }
+
+    function isDuplicate(a, b) {
+      const dt = Math.abs(a.time - b.time) / 1000;
+      const dlat = Math.abs(a.lat - b.lat);
+      const dlon = Math.abs(a.lon - b.lon);
+      const dmag = Math.abs((a.mag || 0) - (b.mag || 0));
+      return dt <= 180 && dlat <= 0.12 && dlon <= 0.12 && dmag <= 0.5;
+    }
+
+    function addEventMarker(evt, layer) {
+      const marker = L.marker([evt.lat, evt.lon], {
+        icon: starIcon(evt.mag, evt.time),
+        title: `M ${Number.isFinite(evt.mag) ? evt.mag.toFixed(1) : '?'} - ${evt.place || 'Sismo'}`,
+        keyboard: true
+      });
+      marker.bindPopup(`
+        <div class="popup-title">★ Sismo M ${Number.isFinite(evt.mag) ? evt.mag.toFixed(1) : 'N/D'}</div>
+        <div class="popup-line"><b>Ubicación:</b> ${escapeHtml(evt.place || 'No disponible')}</div>
+        <div class="popup-line"><b>Fecha/hora RD:</b> ${Number.isFinite(evt.time) ? escapeHtml(fmtTime(evt.time)) : 'N/D'}</div>
+        <div class="popup-line"><b>Profundidad:</b> ${Number.isFinite(evt.depth) ? evt.depth.toFixed(1) + ' km' : 'N/D'}</div>
+        <div class="popup-line"><b>Coordenadas:</b> ${evt.lat.toFixed(3)}, ${evt.lon.toFixed(3)}</div>
+        <span class="source-badge">Fuente: ${escapeHtml(evt.source)}</span>
+      `);
+      marker.addTo(layer);
+    }
+
+
+    function geometryTouchesDR(geometry) {
+      if (!geometry || !geometry.coordinates) return false;
+      const pts = [];
+      const walk = v => {
+        if (Array.isArray(v) && v.length >= 2 && typeof v[0] === 'number' && typeof v[1] === 'number') pts.push(v);
+        else if (Array.isArray(v)) v.forEach(walk);
+      };
+      walk(geometry.coordinates);
+      // Ventana regional para mostrar las fallas que afectan a La Española y aguas dominicanas.
+      return pts.some(([lon,lat]) => lon >= -75.0 && lon <= -67.0 && lat >= 17.0 && lat <= 21.5);
+    }
+
+    // Nombres personalizados de fallas para mostrar en el mapa y el boletín.
+    const faultNameOverrides = {
+      'North Caribbeam Megathrust (North Hispaniola Fault)': 'Falla norte del Caribe',
+      'North Caribbean Megathrust (North Hispaniola Fault)': 'Falla norte del Caribe',
+      'Monte Cristi Fault': 'Falla de Monte Cristi',
+      'Septentrional Fault': 'Falla Septentrional',
+      'South Samana Fault': 'Falla Sur de Samana',
+      'Bonao Fault': 'Falla de Bonao',
+      'Cano Grande Estero Fault': 'Falla  Estero Grande Cano',
+      'Monte Grande Fault': 'Falla de Monte Grande',
+      'El Rodeo Thust': 'Monte Grande',
+      'El Rodeo Thrust': 'Monte Grande',
+      'Neyba Thust': 'Falla de Neyba',
+      'Neyba Thrust': 'Falla de Neyba',
+      'Independencia Thust': 'Falla de Independencia',
+      'Independencia Thrust': 'Falla de Independencia',
+      'Boca de Cachon Thust': 'Falla de Boca de Cachon',
+      'Boca de Cachon Thrust': 'Falla de Boca de Cachon',
+      'Balan Thust': 'Falla de Balan',
+      'Balan Thrust': 'Falla de Balan',
+      'Ganthier Thust': 'Falla de Ganthier',
+      'Ganthier Thrust': 'Falla de Ganthier',
+      'Muertos Thust': 'Falla de los Muertos',
+      'Muertos Thrust': 'Falla de los Muertos',
+      'EnrriquilloThust': 'Falla de Enrriquillo',
+      'EnrriquilloThrust': 'Falla de Enrriquillo',
+      'West Yuma Rift Fault': 'Falla de Yuma oeste',
+      'East Yuma Fault': 'Falla de Yuma este'
+    };
+
+    function faultName(props) {
+      const original = props.name || props.fz_name || props.Name || props.Fault_Name || props.catalog_id || 'Falla activa';
+      return faultNameOverrides[original] || original;
+    }
+
+    function faultPopup(props) {
+      const name = faultName(props);
+      const type = props.slip_type || props.type || props.movement || 'No especificado';
+      const ref = props.reference || props.source || 'GEM Global Active Faults / CCAF-DB';
+      return `<div class="popup-title">Falla: ${escapeHtml(name)}</div>
+        <div class="popup-line"><b>Tipo:</b> ${escapeHtml(type)}</div>
+        <div class="popup-line"><b>Referencia:</b> ${escapeHtml(ref)}</div>
+        <span class="source-badge">Fallas activas GEM/CCAF-DB</span>`;
+    }
+
+    const labeledFaultNames = new Set();
+    let regionalFaultFeatures = [];
+
+    async function loadFaults() {
+      const urls = [
+        'https://cdn.jsdelivr.net/gh/GEMScienceTools/gem-global-active-faults@master/geojson/gem_active_faults.geojson',
+        'https://raw.githubusercontent.com/GEMScienceTools/gem-global-active-faults/master/geojson/gem_active_faults.geojson'
+      ];
+      let data = null, lastError = null;
+      for (const url of urls) {
+        try {
+          const res = await fetch(url, { cache:'force-cache' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          data = await res.json();
+          break;
+        } catch (err) { lastError = err; console.warn('Fallas: intento fallido', url, err); }
+      }
+      if (!data) throw lastError || new Error('No se pudo cargar la base de fallas');
+
+      faultLayer.clearLayers();
+      labeledFaultNames.clear();
+      const regional = {
+        type:'FeatureCollection',
+        features:(data.features || []).filter(f => geometryTouchesDR(f.geometry))
+      };
+      regionalFaultFeatures = regional.features.slice();
+      L.geoJSON(regional, {
+        style: () => ({ color:'#3f3f46', weight:2.4, opacity:0.90 }),
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+          const rawName = String(faultName(p) || '').trim();
+
+          // Quitar etiquetas genéricas: Fault, Faults, Falla, Fallas.
+          const genericFault = /^(faults?|fallas?)$/i.test(rawName) || /^PB_/i.test(rawName) || /^CA_/i.test(rawName);
+
+          // El popup sigue disponible al hacer clic sobre la línea.
+          layer.bindPopup(faultPopup(p));
+
+          // Mostrar una sola etiqueta únicamente cuando existe un nombre real.
+          if (!genericFault && rawName && !labeledFaultNames.has(rawName)) {
+            layer.bindTooltip(rawName, {
+              permanent: true,
+              direction: 'center',
+              className: 'fault-label'
+            });
+            labeledFaultNames.add(rawName);
+          }
+        }
+      }).addTo(faultLayer);
+      return regional.features.length;
+    }
+
+
+    function faultCoordinateSegments(geometry) {
+      const segments = [];
+      if (!geometry || !geometry.coordinates) return segments;
+      const addLine = line => {
+        if (!Array.isArray(line)) return;
+        for (let i=1; i<line.length; i++) {
+          const a=line[i-1], b=line[i];
+          if (Array.isArray(a) && Array.isArray(b) && typeof a[0]==='number' && typeof a[1]==='number' && typeof b[0]==='number' && typeof b[1]==='number') segments.push([a,b]);
+        }
+      };
+      if (geometry.type === 'LineString') addLine(geometry.coordinates);
+      else if (geometry.type === 'MultiLineString') geometry.coordinates.forEach(addLine);
+      else {
+        const walk = v => {
+          if (!Array.isArray(v)) return;
+          if (v.length && Array.isArray(v[0]) && typeof v[0][0] === 'number') addLine(v);
+          else v.forEach(walk);
+        };
+        walk(geometry.coordinates);
+      }
+      return segments;
+    }
+
+    function pointToSegmentKm(lat, lon, a, b) {
+      const rad = Math.PI / 180;
+      const lat0 = lat * rad;
+      const kmLat = 111.32;
+      const kmLon = 111.32 * Math.cos(lat0);
+      const ax = (a[0] - lon) * kmLon, ay = (a[1] - lat) * kmLat;
+      const bx = (b[0] - lon) * kmLon, by = (b[1] - lat) * kmLat;
+      const dx = bx-ax, dy = by-ay;
+      const den = dx*dx + dy*dy;
+      let t = den ? -(ax*dx + ay*dy)/den : 0;
+      t = Math.max(0, Math.min(1, t));
+      const x=ax+t*dx, y=ay+t*dy;
+      return Math.sqrt(x*x+y*y);
+    }
+
+    function nearestFaultForEvent(evt) {
+      if (!regionalFaultFeatures.length || !Number.isFinite(Number(evt.lat)) || !Number.isFinite(Number(evt.lon))) return null;
+      let best = null;
+      for (const f of regionalFaultFeatures) {
+        const props = f.properties || {};
+        const rawName = String(faultName(props) || '').trim();
+        if (!rawName || /^(faults?|fallas?)$/i.test(rawName)) continue;
+        const segs = faultCoordinateSegments(f.geometry);
+        for (const seg of segs) {
+          const d = pointToSegmentKm(Number(evt.lat), Number(evt.lon), seg[0], seg[1]);
+          if (!best || d < best.distanceKm) best = { name: rawName, distanceKm: d };
+        }
+      }
+      return best;
+    }
+
+    function faultAssessment(evt) {
+      const nf = nearestFaultForEvent(evt);
+      if (!nf) return { label:'No determinada', text:'No determinada', distanceKm:null, near:false };
+      // Proximidad geométrica, no identificación de la falla causante.
+      if (nf.distanceKm <= 25) return { label:nf.name, text:`${nf.name} (aprox. ${nf.distanceKm.toFixed(1)} km)`, distanceKm:nf.distanceKm, near:true };
+      return { label:'Sin asociación cercana', text:`Sin asociación cercana; falla cartografiada más próxima: ${nf.name} (${nf.distanceKm.toFixed(1)} km)`, distanceKm:nf.distanceKm, near:false };
+    }
+
+
+    function showLatestMagnitude(events) {
+      latestMagLayer.clearLayers();
+      if (!events || !events.length) return;
+
+      // Seleccionar únicamente el sismo real más reciente.
+      const latest = [...events].sort((a, b) => {
+        const ta = Number(a.timeMs || new Date(a.time).getTime() || 0);
+        const tb = Number(b.timeMs || new Date(b.time).getTime() || 0);
+        return tb - ta;
+      })[0];
+
+      const lat = Number(latest.lat);
+      const lon = Number(latest.lon);
+      const mag = Number(latest.mag);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(mag)) return;
+
+      const icon = L.divIcon({
+        className: 'latest-mag-label',
+        html: `<div style="
+          color:#ff0000;
+          font-weight:900;
+          font-size:16px;
+          line-height:1;
+          white-space:nowrap;
+          text-shadow:
+            -1px -1px 0 #fff,
+             1px -1px 0 #fff,
+            -1px  1px 0 #fff,
+             1px  1px 0 #fff;
+          transform:translate(-50%,-28px);
+          pointer-events:none;
+        ">M ${mag.toFixed(1)}</div>`,
+        iconSize: [1, 1],
+        iconAnchor: [0, 0]
+      });
+
+      L.marker([lat, lon], {
+        icon,
+        interactive: false,
+        keyboard: false
+      }).addTo(latestMagLayer);
+    }
+
+
+    async function loadEarthquakes() {
+      const status = document.getElementById('status');
+      const end = new Date();
+      const start = new Date(end.getTime() - 48 * 60 * 60 * 1000);
+      const startMs = start.getTime(), endMs = end.getTime();
+      uasdLayer.clearLayers();
+      ayitiLayer.clearLayers();
+      usgsLayer.clearLayers();
+      status.innerHTML = 'Cargando CNS-UASD, Ayiti-Séismes y USGS…';
+
+      const [uasdResult, ayitiResult, usgsResult] = await Promise.allSettled([
+        loadUasdEvents(startMs, endMs),
+        loadAyitiEvents(start, end),
+        loadUsgsEvents(start, end)
+      ]);
+
+      let uasdEvents = uasdResult.status === 'fulfilled' ? uasdResult.value.events : [];
+      let ayitiEvents = ayitiResult.status === 'fulfilled' ? ayitiResult.value.events : [];
+      let usgsEvents = usgsResult.status === 'fulfilled' ? usgsResult.value : [];
+
+      // Mantener UASD como prioridad visual; Ayiti agrega eventos no repetidos y USGS completa el resto.
+      const ayitiUnique = ayitiEvents.filter(a => !uasdEvents.some(d => isDuplicate(a, d)));
+      const usgsUnique = usgsEvents.filter(u =>
+        !uasdEvents.some(d => isDuplicate(u, d)) &&
+        !ayitiUnique.some(a => isDuplicate(u, a))
+      );
+
+      uasdEvents.forEach(e => addEventMarker(e, uasdLayer));
+      ayitiUnique.forEach(e => addEventMarker(e, ayitiLayer));
+      usgsUnique.forEach(e => addEventMarker(e, usgsLayer));
+
+      const all = [...uasdEvents, ...ayitiUnique, ...usgsUnique];
+      currentVisibleEvents = all.slice();
+      showLatestMagnitude(all);
+      const maxMag = all.reduce((m,e) => Number.isFinite(e.mag) && (m === null || e.mag > m) ? e.mag : m, null);
+      const uasdOk = uasdResult.status === 'fulfilled' && uasdEvents.length > 0;
+      const ayitiOk = ayitiResult.status === 'fulfilled' && ayitiResult.value && ayitiResult.value.responded;
+      const usgsOk = usgsResult.status === 'fulfilled';
+
+      let sourceState = `<b>UASD:</b> ${uasdEvents.length} · <b>Ayiti:</b> ${ayitiUnique.length} · <b>USGS:</b> ${usgsUnique.length}`;
+      if (!uasdOk) sourceState += '<br><span style="color:#b45309">UASD no respondió o no publicó eventos dentro de las 48 h.</span>';
+      if (!ayitiOk) sourceState += '<br><span style="color:#b45309">Ayiti-Séismes no respondió.</span>';
+      else if (ayitiEvents.length === 0) sourceState += '<br><span style="color:#64748b">Ayiti-Séismes respondió: 0 eventos dentro de las últimas 48 h.</span>';
+      if (!usgsOk) sourceState += '<br><span style="color:#b45309">USGS no respondió.</span>';
+
+      status.innerHTML = `<b>${all.length}</b> sismo${all.length === 1 ? '' : 's'} visible${all.length === 1 ? '' : 's'} en 48 h` +
+        (maxMag !== null ? ` · Mayor: <b>M ${maxMag.toFixed(1)}</b>` : '') +
+        `<br>${sourceState}<br><span style="font-size:10px">Actualizado: ${fmtTime(Date.now())}</span>`;
+    }
+
+
+    function bulletinSourceCounts(events) {
+      return events.reduce((acc, e) => {
+        const key = e.source || 'Otra fuente';
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function buildTechnicalAnalysis(events) {
+      if (!events.length) return 'No se registran sismos en las fuentes disponibles dentro de las últimas 6 horas. Esto significa únicamente que los catálogos cargados en el visor no reportan eventos en esa ventana.';
+      const mags = events.map(e => Number(e.mag)).filter(Number.isFinite);
+      const depths = events.map(e => Number(e.depth)).filter(Number.isFinite);
+      const strongest = events.reduce((a,b) => Number(b.mag) > Number(a.mag) ? b : a);
+      const latest = events.reduce((a,b) => Number(b.time) > Number(a.time) ? b : a);
+      const avgMag = mags.length ? mags.reduce((a,b)=>a+b,0)/mags.length : NaN;
+      const shallow = depths.filter(d => d <= 70).length;
+      let level = 'actividad de baja a moderada magnitud';
+      if (Number(strongest.mag) >= 5) level = 'actividad con al menos un evento de magnitud moderada o mayor';
+      else if (Number(strongest.mag) >= 4) level = 'actividad con al menos un evento de magnitud moderada';
+      return `En las últimas 6 horas se muestran ${events.length} evento${events.length===1?'':'s'}, con ${level}. ` +
+        `El mayor corresponde a M ${Number(strongest.mag).toFixed(1)} (${escapeHtml(strongest.place || 'ubicación no disponible')}). ` +
+        (Number.isFinite(avgMag) ? `La magnitud media es M ${avgMag.toFixed(1)}. ` : '') +
+        (depths.length ? `${shallow} de ${depths.length} evento${depths.length===1?'':'s'} con profundidad disponible se ubican a 70 km o menos. ` : '') +
+        `El evento más reciente ocurrió a las ${escapeHtml(fmtTime(latest.time))}. ` +
+        `Este resumen es descriptivo; no predice terremotos ni permite por sí solo afirmar un aumento futuro del peligro sísmico.`;
+    }
+
+    function buildBulletin6h() {
+      const now = Date.now();
+      const cutoff = now - 6 * 60 * 60 * 1000;
+      const events = currentVisibleEvents.filter(e => Number.isFinite(Number(e.time)) && Number(e.time) >= cutoff && Number(e.time) <= now).sort((a,b) => Number(b.time) - Number(a.time));
+      const sourceCounts = bulletinSourceCounts(events);
+      const maxMag = events.reduce((m,e) => Number.isFinite(Number(e.mag)) && (m === null || Number(e.mag) > m) ? Number(e.mag) : m, null);
+      const latest = events.length ? events[0] : null;
+      const analysis = buildTechnicalAnalysis(events);
+      const rows = events.length ? events.map((e,i) => { const fa=faultAssessment(e); return `<tr><td>${i+1}</td><td><b>M ${Number.isFinite(Number(e.mag)) ? Number(e.mag).toFixed(1) : 'N/D'}</b></td><td>${escapeHtml(e.place || 'No disponible')}</td><td>${escapeHtml(fa.text)}</td><td>${Number.isFinite(Number(e.depth)) ? Number(e.depth).toFixed(1)+' km' : 'N/D'}</td><td>${escapeHtml(fmtTime(e.time))}</td><td>${escapeHtml(e.source || 'N/D')}</td></tr>`; }).join('') : '<tr><td colspan="7">No hay eventos reportados en las últimas 6 horas.</td></tr>';
+      const sourceText = Object.entries(sourceCounts).map(([k,v]) => `${k}: ${v}`).join(' · ') || 'Sin eventos';
+      document.getElementById('bulletinContent').innerHTML = `<div class="bulletin-meta"><b>Generado:</b> ${escapeHtml(fmtTime(now))} · <b>Ventana:</b> 6 horas · <b>Fuentes:</b> CNS-UASD, Ayiti-Séismes y USGS</div><div class="bulletin-summary"><b>Total:</b> ${events.length} evento${events.length===1?'':'s'} · <b>Mayor magnitud:</b> ${maxMag !== null ? 'M '+maxMag.toFixed(1) : 'N/D'}<br><b>Más reciente:</b> ${latest ? 'M '+Number(latest.mag).toFixed(1)+' · '+escapeHtml(latest.place || 'No disponible')+' · '+escapeHtml(fmtTime(latest.time)) : 'N/D'}<br><b>Por fuente:</b> ${escapeHtml(sourceText)}</div><table class="bulletin-events"><thead><tr><th>#</th><th>Magnitud</th><th>Ubicación</th><th>Falla más cercana</th><th>Prof.</th><th>Hora RD</th><th>Fuente</th></tr></thead><tbody>${rows}</tbody></table><div class="bulletin-analysis"><b>Fallas sísmicas</b><br>La falla indicada corresponde a la <b>falla cartografiada más cercana al epicentro</b> (GEM/CCAF-DB). La proximidad geográfica no demuestra que esa falla haya sido la causante del sismo.<br><br><b>Análisis técnico preliminar</b><br>${analysis}</div>`;
+      const lines = events.map((e,i) => { const fa=faultAssessment(e); return `${i+1}. M ${Number.isFinite(Number(e.mag)) ? Number(e.mag).toFixed(1) : 'N/D'} | ${e.place || 'No disponible'} | Falla más cercana: ${fa.text} | Prof. ${Number.isFinite(Number(e.depth)) ? Number(e.depth).toFixed(1)+' km' : 'N/D'} | ${fmtTime(e.time)} | ${e.source || 'N/D'}`; });
+      currentBulletinText = `BOLETÍN SÍSMICO - ÚLTIMAS 6 HORAS\nGenerado: ${fmtTime(now)}\nTotal: ${events.length}\nMayor magnitud: ${maxMag !== null ? 'M '+maxMag.toFixed(1) : 'N/D'}\nFuentes: ${sourceText}\n\nEVENTOS\n${lines.length ? lines.join('\n') : 'No hay eventos reportados en las últimas 6 horas.'}\n\nANÁLISIS TÉCNICO PRELIMINAR\n${analysis.replace(/<[^>]*>/g,'')}`;
+      document.getElementById('bulletinOverlay').style.display = 'flex';
+    }
+
+    async function copyBulletinText() {
+      try { await navigator.clipboard.writeText(currentBulletinText); return true; }
+      catch (e) { const ta=document.createElement('textarea'); ta.value=currentBulletinText; document.body.appendChild(ta); ta.select(); const ok=document.execCommand('copy'); ta.remove(); return ok; }
+    }
+
+    document.getElementById('bulletinBtn').addEventListener('click', buildBulletin6h);
+    document.getElementById('bulletinClose').addEventListener('click', () => document.getElementById('bulletinOverlay').style.display = 'none');
+    document.getElementById('bulletinOverlay').addEventListener('click', e => { if (e.target.id === 'bulletinOverlay') e.currentTarget.style.display = 'none'; });
+    document.getElementById('copyBulletin').addEventListener('click', async () => { const btn=document.getElementById('copyBulletin'); const ok=await copyBulletinText(); const old=btn.textContent; btn.textContent=ok?'Copiado':'No se pudo copiar'; setTimeout(()=>btn.textContent=old,1600); });
+
+    document.getElementById('printBulletin').addEventListener('click', async () => {
+      const panel = document.querySelector('.bulletin-panel');
+      const cerrar = document.getElementById('bulletinClose');
+      const acciones = panel ? panel.querySelector('.bulletin-actions') : null;
+      const btn = document.getElementById('printBulletin');
+
+      if (!panel || typeof html2canvas !== 'function') {
+        alert('No se pudo cargar la función de captura PNG.');
+        return;
+      }
+
+      const cerrarDisplay = cerrar ? cerrar.style.display : '';
+      const accionesDisplay = acciones ? acciones.style.display : '';
+      const oldText = btn.textContent;
+
+      try {
+        btn.textContent = 'Generando PNG...';
+        btn.disabled = true;
+
+        // No incluir los botones ni la X de cerrar en la imagen final.
+        if (cerrar) cerrar.style.display = 'none';
+        if (acciones) acciones.style.display = 'none';
+
+        // Captura exclusivamente el cuadro blanco del boletín.
+        const canvas = await html2canvas(panel, {
+          backgroundColor: '#ffffff',
+          scale: Math.min(2, window.devicePixelRatio || 2),
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: panel.scrollWidth,
+          windowHeight: panel.scrollHeight,
+          width: panel.scrollWidth,
+          height: panel.scrollHeight
+        });
+
+        const link = document.createElement('a');
+        const fecha = new Date().toISOString().slice(0,10);
+        link.download = `Boletin_Sismico_${fecha}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch (err) {
+        console.error('Error al generar PNG:', err);
+        alert('No se pudo generar la imagen PNG del boletín.');
+      } finally {
+        if (cerrar) cerrar.style.display = cerrarDisplay;
+        if (acciones) acciones.style.display = accionesDisplay;
+        btn.textContent = oldText;
+        btn.disabled = false;
+      }
+    });
+
+
+    const legend = L.control({ position:'bottomright' });
+    legend.onAdd = function() {
+      const div = L.DomUtil.create('div', 'legend');
+      div.innerHTML = `
+        <div class=\"legend-title\">Antigüedad de los sismos</div>
+        <div class=\"legend-row\"><span style=\"color:#e31a1c;font-size:18px\">★</span> 0–1 h</div>
+        <div class=\"legend-row\"><span style=\"color:#ff7f00;font-size:18px\">★</span> 1–2 h</div>
+        <div class=\"legend-row\"><span style=\"color:#ffd700;font-size:18px\">★</span> 2–4 h</div>
+        <div class=\"legend-row\"><span style=\"color:#006400;font-size:18px\">★</span> 4–6 h</div>
+        <div class=\"legend-row\"><span style=\"color:#66cc66;font-size:18px\">★</span> 6–8 h</div>
+        <div class=\"legend-row\"><span style=\"color:#003f8c;font-size:18px\">★</span> 8–10 h</div>
+        <div class=\"legend-row\"><span style=\"color:#4da6ff;font-size:18px\">★</span> 10–24 h</div>
+        <div class=\"legend-row\"><span style=\"color:#7a7a7a;font-size:18px\">★</span> 24–48 h</div>
+        <div style=\"margin-top:5px;font-weight:700\">Tamaño de estrella = magnitud</div>
+        <div class=\"legend-row\"><span style=\"display:inline-block;width:28px;border-top:3px solid #3f3f46\"></span> Falla sísmica activa</div>`;
+      return div;
+    };
+    legend.addTo(map);
+
+    loadFaults().then(n => console.log(`Fallas regionales cargadas: ${n}`)).catch(err => console.warn('No se pudieron cargar las fallas:', err));
+
+    loadEarthquakes().catch(err => {
+      console.error(err);
+      document.getElementById('status').innerHTML = '<b>No se pudieron cargar los sismos.</b><br>Verifique la conexión a Internet y vuelva a abrir la página.';
+    });
+    setInterval(loadEarthquakes, 10 * 60 * 1000);
+  </script>
+</body>
+</html>
