@@ -54,7 +54,10 @@ export async function onRequestGet(context) {
   try {
     const r = await fetch(upstream.toString(), {
       headers: { "Accept": "application/json" },
-      cf: { cacheTtl: 0, cacheEverything: false }
+      cf: {
+        cacheTtl: 300,
+        cacheEverything: true
+      }
     });
 
     const body = await r.text();
@@ -68,8 +71,9 @@ export async function onRequestGet(context) {
       status: 200,
       headers: {
         "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-        "Pragma": "no-cache",
+        "Cache-Control": "private, no-store",
+        "CDN-Cache-Control": "public, max-age=300",
+        "Cloudflare-CDN-Cache-Control": "public, max-age=300",
         "X-Content-Type-Options": "nosniff"
       }
     });
