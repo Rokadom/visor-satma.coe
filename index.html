@@ -4322,15 +4322,91 @@ function nhcAplicarPatron(layer, p){
     }
 }
 
+function nhcProbFormateada(v){
+    const s = String(v ?? '').trim();
+    if(!s) return 'N/D';
+    return s.includes('%') ? s : `${s}%`;
+}
+
+function nhcRiesgoEspanol(valor, prob){
+    const s = String(valor ?? '').trim().toLowerCase();
+    if(s){
+        if(s.includes('high') || s.includes('alto') || s.includes('alta')) return 'Alto';
+        if(s.includes('medium') || s.includes('med') || s.includes('medio') || s.includes('media')) return 'Mediano';
+        if(s.includes('low') || s.includes('bajo') || s.includes('baja')) return 'Bajo';
+    }
+
+    const n = Number(String(prob ?? '').replace('%','').trim());
+    if(Number.isFinite(n)){
+        if(n >= 70) return 'Alto';
+        if(n >= 40) return 'Mediano';
+        return 'Bajo';
+    }
+    return 'N/D';
+}
+
+function nhcFechaProductoTexto(p){
+    // El servicio GIS oficial del NHC publica idp_filedate con la fecha/hora
+    // del producto. Se usa primero ese valor; si no está disponible, se usa
+    // la hora de la última actualización recuperada por SATMA.
+    const raw = p?.idp_filedate ?? p?.IDP_FILEDATE ??
+                p?.filedate ?? p?.FILEDATE ??
+                p?.validtime ?? p?.VALIDTIME ?? null;
+
+    let d = null;
+
+    if(raw instanceof Date){
+        d = raw;
+    } else if(typeof raw === 'number' && Number.isFinite(raw)){
+        // ArcGIS normalmente entrega fechas en milisegundos desde epoch.
+        d = new Date(raw);
+    } else if(raw){
+        const n = Number(raw);
+        if(Number.isFinite(n) && String(raw).trim().length >= 10){
+            d = new Date(n);
+        } else {
+            const prueba = new Date(raw);
+            if(!Number.isNaN(prueba.getTime())) d = prueba;
+        }
+    }
+
+    if(!d || Number.isNaN(d.getTime())){
+        d = nhcUltimaActualizacion || new Date();
+    }
+
+    try{
+        return new Intl.DateTimeFormat('es-DO',{
+            timeZone:'America/Santo_Domingo',
+            day:'2-digit',
+            month:'2-digit',
+            year:'numeric',
+            hour:'2-digit',
+            minute:'2-digit',
+            hour12:false
+        }).format(d);
+    }catch(e){
+        return nhcHoraLocalTexto(d);
+    }
+}
+
 function nhcPopup(p){
-    const prob = p?.prob7day ?? p?.PROB7DAY ?? '';
     const prob2 = p?.prob2day ?? p?.PROB2DAY ?? '';
-    const risk = p?.risk7day ?? p?.RISK7DAY ?? nhcRiskTexto(p);
-    return `<b>Perspectiva Tropical NHC — 7 días</b>` +
-           `<br>Probabilidad 7 días: <b>${prob || nhcProbNumero(p)+'%'}</b>` +
-           `<br>Riesgo: <b>${risk}</b>` +
-           (prob2 ? `<br>Probabilidad 2 días: ${prob2}` : '') +
-           `<br><span style="font-size:.67rem;color:#ccc">Fuente: NHC/NOAA</span>`;
+    const prob7 = p?.prob7day ?? p?.PROB7DAY ?? '';
+
+    const risk2Raw = p?.risk2day ?? p?.RISK2DAY ?? '';
+    const risk7Raw = p?.risk7day ?? p?.RISK7DAY ?? '';
+
+    const fecha = nhcFechaProductoTexto(p);
+    const riesgo2 = nhcRiesgoEspanol(risk2Raw, prob2);
+    const riesgo7 = nhcRiesgoEspanol(risk7Raw, prob7);
+
+    return `<b>${fecha}</b>` +
+           `<br><b>Perspectiva Tropical NHC</b>` +
+           `<br>Probabilidad 2 días: <b>${nhcProbFormateada(prob2)}</b>` +
+           `<br>Riesgo: <b>${riesgo2}</b>` +
+           `<br>Probabilidad 7 días: <b>${nhcProbFormateada(prob7)}</b>` +
+           `<br>Riesgo: <b>${riesgo7}</b>` +
+           `<br><span style="font-size:.67rem;color:#ccc">Fuente: NHC</span>`;
 }
 
 function nhcDibujarRegiones(gj, grupo){
