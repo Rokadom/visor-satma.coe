@@ -2075,7 +2075,10 @@ let datosEstaciones = [];
 
             const valores = estacionesDentro.map(valorEstacionPorModo);
             const maxLluvia = valores.length ? Math.max(...valores) : 0;
-            const tieneLluvia = maxLluvia > 0;
+
+            // El municipio sólo toma el color de intensidad cuando la lluvia
+            // SUPERA 5.0 mm. Valores de 0.0 a 5.0 mm conservan el fondo neutro.
+            const tieneLluvia = maxLluvia > 5.0;
 
             const gfsActivo = (typeof gfsVisible !== 'undefined' && gfsVisible);
             layer.setStyle({
