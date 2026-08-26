@@ -1804,7 +1804,12 @@ let datosEstaciones = [];
             .trim();
 
         const partes = nombre.split(' ').filter(Boolean);
-        return partes.slice(0, 2).join(' ') || 'Municipio';
+        let etiqueta = partes.slice(0, 2).join(' ') || 'Municipio';
+
+        // Ajuste solicitado para la estación/sector de Jacagua.
+        if (/^San\s+F/i.test(etiqueta)) etiqueta = 'Jacagua';
+
+        return etiqueta;
     }
 
     function cargarEtiquetasMunicipios() {
