@@ -1148,6 +1148,25 @@
             }
         }
 
+
+        /* ===== Cuadrícula de coordenadas SATMA ===== */
+        .satma-grid-label {
+            position: absolute;
+            color: #d8ffff;
+            font: 700 10px/1 Arial, sans-serif;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #111, 1px -1px 0 #111, -1px 1px 0 #111, 1px 1px 0 #111, 0 0 3px #000;
+            pointer-events: none;
+            user-select: none;
+        }
+        .satma-grid-lat { transform: translate(3px, -50%); }
+        .satma-grid-lon { transform: translate(-50%, -14px); }
+        @media (max-width:768px) {
+            .satma-grid-label { font-size: 8px; }
+            .satma-grid-lat { transform: translate(2px, -50%); }
+            .satma-grid-lon { transform: translate(-50%, -12px); }
+        }
+
     </style>
 
 <style id="satma-panel-derecho-compacto">
@@ -1595,6 +1614,87 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
 
     const mapa = L.map('mapa', {zoomControl: false}).setView([18.7357, -70.1627], 8);
 
+    // ===== Cuadrícula SATMA de latitud / longitud =====
+    // Inspirada en la referencia suministrada: líneas cian punteadas y
+    // coordenadas colocadas en el borde izquierdo (latitud) y borde inferior (longitud).
+    mapa.createPane('satma-coordenadas');
+    mapa.getPane('satma-coordenadas').style.zIndex = 310;
+    mapa.getPane('satma-coordenadas').style.pointerEvents = 'none';
+
+    const SATMA_GRID_COLOR = '#20d9d5';
+    const capaCoordenadas = L.layerGroup([], { pane: 'satma-coordenadas' }).addTo(mapa);
+
+    function satmaPasoCuadricula() {
+        const z = mapa.getZoom();
+        if (z <= 4) return 5;
+        if (z <= 6) return 2;
+        if (z <= 8) return 1;
+        if (z <= 10) return 0.5;
+        return 0.25;
+    }
+
+    function satmaFormatoLat(v) {
+        const a = Math.abs(v);
+        const dec = Math.abs(a - Math.round(a)) < 1e-8 ? 0 : (a * 2 === Math.round(a * 2) ? 1 : 2);
+        return a.toFixed(dec) + '°' + (v >= 0 ? 'N' : 'S');
+    }
+
+    function satmaFormatoLon(v) {
+        const a = Math.abs(v);
+        const dec = Math.abs(a - Math.round(a)) < 1e-8 ? 0 : (a * 2 === Math.round(a * 2) ? 1 : 2);
+        return a.toFixed(dec) + '°' + (v >= 0 ? 'E' : 'W');
+    }
+
+    function satmaIconoCoordenada(texto, clase) {
+        return L.divIcon({
+            className: '',
+            html: '<div class="satma-grid-label ' + clase + '">' + texto + '</div>',
+            iconSize: [1, 1],
+            iconAnchor: [0, 0]
+        });
+    }
+
+    function actualizarCuadriculaSATMA() {
+        capaCoordenadas.clearLayers();
+        const b = mapa.getBounds();
+        const sur = b.getSouth(), norte = b.getNorth(), oeste = b.getWest(), este = b.getEast();
+        const paso = satmaPasoCuadricula();
+        const eps = paso / 1000;
+
+        // Pequeño margen interior para que los números no queden recortados por el marco del mapa.
+        const latEtiquetaLon = oeste + (este - oeste) * 0.006;
+        const lonEtiquetaLat = sur + (norte - sur) * 0.012;
+
+        let lat0 = Math.ceil((sur - eps) / paso) * paso;
+        for (let lat = lat0; lat <= norte + eps; lat += paso) {
+            const v = Math.round(lat * 1000000) / 1000000;
+            capaCoordenadas.addLayer(L.polyline([[v, oeste], [v, este]], {
+                pane: 'satma-coordenadas', color: SATMA_GRID_COLOR, weight: 1.15,
+                opacity: 0.88, dashArray: '2, 3', interactive: false
+            }));
+            capaCoordenadas.addLayer(L.marker([v, latEtiquetaLon], {
+                pane: 'satma-coordenadas', interactive: false,
+                icon: satmaIconoCoordenada(satmaFormatoLat(v), 'satma-grid-lat')
+            }));
+        }
+
+        let lon0 = Math.ceil((oeste - eps) / paso) * paso;
+        for (let lon = lon0; lon <= este + eps; lon += paso) {
+            const v = Math.round(lon * 1000000) / 1000000;
+            capaCoordenadas.addLayer(L.polyline([[sur, v], [norte, v]], {
+                pane: 'satma-coordenadas', color: SATMA_GRID_COLOR, weight: 1.15,
+                opacity: 0.88, dashArray: '2, 3', interactive: false
+            }));
+            capaCoordenadas.addLayer(L.marker([lonEtiquetaLat, v], {
+                pane: 'satma-coordenadas', interactive: false,
+                icon: satmaIconoCoordenada(satmaFormatoLon(v), 'satma-grid-lon')
+            }));
+        }
+    }
+
+    mapa.on('moveend zoomend resize', actualizarCuadriculaSATMA);
+    actualizarCuadriculaSATMA();
+
     // Mapa base SATMA satelital oscuro.
     // Esri World Imagery satelital oscurecido usa tonos blanco/gris para no confundirse con los colores de alertas meteorológicas.
     // Conserva visibles ciudades, municipios, carreteras y referencias.
@@ -1713,6 +1813,31 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
 
 let datosEstaciones = [];
     const API_KEY = "4d7968132b634013b968132b6360138c";
+    // ===== Nombres personalizados de estaciones SATMA =====
+    // Se conservan también alias alternativos para códigos repetidos indicados por el usuario.
+    const NOMBRES_ESTACIONES_SATMA = {
+        'ISANTO505': 'Ens. Carmelita',
+        'ISANTO530': 'Mar Azul',
+        'ISANTO283': 'Urb. Real',
+        'ISANTO226': 'Las Malvinas',
+        'ISANTO17': 'Bella Vista',
+        'ISANTO439': 'Ens. Julieta',
+        'INATIONA6': 'Urb. Fernandez',
+        'ISANTO329': 'Los Pados',
+        'ISANTO229': 'Las Cementera',
+        'ISANTO406': 'Arroyo Hondo I',
+        'ISANTO471': 'Arroyo Hondo II',
+        'ISANTO497': 'La Ureña'
+    };
+    const ALIAS_ALTERNATIVOS_ESTACIONES_SATMA = {
+        'ISANTO17': ['Jardines Embajador'],
+        'ISANTO505': ['Evaristo Morales']
+    };
+    function nombreEstacionSATMA(est) {
+        const id = String(est?.id || '').trim().toUpperCase();
+        return NOMBRES_ESTACIONES_SATMA[id] || String(est?.nombre || '').trim() || id;
+    }
+
     const ESTACIONES = ['ISANTO505', 'ISANTO530', 'ISANTO283', 'ISANTO392', 'ISANTO226', 'ISANTO439', 'ISANTO30', 'ISANTO245', 'ISANTO497', 'ISANPE177', 'IVILLA335', 'ISANRA71', 'IPUNTA72', 'IPUNTA174', 'IHIGEY2', 'IMICHE117', 'ISABAN22', 'ISAMANAS2', 'ILUPER2', 'IPUERT376', 'ISANTI216', 'IMUNIC501', 'INAGUA3', 'ISAMAN9', 'ISNCHE1', 'ISANTI281', 'ISANTI193', 'ITAMBO107', 'ISALCE6', 'ILAVEG4', 'IJARAB42', 'ICONST97', 'ICONST167', 'ICONST43', 'ICONST5', 'INEIBA2', 'IELCER7', 'IPEDER21', 'ISANTA1190', 'ILOMAD1', 'ISANJO136', 'IMAO34', 'VALVERD2', 'IMOCA27', 'IMUNIC794', 'INIZAO2', 'IBAN265', 'IPUERT480', 'ISAMANAL3', 'ISANTA1960', 'IPIEDR27', 'ISANTI237', 'ISANTI43', 'ISANFR85', 'ISALVA31', 'ILAROMAN14', 'ILAROM17', 'ILAROMAN9', 'ILAROM45', 'ISANPE118', 'IHATOM2'];
 
     // Segunda red pública: NOAA/NCEI Global Hourly (Santo Domingo)
@@ -2283,7 +2408,7 @@ let datosEstaciones = [];
                 radius: (window.innerWidth <= 768 ? 4 : 5),
                 fillColor: obtenerColor(vParaColor, (modoActual !== '15m')),
                 color: "#fff", weight: 2, fillOpacity: 0.85
-            }).addTo(mapa).bindPopup(`<b>${est.nombre || est.id}</b><br>
+            }).addTo(mapa).bindPopup(`<b>${nombreEstacionSATMA(est)}</b><br>
                 <span style="font-size:0.78rem;color:#90caf9">${est.fuente ? 'Fuente: ' + est.fuente : est.id}</span><hr>
                 Lluvias 15 min: ${est.fuente === 'NOAA/NCEI' && est.noaa15Disponible === false ? 'N/D' : formatearLluvia(valores['15m']) + ' mm'}<br>
                 Lluvias 1 h: ${formatearLluvia(valores['1h'])} mm<br>
@@ -2304,7 +2429,7 @@ let datosEstaciones = [];
 
             if (['1h', '3h', '6h', '12h', '24h'].includes(modoActual) && valorEtiqueta > 0) {
                 marcador.bindTooltip(
-                    `${nombreMunicipioDePunto(est.lat, est.lon)}: ${formatearLluvia(valorEtiqueta)}`,
+                    `${NOMBRES_ESTACIONES_SATMA[String(est.id || '').toUpperCase()] || nombreMunicipioDePunto(est.lat, est.lon)}: ${formatearLluvia(valorEtiqueta)}`,
                     {
                         permanent: true,
                         direction: 'top',
@@ -3451,15 +3576,21 @@ let datosEstaciones = [];
 
         // Nombres conocidos de estaciones que no traen ubicación descriptiva.
         const ubicacionesPorId = {
-            'ISANTO530': 'Santo Domingo',
-            'ISANTO505': 'Santo Domingo',
-            'ISANTO283': 'Santo Domingo',
+            'ISANTO530': 'Mar Azul',
+            'ISANTO505': 'Ens. Carmelita',
+            'ISANTO283': 'Urb. Real',
             'ISANTO392': 'Santo Domingo',
-            'ISANTO226': 'Santo Domingo',
-            'ISANTO439': 'Santo Domingo',
+            'ISANTO226': 'Las Malvinas',
+            'ISANTO439': 'Ens. Julieta',
             'ISANTO30': 'Santo Domingo',
             'ISANTO245': 'Santo Domingo',
-            'ISANTO497': 'Santo Domingo',
+            'ISANTO497': 'La Ureña',
+            'ISANTO17': 'Bella Vista',
+            'INATIONA6': 'Urb. Fernandez',
+            'ISANTO329': 'Los Pados',
+            'ISANTO229': 'Las Cementera',
+            'ISANTO406': 'Arroyo Hondo I',
+            'ISANTO471': 'Arroyo Hondo II',
             'ISANPE177': 'San Pedro de Macorís',
             'IVILLA335': 'Villa Altagracia',
             'ISANRA71': 'San Rafael del Yuma',
@@ -4323,7 +4454,10 @@ let datosEstaciones = [];
             'ManeGonte08': 'agromet#analisis',
         "Antony09": "Jarabacoa#piton",
         "AndresHT": "Citricola#056",
-        "Anaesp": "Arcoiris#dn"
+        "Anaesp": "Arcoiris#dn",
+        "YicauriM": "Mena#ambar",
+        "RamonSP": "Spedro#SP",
+        "VitnniQ": "Quisqueya#Caña"
 };
 
         function mostrarLogin() {
@@ -5540,10 +5674,20 @@ function atcfEtiqueta(p){
 
 function atcfDibujar(puntos){
   if(atcfGrupo){ try{mapa.removeLayer(atcfGrupo)}catch(e){} }
+
+  // Datos Tropical siempre por encima del cono, trayectoria y puntos del NHC.
+  // NHC usa panes hasta z-index 572; ATCF queda en 620.
+  let atcfPane=mapa.getPane('satma-atcf-datos-tropical');
+  if(!atcfPane){
+    atcfPane=mapa.createPane('satma-atcf-datos-tropical');
+  }
+  atcfPane.style.zIndex='620';
+  atcfPane.style.pointerEvents='auto';
+
   atcfGrupo=L.layerGroup();
   if(!puntos.length) return;
   if(puntos.length>1){
-    L.polyline(puntos.map(p=>[p.lat,p.lon]),{color:'#111',weight:2,opacity:.8,dashArray:'4,5',interactive:false}).addTo(atcfGrupo);
+    L.polyline(puntos.map(p=>[p.lat,p.lon]),{color:'#111',weight:2,opacity:.8,dashArray:'4,5',interactive:false,pane:'satma-atcf-datos-tropical'}).addTo(atcfGrupo);
   }
   puntos.forEach((p,i)=>{
     const reciente=i===puntos.length-1;
@@ -5554,7 +5698,7 @@ function atcfDibujar(puntos){
       fillColor:reciente?'#ff0000':'#000000',
       fillOpacity:1,
       opacity:1,
-      pane:'markerPane'
+      pane:'satma-atcf-datos-tropical'
     });
     marcador.bindPopup(`<b>Invest 96L · BEST Track</b><br>${atcfFormatoFecha(p.fecha)}<br>Lat/Lon: ${p.lat.toFixed(1)}°, ${p.lon.toFixed(1)}°<br>Presión: ${Number.isFinite(p.presion)?p.presion+' hPa':'—'}<br>Viento máximo: ${Number.isFinite(p.viento)?p.viento+' kt':'—'}`);
     if(reciente){
