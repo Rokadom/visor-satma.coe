@@ -5099,7 +5099,11 @@ let datosEstaciones = [];
         "Anaesp": "Arcoiris#dn",
         "YicauriM": "Mena#ambar",
         "RamonSP": "Spedro#SP",
-        "VitnniQ": "Quisqueya#Caña"
+        "VitnniQ": "Quisqueya#Caña",
+        "CarlosZ": "Flordelsol#Bani",
+        "JoseB": "Nagua#ne",
+        "PolancoR": "Santiago#911",
+        "MejiaH": "Bombero#hm"
 };
 
         function mostrarLogin() {
@@ -5111,9 +5115,16 @@ let datosEstaciones = [];
         }
 
         function entrar() {
-            const usuario = (usuarioInput?.value || '').trim();
+            const usuarioEscrito = (usuarioInput?.value || '').trim();
             const clave = passwordInput?.value || '';
-            if (Object.prototype.hasOwnProperty.call(accesosSATMA, usuario) && accesosSATMA[usuario] === clave) {
+
+            // v16_126: localizar el usuario sin depender de mayúsculas/minúsculas.
+            // Esto evita problemas de acceso como JoseB / joseb / JOSEB.
+            const usuario = Object.keys(accesosSATMA).find(
+                u => u.toLowerCase() === usuarioEscrito.toLowerCase()
+            ) || '';
+
+            if (usuario && accesosSATMA[usuario] === clave) {
                 if (login) login.style.display = 'none';
                 if (sesion) sesion.style.display = 'flex';
                 if (usuarioActivo) usuarioActivo.textContent = usuario;
