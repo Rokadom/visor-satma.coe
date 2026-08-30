@@ -85,6 +85,38 @@
         /* Botones: Gris oscuro por defecto (#424242), Azul brillante cuando están activos (#1e88e5) */
         .btn-modo { background-color: #424242; color: #ffffff; border: 2px solid transparent; padding: 10px 15px; margin: 8px 0; width: 100%; border-radius: 6px; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; font-weight: bold; }
         .btn-modo.activo { background-color: #1e88e5; border: 2px solid #90caf9; box-shadow: 0 0 10px rgba(30, 136, 229, 0.5); }
+
+
+        /* v16_129 · Menú agrupado de lluvias y botones de herramientas meteorológicas */
+        #btn-menu-lluvias{
+            background:#0b5d1e;
+            border:1px solid #d9f2df;
+            color:#fff;
+            position:relative;
+        }
+        #btn-menu-lluvias::after{
+            content:'▼';
+            float:right;
+            font-size:.72rem;
+            margin-top:2px;
+        }
+        #btn-menu-lluvias.abierto::after{content:'▲';}
+        #submenu-lluvias{display:none;margin:2px 0 6px 0;padding:4px 5px 5px;background:rgba(8,16,22,.65);border:1px solid rgba(255,255,255,.18);border-radius:6px;}
+        #submenu-lluvias.abierto{display:block;}
+        #submenu-lluvias .btn-modo{margin:4px 0;padding:7px 8px;font-size:.78rem;background:#126b2b;border-color:#bce2c6;}
+        #submenu-lluvias .btn-modo.activo{background:#1e88e5;border-color:#90caf9;box-shadow:0 0 8px rgba(30,136,229,.42);}
+        .btn-herramienta-futura{color:#fff;border-radius:6px;padding:8px 10px;margin:4px 0;width:100%;font-size:.80rem;font-weight:900;border:1px solid rgba(255,255,255,.5);cursor:default;}
+        .btn-herr-temp{background:#9f2525;border-color:#ff6b6b;}
+        .btn-herr-viento{background:#244d78;border-color:#6caee8;}
+        .btn-herr-viento-sup{background:#63328a;border-color:#c58cff;}
+        .btn-herr-presion{background:#80621c;border-color:#e4c46a;}
+        .btn-herr-modelo{background:#0d516f;border-color:#7fd1ff;opacity:.68;}
+        .btn-herramienta-futura{cursor:pointer;}
+        .btn-herramienta-futura:disabled{cursor:not-allowed;opacity:.68;}
+        #visor-herramientas-overlay{position:fixed;inset:0;z-index:20050;background:#07141c;display:none;}
+        #visor-herramientas-overlay.visible{display:block;}
+        #visor-herramientas-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#07141c;}
+        #cerrar-herramientas-overlay{position:absolute;right:14px;top:10px;z-index:20060;background:#b71c1c;color:#fff;border:1px solid #fff;border-radius:6px;padding:8px 12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45);}
     
         .radar-control-extra {
             margin-top: 6px;
@@ -1481,12 +1513,21 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
 <div id="panel-derecho">
     <button id="btn-analisis" type="button" aria-expanded="false" aria-controls="contenido-analisis">Análisis</button>
     <div id="contenido-analisis">
-        <button id="btn-15m" class="btn-modo" onclick="cambiarModo('15m')">Lluvias 15 min (mm)</button>
-        <button id="btn-1h" class="btn-modo activo" onclick="cambiarModo('1h')">Lluvias 1 h (mm)</button>
-        <button id="btn-3h" class="btn-modo" onclick="cambiarModo('3h')">Lluvias 3h (mm)</button>
-        <button id="btn-6h" class="btn-modo" onclick="cambiarModo('6h')">Lluvias 6h (mm)</button>
-        <button id="btn-12h" class="btn-modo" onclick="cambiarModo('12h')">Lluvia 12 h (mm)</button>
-        <button id="btn-24h" class="btn-modo" onclick="cambiarModo('24h')">Lluvias 24h (mm)</button>
+        <button id="btn-menu-lluvias" class="btn-modo" type="button" onclick="toggleMenuLluvias()" aria-expanded="false" aria-controls="submenu-lluvias">Lluvias</button>
+        <div id="submenu-lluvias">
+            <button id="btn-15m" class="btn-modo" onclick="cambiarModo('15m')">Lluvias 15 min (mm)</button>
+            <button id="btn-30m" class="btn-modo" onclick="cambiarModo('30m')">Lluvias 30 min (mm)</button>
+            <button id="btn-1h" class="btn-modo activo" onclick="cambiarModo('1h')">Lluvias 1 h (mm)</button>
+            <button id="btn-3h" class="btn-modo" onclick="cambiarModo('3h')">Lluvias 3 h (mm)</button>
+            <button id="btn-6h" class="btn-modo" onclick="cambiarModo('6h')">Lluvias 6 h (mm)</button>
+            <button id="btn-12h" class="btn-modo" onclick="cambiarModo('12h')">Lluvias 12 h (mm)</button>
+            <button id="btn-24h" class="btn-modo" onclick="cambiarModo('24h')">Lluvias 24 h (mm)</button>
+        </div>
+        <button id="btn-herr-temp" class="btn-herramienta-futura btn-herr-temp" type="button" onclick="abrirHerramientaMeteorologica('temperaturas')">Temperaturas</button>
+        <button id="btn-herr-viento" class="btn-herramienta-futura btn-herr-viento" type="button" onclick="abrirHerramientaMeteorologica('viento')">Fuerza del viento</button>
+        <button id="btn-herr-viento-sup" class="btn-herramienta-futura btn-herr-viento-sup" type="button" onclick="abrirHerramientaMeteorologica('viento-superior')">Viento superior</button>
+        <button id="btn-herr-presion" class="btn-herramienta-futura btn-herr-presion" type="button" onclick="abrirHerramientaMeteorologica('presion')">Presión</button>
+        <button id="btn-modelo-hispaniola" class="btn-herramienta-futura btn-herr-modelo" type="button" disabled title="MODELO HISPANIOLA desactivado">MODELO HISPANIOLA</button>
         <button id="btn-filtro" class="btn-modo activo" onclick="toggleFiltro()">Solo con Lluvias</button>
         <button id="btn-radar" class="btn-modo activo" onclick="toggleRadar()">📡 Radar Meteorológico</button>
         <div class="radar-control-extra">
@@ -1916,8 +1957,7 @@ let datosEstaciones = [];
         'ISANTO329': 'Los Pados',
         'ISANTO229': 'Las Cementera',
         'ISANTO406': 'Arroyo Hondo I',
-        'ISANTO471': 'Arroyo Hondo II',
-        'ISANTO497': 'La Ureña'
+        'ISANTO471': 'Arroyo Hondo II'
     };
     const ALIAS_ALTERNATIVOS_ESTACIONES_SATMA = {
         'ISANTO17': ['Jardines Embajador'],
@@ -2273,6 +2313,7 @@ let datosEstaciones = [];
     function valorEstacionPorModo(est) {
         const valores = {
             '15m': numeroLluvia(est.precip15min),
+            '30m': numeroLluvia(est.precip30min),
             '1h': numeroLluvia(est.precip1h),
             '3h': numeroLluvia(est.precip3h),
             '6h': numeroLluvia(est.precip6h),
@@ -2513,6 +2554,7 @@ let datosEstaciones = [];
         datosEstaciones.forEach(est => {
             const valores = {
                 '15m': numeroLluvia(est.precip15min),
+                '30m': numeroLluvia(est.precip30min),
                 '1h': numeroLluvia(est.precip1h),
                 '3h': numeroLluvia(est.precip3h),
                 '6h': numeroLluvia(est.precip6h),
@@ -2540,6 +2582,7 @@ let datosEstaciones = [];
             }).addTo(mapa).bindPopup(`<b>${nombreEstacionSATMA(est)}</b><br>
                 <span style="font-size:0.78rem;color:#90caf9">${est.fuente ? 'Fuente: ' + est.fuente : est.id}</span><hr>
                 Lluvias 15 min: ${est.fuente === 'NOAA/NCEI' && est.noaa15Disponible === false ? 'N/D' : formatearLluvia(valores['15m']) + ' mm'}<br>
+                Lluvias 30 min: ${est.fuente === 'NOAA/NCEI' && est.noaa30Disponible === false ? 'N/D' : formatearLluvia(valores['30m']) + ' mm'}<br>
                 Lluvias 1 h: ${formatearLluvia(valores['1h'])} mm<br>
                 Lluvias 3h: ${formatearLluvia(valores['3h'])} mm<br>
                 Lluvias 6h: ${formatearLluvia(valores['6h'])} mm<br>
@@ -2549,6 +2592,7 @@ let datosEstaciones = [];
             // Mostrar etiqueta para estaciones con lluvia en los modos
             // 1 h, 3 h, 6 h y 24 h, usando el acumulado correspondiente.
             const valorEtiqueta = {
+                '30m': numeroLluvia(est.precip30min),
                 '1h': numeroLluvia(est.precip1h),
                 '3h': numeroLluvia(est.precip3h),
                 '6h': numeroLluvia(est.precip6h),
@@ -2561,7 +2605,7 @@ let datosEstaciones = [];
             marcador._satmaEstacion = est;
             marcador._satmaValorEtiqueta = Number(valorEtiqueta) || 0;
 
-            const mostrarObs = ['1h', '3h', '6h', '12h', '24h'].includes(modoActual) && valorEtiqueta > 0;
+            const mostrarObs = ['30m', '1h', '3h', '6h', '12h', '24h'].includes(modoActual) && valorEtiqueta > 0;
             const mostrarModeloDN = (typeof gfsVisible !== 'undefined' && gfsVisible &&
                 typeof gfsDatosListos !== 'undefined' && gfsDatosListos &&
                 typeof esEstacionDistritoNacional === 'function' && esEstacionDistritoNacional(est) &&
@@ -2616,13 +2660,23 @@ let datosEstaciones = [];
         mapa.eachLayer(l => { if (l instanceof L.CircleMarker) l.bringToFront(); });
     }
 
+    function toggleMenuLluvias() {
+        const btn = document.getElementById('btn-menu-lluvias');
+        const sub = document.getElementById('submenu-lluvias');
+        if (!btn || !sub) return;
+        const abrir = !sub.classList.contains('abierto');
+        sub.classList.toggle('abierto', abrir);
+        btn.classList.toggle('abierto', abrir);
+        btn.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+    }
+
     function cambiarModo(m) {
         modoActual = m;
 
         // Incluir también 12 h al limpiar el estado visual de los botones.
         // Antes faltaba '12h', por eso el botón quedaba azul aunque se
         // seleccionara posteriormente otro acumulado.
-        ['15m','1h','3h','6h','12h','24h'].forEach(x => {
+        ['15m','30m','1h','3h','6h','12h','24h'].forEach(x => {
             document.getElementById('btn-' + x)?.classList.remove('activo');
         });
 
@@ -3690,7 +3744,7 @@ let datosEstaciones = [];
             if(!(layer instanceof L.CircleMarker) || !layer._satmaEstacion) return;
             const est=layer._satmaEstacion;
             const valorObs=Number(layer._satmaValorEtiqueta)||0;
-            const mostrarObs=['1h','3h','6h','12h','24h'].includes(modoActual) && valorObs>0;
+            const mostrarObs=['30m','1h','3h','6h','12h','24h'].includes(modoActual) && valorObs>0;
 
             // Quitar cualquier etiqueta fija creada anteriormente por el modelo.
             if(layer.getTooltip()) layer.unbindTooltip();
@@ -4018,6 +4072,7 @@ let datosEstaciones = [];
                 lat: Number(ultima.lat),
                 lon: Number(ultima.lon),
                 precip15min: precip15,
+                precip30min: acumularHoras(0.5),
                 precip1h: acumular1hReciente(),
                 precip3h: acumularHoras(3),
                 precip6h: acumularHoras(6),
@@ -4124,12 +4179,14 @@ let datosEstaciones = [];
                 lat: Number(ultima.LATITUDE ?? cfg.lat),
                 lon: Number(ultima.LONGITUDE ?? cfg.lon),
                 precip15min: p15 ?? 0,
+                precip30min: 0,
                 precip1h: p1,
                 precip3h: p3,
                 precip6h: p6,
                 precip12h: Math.min(numeroLluvia(p6) * 2, numeroLluvia(total24 || 0)),
                 total: p24,
                 noaa15Disponible: p15 !== null,
+                noaa30Disponible: false,
                 obsTimeUtc: ultima.DATE
             };
         } catch (e) {
@@ -4178,7 +4235,7 @@ let datosEstaciones = [];
         if (provinciasVisibles) actualizarColoresProvincias();
 
         const conLluvia = datosEstaciones.filter(est =>
-            numeroLluvia(est.precip15min) > 0 || numeroLluvia(est.precip1h) > 0 ||
+            numeroLluvia(est.precip15min) > 0 || numeroLluvia(est.precip30min) > 0 || numeroLluvia(est.precip1h) > 0 ||
             numeroLluvia(est.precip3h) > 0 || numeroLluvia(est.precip6h) > 0 ||
             numeroLluvia(est.total) > 0
         ).length;
@@ -6867,5 +6924,27 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
 </style>
 <div id="satma-credito-creador">Creado por "Claudio Martinez"</div>
 
+
+<div id="visor-herramientas-overlay" aria-hidden="true">
+  <button id="cerrar-herramientas-overlay" type="button" onclick="cerrarHerramientaMeteorologica()">Regresar al visor</button>
+  <iframe id="visor-herramientas-frame" title="Herramientas Meteorológicas SATMA"></iframe>
+</div>
+<script>
+function abrirHerramientaMeteorologica(producto){
+    const overlay=document.getElementById('visor-herramientas-overlay');
+    const frame=document.getElementById('visor-herramientas-frame');
+    if(!overlay||!frame) return;
+    const base='herramientas.html';
+    frame.src=base+'?producto='+encodeURIComponent(producto)+'&t='+Date.now();
+    overlay.classList.add('visible');
+    overlay.setAttribute('aria-hidden','false');
+}
+function cerrarHerramientaMeteorologica(){
+    const overlay=document.getElementById('visor-herramientas-overlay');
+    const frame=document.getElementById('visor-herramientas-frame');
+    if(overlay){ overlay.classList.remove('visible'); overlay.setAttribute('aria-hidden','true'); }
+    if(frame) frame.src='about:blank';
+}
+</script>
 </body>
 </html>
