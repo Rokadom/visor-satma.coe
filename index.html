@@ -1555,7 +1555,7 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
 .gfs-productos{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:5px 0 6px}.gfs-producto{background:#333;color:#fff;border:1px solid #666;border-radius:5px;padding:6px 4px;font-size:.58rem;font-weight:900;cursor:pointer}.gfs-producto.activo{background:#1565c0;border-color:#64b5f6;box-shadow:0 0 6px rgba(33,150,243,.45)}.gfs-producto small{display:block;font-size:.46rem;font-weight:700;opacity:.9;margin-top:2px}.gfs-hora.inhabilitado{opacity:.35;pointer-events:none}.gfs-acum.oculto{display:none!important}
 </style>
 <div id="gfs-panel" aria-label="Productos de precipitación ECMWF y AIFS">
-  <div class="gfs-cabecera"><div class="gfs-titulo">Modelo · Atlántico tropical</div><button class="gfs-cerrar" type="button" onclick="toggleGFS(false)" aria-label="Cerrar">×</button></div>
+  <div class="gfs-cabecera"><div class="gfs-titulo"></div><button class="gfs-cerrar" type="button" onclick="toggleGFS(false)" aria-label="Cerrar">×</button></div>
   <div class="gfs-productos">
     <button id="gfs-prod-aifs" class="gfs-producto" onclick="seleccionarProductoModelo('aifs')">Precipitación 6 h AIFS<small>Estructura tropical · tasa media mm/h</small></button>
     <button id="gfs-prod-ifs" class="gfs-producto activo" onclick="seleccionarProductoModelo('ifs')">Acumulados ECMWF<small>Impacto · 6 / 9 / 12 / 24 h</small></button>
@@ -1573,7 +1573,7 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     </div>
     <button id="gfs-vista-atlantico" type="button" onclick="verAtlanticoGFS()">Cargar Vista Atlántico · Caribe → África</button>
   </div>
-  <div style="font-size:.57rem;color:#b39ddb;font-weight:800;margin:3px 0 5px">Fuente: ECMWF AIFS Single / ECMWF IFS 0.25° · paso IFS 3 h · Open-Meteo · dominio Caribe–África</div><div class="gfs-info"><span><span class="gfs-etiqueta-tiempo" id="gfs-tiempo-texto">Modelo ECMWF IFS 0.25°: pulse Modelo para cargar</span><br><span id="gfs-corrida-texto">Corrida: —</span> · <span id="gfs-validez-texto">Válido: —</span> · <span id="gfs-acumulado-texto">Lluvia: 3 h</span></span><span class="gfs-escala"><span>Débil</span><span class="gfs-gradiente"></span><span>Fuerte</span></span></div>
+  <div style="font-size:.57rem;color:#b39ddb;font-weight:800;margin:3px 0 5px">Fuente: ECMWF AIFS 0.25</div><div class="gfs-info"><span><span class="gfs-etiqueta-tiempo" id="gfs-tiempo-texto">Modelo ECMWF IFS 0.25°: pulse Modelo para cargar</span><br><span id="gfs-corrida-texto">Corrida: —</span> · <span id="gfs-validez-texto">Válido: —</span> · <span id="gfs-acumulado-texto"></span></span><span class="gfs-escala"><span>Débil</span><span class="gfs-gradiente"></span><span>Fuerte</span></span></div>
 </div>
 
 
@@ -2340,11 +2340,11 @@ let datosEstaciones = [];
                         const valido = gfsCorridaUTC
                             ? new Date(gfsCorridaUTC.getTime() + gfsHora * 3600000)
                             : null;
-                        const textoValido = valido && typeof fechaUTCTexto === 'function'
-                            ? fechaUTCTexto(valido)
+                        const textoValido = valido && typeof textoPronosticoValidoRD === 'function'
+                            ? textoPronosticoValidoRD(valido)
                             : '';
 
-                        const periodo = gfsHora === 0 ? 'Hora de análisis' : `Acumulado ${gfsAcumuladoHoras} h`;
+                        const periodo = gfsHora === 0 ? '' : `Acumulado ${gfsAcumuladoHoras} h`;
 
                         // Si el punto del modelo está a 2 km o menos de una estación
                         // ubicada dentro del Distrito Nacional, incluir esa estación
@@ -2371,8 +2371,8 @@ let datosEstaciones = [];
                             `<div style="min-width:175px">` +
                             `<b style="font-size:.86rem">${nomMun}</b>` +
                             `<br><span style="color:#90caf9;font-weight:800">Modelo: ${formatearLluvia(valorModelo)} mm</span>` +
-                            `<br><span style="font-size:.70rem">${periodo}</span>` +
-                            (textoValido ? `<br><span style="font-size:.68rem">Válido: ${textoValido}</span>` : '') +
+                            (periodo ? `<br><span style="font-size:.70rem">${periodo}</span>` : '') +
+                            (textoValido ? `<br><span style="font-size:.68rem">${textoValido}</span>` : '') +
                             bloqueEstacionDN +
                             `</div>`
                         );
@@ -3283,6 +3283,23 @@ let datosEstaciones = [];
         const dias=['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
         return `${dias[d.getUTCDay()]} ${dos(d.getUTCDate())}/${dos(d.getUTCMonth()+1)}/${d.getUTCFullYear()} ${dos(d.getUTCHours())}:00 UTC`;
     }
+
+    // Hora local de República Dominicana (UTC-4) para las etiquetas flotantes del modelo.
+    function horaValidaRDModelo(d){
+        if(!(d instanceof Date) || !Number.isFinite(d.getTime())) return '';
+        const rd = new Date(d.getTime() - 4*3600000);
+        let h = rd.getUTCHours();
+        const min = String(rd.getUTCMinutes()).padStart(2,'0');
+        const suf = h >= 12 ? 'pm' : 'am';
+        h = h % 12;
+        if(h === 0) h = 12;
+        return `${h}:${min}${suf}`;
+    }
+
+    function textoPronosticoValidoRD(d){
+        const h = horaValidaRDModelo(d);
+        return h ? `Pronóstico válido hasta las ${h}` : '';
+    }
     // ===== ECMWF IFS · carga estable desde la API de pronóstico en tiempo real =====
     // La versión anterior usaba Single Runs y podía fallar cuando la corrida más reciente
     // todavía no estaba publicada en el archivo. Aquí se usa /v1/ecmwf, que entrega
@@ -3602,14 +3619,14 @@ let datosEstaciones = [];
                 const ll=(e && e.latlng)?e.latlng:L.latLng(lat,lon);
                 const vm=valorBilinealGFS(campo,ll.lat,ll.lng);
                 const valido=gfsCorridaUTC?new Date(gfsCorridaUTC.getTime()+gfsHora*3600000):null;
-                const textoValido=valido && typeof fechaUTCTexto==='function'?fechaUTCTexto(valido):'—';
-                const periodo=gfsHora===0?'Hora de análisis':`Acumulado ${gfsAcumuladoHoras} h`;
+                const textoValido=valido && typeof textoPronosticoValidoRD==='function'?textoPronosticoValidoRD(valido):'';
+                const periodo=gfsHora===0?'':`Acumulado ${gfsAcumuladoHoras} h`;
                 zona.setTooltipContent(
                     `<div style="min-width:175px">`+
                     `<b style="font-size:.86rem">${nombre}</b>`+
                     `<br><span style="color:#90caf9;font-weight:800">Modelo: ${formatearLluvia(vm)} mm</span>`+
-                    `<br><span style="font-size:.70rem">${periodo}</span>`+
-                    `<br><span style="font-size:.68rem">Válido: ${textoValido}</span>`+
+                    (periodo ? `<br><span style="font-size:.70rem">${periodo}</span>` : '')+
+                    (textoValido ? `<br><span style="font-size:.68rem">${textoValido}</span>` : '')+
                     `</div>`
                 );
                 if(!zona.isTooltipOpen()) zona.openTooltip(ll);
@@ -3636,10 +3653,10 @@ let datosEstaciones = [];
             const valido = gfsCorridaUTC
                 ? new Date(gfsCorridaUTC.getTime() + gfsHora * 3600000)
                 : null;
-            const textoValido = valido && typeof fechaUTCTexto === 'function'
-                ? fechaUTCTexto(valido)
-                : '—';
-            const periodo = gfsHora === 0 ? 'Hora de análisis' : `Acumulado ${gfsAcumuladoHoras} h`;
+            const textoValido = valido && typeof textoPronosticoValidoRD === 'function'
+                ? textoPronosticoValidoRD(valido)
+                : '';
+            const periodo = gfsHora === 0 ? '' : `Acumulado ${gfsAcumuladoHoras} h`;
 
             // Misma etiqueta blanca usada al consultar el modelo sobre los municipios.
             layer._satmaModeloHoverTooltip=L.tooltip({
@@ -3653,8 +3670,8 @@ let datosEstaciones = [];
                 `<div style="min-width:175px">` +
                 `<b style="font-size:.86rem">${nombre}</b>` +
                 `<br><span style="color:#90caf9;font-weight:800">Modelo: ${formatearLluvia(vm)} mm</span>` +
-                `<br><span style="font-size:.70rem">${periodo}</span>` +
-                `<br><span style="font-size:.68rem">Válido: ${textoValido}</span>` +
+                (periodo ? `<br><span style="font-size:.70rem">${periodo}</span>` : '') +
+                (textoValido ? `<br><span style="font-size:.68rem">${textoValido}</span>` : '') +
                 `</div>`
             )
             .addTo(mapa);
@@ -3754,11 +3771,21 @@ let datosEstaciones = [];
         if(gfsCargando){ if(t)t.textContent='Cargando '+(gfsProducto==='aifs'?'ECMWF AIFS Single':'ECMWF IFS')+'…'; return; }
         if(gfsError){ if(t)t.textContent='Error: '+gfsError; return; }
         if(!gfsCorridaUTC){ if(t)t.textContent=(gfsProducto==='aifs'?'AIFS 6 h':'Acumulados ECMWF')+': pulse Modelo para cargar'; return; }
-        if(t)t.textContent=(gfsProducto==='aifs'?'ECMWF AIFS Single · precipitación media 6 h':'ECMWF IFS 0.25° · lluvia acumulada')+(gfsAtlanticoCompleto?' · Atlántico completo':' · Caribe listo');
-        if(c)c.textContent='Base ECMWF: '+fechaUTCTexto(gfsCorridaUTC);
+        if(t)t.textContent='';
+        if(c)c.textContent='Corrida ECMWF: '+fechaUTCTexto(gfsCorridaUTC);
         const valido=new Date(gfsCorridaUTC.getTime()+gfsHora*3600000);
         if(v)v.textContent='Válido: '+fechaUTCTexto(valido);
-        if(a)a.textContent=gfsProducto==='aifs'?'Precipitación media 6 h (mm/h)':(gfsHora===0?'Lluvia: paso 3 h':`Lluvia acumulada: ${gfsAcumuladoHoras} h · paso 3 h`);
+        if(a){
+            if(gfsProducto==='aifs'){
+                const inicioPeriodo=new Date(valido.getTime()-6*3600000);
+                a.textContent=`Precipitación media 6 h · Período: ${fechaUTCTexto(inicioPeriodo)} → ${fechaUTCTexto(valido)}`;
+            }else if(gfsHora===0){
+                a.textContent='';
+            }else{
+                const inicioPeriodo=new Date(valido.getTime()-gfsAcumuladoHoras*3600000);
+                a.textContent=`Lluvia acumulada ${gfsAcumuladoHoras} h · Período: ${fechaUTCTexto(inicioPeriodo)} → ${fechaUTCTexto(valido)}`;
+            }
+        }
     }
     function renderGFS(){
         document.querySelectorAll('.gfs-hora').forEach(b=>b.classList.toggle('activo',Number(b.dataset.h)===gfsHora));
@@ -6656,15 +6683,15 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
         if(valor===null){ ocultarTooltipModeloAtlantico(); return; }
 
         const valido=gfsCorridaUTC ? new Date(gfsCorridaUTC.getTime()+gfsHora*3600000) : null;
-        const textoValido=valido && typeof fechaUTCTexto==='function' ? fechaUTCTexto(valido) : '—';
+        const textoValido=valido && typeof textoPronosticoValidoRD==='function' ? textoPronosticoValidoRD(valido) : '';
         const producto=gfsProducto==='aifs' ? 'ECMWF AIFS' : 'ECMWF IFS 0.25° · paso 3 h';
         const valorTxt=(typeof formatearLluvia==='function') ? formatearLluvia(valor) : valor.toFixed(1);
         const contenido=
             `<div style="min-width:185px">`+
             `<b style="font-size:.88rem">${producto} · punto del modelo</b>`+
             `<br><span style="color:#1565c0;font-size:.88rem;font-weight:900">Lluvia: ${valorTxt} mm</span>`+
-            `<br><span style="font-size:.70rem">${textoPeriodoModelo()}</span>`+
-            `<br><span style="font-size:.68rem">Válido: ${textoValido}</span>`+
+            (textoPeriodoModelo() && textoPeriodoModelo()!=='Hora de análisis' ? `<br><span style="font-size:.70rem">${textoPeriodoModelo()}</span>` : '')+
+            (textoValido ? `<br><span style="font-size:.68rem">${textoValido}</span>` : '')+
             `<br><span style="font-size:.64rem;color:#555">${lat.toFixed(2)}°N · ${Math.abs(lon).toFixed(2)}°${lon<0?'W':'E'}</span>`+
             `</div>`;
 
@@ -6805,5 +6832,29 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
 <!-- SATMA v16_110: caché AIFS/IFS + lotes ampliados para reducir HTTP 429 -->
 <!-- SATMA v16_115: ECMWF IFS por defecto + malla API optimizada + caché persistente + recuperación 429 -->
 <!-- SATMA v16_116: ECMWF acumulados con malla espacial 1° + caché nueva; corrige manchas sobredimensionadas de la v16_115 -->
+
+<!-- v16_123 · Crédito del creador -->
+<style id="satma-credito-creador">
+#satma-credito-creador{
+    position:fixed;
+    top:76px;
+    left:50%;
+    right:auto;
+    transform:translateX(-50%);
+    z-index:10050;
+    background:rgba(0,0,0,.88);
+    color:#fff;
+    padding:5px 10px;
+    border-radius:5px;
+    font-family:Arial,sans-serif;
+    font-size:12px;
+    font-weight:500;
+    line-height:1.2;
+    box-shadow:0 1px 4px rgba(0,0,0,.35);
+    pointer-events:none;
+}
+</style>
+<div id="satma-credito-creador">Creado por "Claudio Martinez"</div>
+
 </body>
 </html>
