@@ -527,11 +527,12 @@ body.modo-temperaturas .leyenda{display:none!important}
 .btn-hora-supercelula.activo{background:#a1268d;border-color:#fff;outline:1px solid rgba(255,255,255,.4)}
 
 </style>
+<!-- V41.7.11 · carga rápida: observaciones actuales primero, historial de lluvia en segundo plano -->
 </head>
 <body>
 <div id="mapa"></div>
 <div class="titulo"><h1>HERRAMIENTAS METEOROLÓGICAS</h1><div>Modelo de estación · Red meteorológica del Visor COE</div></div>
-<div id="estado" class="estado">Cargando red de estaciones…</div>
+<div id="estado" class="estado">Abriendo mapa y red de estaciones…</div>
 
 <div class="productos-temp">
   <button id="btn-temperaturas" class="btn-temp" type="button">Temperaturas</button>
@@ -2156,6 +2157,8 @@ function alternarLluvias(){
   if(lluviasVisibles){
     if(!capaLluvias) reconstruirCapaLluvias();
     if(capaLluvias && !mapa.hasLayer(capaLluvias))capaLluvias.addTo(mapa);
+    // Si el historial aún no terminó, continuar completándolo en segundo plano.
+    cargarHistorialLluviaSegundoPlano();
   }else if(capaLluvias && mapa.hasLayer(capaLluvias)){
     mapa.removeLayer(capaLluvias);
   }
@@ -2401,6 +2404,7 @@ function cambiarPeriodoLluvia(periodo){
 
   if(lluviasVisibles){
     reconstruirCapaLluvias();
+    if(p!=='momento') cargarHistorialLluviaSegundoPlano();
   }
 }
 
@@ -2662,14 +2666,16 @@ function iconoModelo(e){
     <div class="station-id">${e.id}</div>
   </div>`,iconSize:[66,66],iconAnchor:[33,33]});
 }
+// V41.7.11 OPTIMIZADA: la observación actual se carga primero.
+// El historial de lluvia (hasta 25 h) se descarga después, en segundo plano,
+// para que Temperatura, Viento y Presión aparezcan sin esperar todas las consultas históricas.
 async function consultarEstacion(id){
-  await cargarHistorialInicial(id);
-
   const url=`https://api.weather.com/v2/pws/observations/current?stationId=${encodeURIComponent(id)}&format=json&units=m&numericPrecision=decimal&apiKey=${encodeURIComponent(API_KEY)}`;
   const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status);
   const d=await r.json(); const o=Array.isArray(d?.observations)?d.observations[0]:null; if(!o) throw new Error('Sin observación');
   const lat=Number(o.lat),lon=Number(o.lon); if(!Number.isFinite(lat)||!Number.isFinite(lon)) throw new Error('Sin coordenadas');
 
+  // La observación actual entra de inmediato al historial local.
   agregarObsHistorial(id,o);
   const rainNow=lluviaMomentoObservacion(o);
   const rain3h=calcularLluviaHoras(id,3);
@@ -2683,6 +2689,50 @@ async function consultarEstacion(id){
     windSpeed:Number(m.windSpeed),windGust:Number(m.windGust),winddir:Number(o.winddir),
     humidity:Number(o.humidity),rainNow,rain3h,rain6h,rain12h,rain24h,
     hora:o.obsTimeLocal||o.obsTimeUtc||''};
+}
+
+let historialLluviaEnProceso=false;
+let historialLluviaCompleto=false;
+async function cargarHistorialLluviaSegundoPlano(){
+  if(historialLluviaEnProceso || historialLluviaCompleto) return;
+  historialLluviaEnProceso=true;
+  const estado=document.getElementById('estado');
+  const lote=6;
+  let terminadas=0;
+  try{
+    for(let i=0;i<ESTACIONES.length;i+=lote){
+      const ids=ESTACIONES.slice(i,i+lote);
+      await Promise.allSettled(ids.map(cargarHistorialInicial));
+      terminadas+=ids.length;
+
+      // Recalcular solamente los acumulados; no volver a consultar temperatura/viento/presión.
+      for(const id of ids){
+        const e=datosActualesEstaciones.get(id);
+        if(!e) continue;
+        e.rain3h=calcularLluviaHoras(id,3);
+        e.rain6h=calcularLluviaHoras(id,6);
+        e.rain12h=calcularLluviaHoras(id,12);
+        e.rain24h=calcularLluviaHoras(id,24);
+        pintarEstacion(e);
+      }
+      if(lluviasVisibles && periodoLluvia!=='momento'){
+        reconstruirCapaLluvias();
+      }
+      if(estado && lluviasVisibles && periodoLluvia!=='momento'){
+        estado.textContent=`Completando acumulados de lluvia: ${Math.min(terminadas,ESTACIONES.length)}/${ESTACIONES.length} estaciones…`;
+      }
+      // Ceder tiempo al navegador para mantener el mapa fluido.
+      await new Promise(r=>setTimeout(r,25));
+    }
+    historialLluviaCompleto=true;
+  }finally{
+    historialLluviaEnProceso=false;
+    const ahora=new Date();
+    if(estado){
+      estado.textContent=`Red COE: ${datosActualesEstaciones.size}/${ESTACIONES.length} estaciones · ${ahora.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})} · actualización 5 min`;
+    }
+    if(lluviasVisibles) reconstruirCapaLluvias();
+  }
 }
 function pintarEstacion(e){
   datosActualesEstaciones.set(e.id,e);
@@ -2744,19 +2794,28 @@ function pintarEstacion(e){
 }
 async function cargarRed(){
   if(actualizando)return;actualizando=true;
-  const estado=document.getElementById('estado');estado.textContent='Actualizando modelo de estaciones COE…';
-  let ok=0; const lote=8;
-  for(let i=0;i<ESTACIONES.length;i+=lote){
-    const res=await Promise.allSettled(ESTACIONES.slice(i,i+lote).map(consultarEstacion));
-    for(const r of res) if(r.status==='fulfilled'){pintarEstacion(r.value);ok++}
+  const estado=document.getElementById('estado');estado.textContent='Cargando observaciones actuales de la red COE…';
+  let ok=0; const lote=12;
+  try{
+    for(let i=0;i<ESTACIONES.length;i+=lote){
+      const res=await Promise.allSettled(ESTACIONES.slice(i,i+lote).map(consultarEstacion));
+      for(const r of res) if(r.status==='fulfilled'){pintarEstacion(r.value);ok++}
+      if(estado) estado.textContent=`Red COE: ${ok}/${ESTACIONES.length} estaciones cargadas…`;
+      await new Promise(r=>setTimeout(r,10));
+    }
+    const ahora=new Date();
+    estado.textContent=`Red COE: ${ok}/${ESTACIONES.length} estaciones · ${ahora.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})} · actualización 5 min`;
+    reconstruirCapaTemperaturas();
+    reconstruirCapaViento();
+    reconstruirCapaVientoSuperior();
+    reconstruirCapaPresion();
+    reconstruirCapaLluvias();
+  }finally{
+    actualizando=false;
   }
-  const ahora=new Date();
-  estado.textContent=`Red COE: ${ok}/${ESTACIONES.length} estaciones · ${ahora.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})} · actualización 5 min`;
-  reconstruirCapaTemperaturas();
-  reconstruirCapaViento();
-  reconstruirCapaVientoSuperior();
-  reconstruirCapaLluvias();
-  actualizando=false;
+
+  // La red ya está visible. Ahora completar lluvia histórica sin bloquear la apertura.
+  setTimeout(cargarHistorialLluviaSegundoPlano,350);
 }
 cargarRed();setInterval(cargarRed,5*60*1000);
 
