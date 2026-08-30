@@ -1509,7 +1509,7 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
                 <div class="radar-barra" aria-hidden="true"></div>
                 <div class="radar-escala-valores"><span>Débil</span><span>Moderada</span><span>Fuerte</span><span>Muy fuerte</span></div>
             </div>
-            <div class="radar-fuente">Datos radar: RainViewer · Visualización SATMA</div>
+            
         </div>
         <div id="status-actualizacion" style="font-size: 0.75rem; color: #9e9e9e; margin-top: 10px;">Cargando...</div>
     </div>
@@ -4202,7 +4202,7 @@ let datosEstaciones = [];
         setTimeout(() => mapa.invalidateSize(), 200);
     }
 
-    setInterval(cargar, 60000);
+    setInterval(cargar, 120000);
     setInterval(cargarRadarRainViewer, 300000);
     setInterval(cargarSismosCombinados, 300000);
 
