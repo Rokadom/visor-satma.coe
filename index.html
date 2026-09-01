@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visor COE - Monitor de Lluvias</title>
+    <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
      Base v16_92: contornos municipales reconstruidos desde el KML original con alta precisión (~10 m),
          para mejorar el ajuste visual sobre el mapa satelital sin cambiar la lógica del visor. -->
@@ -111,12 +112,7 @@
         .btn-herr-viento-sup{background:#63328a;border-color:#c58cff;}
         .btn-herr-presion{background:#80621c;border-color:#e4c46a;}
         .btn-herr-modelo{background:#0d516f;border-color:#7fd1ff;opacity:.68;}
-        .btn-herramienta-futura{cursor:pointer;}
-        .btn-herramienta-futura:disabled{cursor:not-allowed;opacity:.68;}
-        #visor-herramientas-overlay{position:fixed;inset:0;z-index:20050;background:#07141c;display:none;}
-        #visor-herramientas-overlay.visible{display:block;}
-        #visor-herramientas-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#07141c;}
-        #cerrar-herramientas-overlay{position:absolute;right:14px;top:10px;z-index:20060;background:#b71c1c;color:#fff;border:1px solid #fff;border-radius:6px;padding:8px 12px;font-weight:900;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.45);}
+        .btn-herramienta-futura:disabled{cursor:not-allowed;}
     
         .radar-control-extra {
             margin-top: 6px;
@@ -1523,11 +1519,11 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
             <button id="btn-12h" class="btn-modo" onclick="cambiarModo('12h')">Lluvias 12 h (mm)</button>
             <button id="btn-24h" class="btn-modo" onclick="cambiarModo('24h')">Lluvias 24 h (mm)</button>
         </div>
-        <button id="btn-herr-temp" class="btn-herramienta-futura btn-herr-temp" type="button" onclick="abrirHerramientaMeteorologica('temperaturas')">Temperaturas</button>
-        <button id="btn-herr-viento" class="btn-herramienta-futura btn-herr-viento" type="button" onclick="abrirHerramientaMeteorologica('viento')">Fuerza del viento</button>
-        <button id="btn-herr-viento-sup" class="btn-herramienta-futura btn-herr-viento-sup" type="button" onclick="abrirHerramientaMeteorologica('viento-superior')">Viento superior</button>
-        <button id="btn-herr-presion" class="btn-herramienta-futura btn-herr-presion" type="button" onclick="abrirHerramientaMeteorologica('presion')">Presión</button>
-        <button id="btn-modelo-hispaniola" class="btn-herramienta-futura btn-herr-modelo" type="button" disabled title="MODELO HISPANIOLA desactivado">MODELO HISPANIOLA</button>
+        <button class="btn-herramienta-futura btn-herr-temp" type="button" disabled>Temperaturas</button>
+        <button class="btn-herramienta-futura btn-herr-viento" type="button" disabled>Fuerza del viento</button>
+        <button class="btn-herramienta-futura btn-herr-viento-sup" type="button" disabled>Viento superior</button>
+        <button class="btn-herramienta-futura btn-herr-presion" type="button" disabled>Presión</button>
+        <button id="btn-modelo-hispaniola" class="btn-herramienta-futura btn-herr-modelo" type="button" disabled title="Reservado para integración futura">MODELO HISPANIOLA</button>
         <button id="btn-filtro" class="btn-modo activo" onclick="toggleFiltro()">Solo con Lluvias</button>
         <button id="btn-radar" class="btn-modo activo" onclick="toggleRadar()">📡 Radar Meteorológico</button>
         <div class="radar-control-extra">
@@ -3627,19 +3623,22 @@ let datosEstaciones = [];
     function contenidoEtiquetaEstacionSATMA(est, valorObs){
         const id=String(est?.id || '').trim().toUpperCase();
         const nombrePropio=NOMBRES_ESTACIONES_SATMA[id] || '';
-        if(Number(valorObs)<=0) return '';
+        const valor=Number(valorObs);
+        if(valor<=0) return '';
 
-        // v16_120:
-        // Solo se deja fijo en negro el nombre cuando existe un nombre REAL
-        // personalizado de estación. Ya no se usa el nombre del municipio como
-        // sustituto permanente, porque quedaba pegado al mapa al hacer zoom.
+        // v16_130: las etiquetas de lluvia usan el mismo color de la escala activa.
+        // Los nombres de estaciones pasan de negro a blanco para mejorar el contraste
+        // sobre el mapa satelital. Se mantiene la etiqueta sin fondo.
+        const colorLluvia=obtenerColor(valor, (modoActual !== '15m'));
+        const sombra='-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 3px #000';
+
         if(nombrePropio){
-            return `<span style="color:#000000;font-weight:400">${nombrePropio}:</span> `+
-                   `<span style="color:#00ffcc;font-weight:900">${formatearLluvia(valorObs)} mm</span>`;
+            return `<span style="color:#ffffff;font-weight:800;text-shadow:${sombra}">${nombrePropio}:</span> `+
+                   `<span style="color:${colorLluvia};font-weight:900;text-shadow:${sombra}">${formatearLluvia(valor)} mm</span>`;
         }
 
         // Estaciones sin nombre personalizado: mostrar únicamente el acumulado.
-        return `<span style="color:#00ffcc;font-weight:900">${formatearLluvia(valorObs)} mm</span>`;
+        return `<span style="color:${colorLluvia};font-weight:900;text-shadow:${sombra}">${formatearLluvia(valor)} mm</span>`;
     }
 
     // Capa de zonas invisibles de consulta: 2 km alrededor de cada estación reciente del DN.
@@ -6924,27 +6923,5 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
 </style>
 <div id="satma-credito-creador">Creado por "Claudio Martinez"</div>
 
-
-<div id="visor-herramientas-overlay" aria-hidden="true">
-  <button id="cerrar-herramientas-overlay" type="button" onclick="cerrarHerramientaMeteorologica()">Regresar al visor</button>
-  <iframe id="visor-herramientas-frame" title="Herramientas Meteorológicas SATMA"></iframe>
-</div>
-<script>
-function abrirHerramientaMeteorologica(producto){
-    const overlay=document.getElementById('visor-herramientas-overlay');
-    const frame=document.getElementById('visor-herramientas-frame');
-    if(!overlay||!frame) return;
-    const base='herramientas.html';
-    frame.src=base+'?producto='+encodeURIComponent(producto)+'&t='+Date.now();
-    overlay.classList.add('visible');
-    overlay.setAttribute('aria-hidden','false');
-}
-function cerrarHerramientaMeteorologica(){
-    const overlay=document.getElementById('visor-herramientas-overlay');
-    const frame=document.getElementById('visor-herramientas-frame');
-    if(overlay){ overlay.classList.remove('visible'); overlay.setAttribute('aria-hidden','true'); }
-    if(frame) frame.src='about:blank';
-}
-</script>
 </body>
 </html>
