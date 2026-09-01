@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor COE - Monitor de Lluvias</title>
+    <title>Visor COE - Monitor de Lluvias · v16_131</title>
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
      Base v16_92: contornos municipales reconstruidos desde el KML original con alta precisión (~10 m),
@@ -1555,6 +1555,18 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
 
 <button id="btn-boletin" type="button">Boletín</button>
 <button id="btn-informe24" type="button">Informe 24 h</button>
+<div id="mapa-lluvia-control">
+  <button id="btn-mapa-lluvia" type="button" aria-expanded="false" aria-controls="menu-mapas-lluvia"
+          title="Abrir opciones de mapas de acumulados de lluvia">Mapa lluvias ▾</button>
+  <div id="menu-mapas-lluvia" aria-hidden="true">
+    <button type="button" data-periodo="1h">Mapa 1 h</button>
+    <button type="button" data-periodo="3h">Mapa 3 h</button>
+    <button type="button" data-periodo="6h">Mapa 6 h</button>
+    <button type="button" data-periodo="12h">Mapa 12 h</button>
+    <button type="button" data-periodo="24h">Mapa 24 h</button>
+    <button type="button" data-periodo="48h">Mapa 48 h</button>
+  </div>
+</div>
 
 <div id="boletin-overlay" role="dialog" aria-modal="true" aria-labelledby="titulo-boletin">
     <div id="boletin-panel">
@@ -3976,16 +3988,17 @@ let datosEstaciones = [];
         throw ultimoError;
     }
 
-    async function cargarEstacion(id, ahora, hace24h) {
+    async function cargarEstacion(id, ahora, hace24h, hace48h) {
         try {
             const fechas = [...new Set([
                 new Date(ahora).toISOString().slice(0,10).replace(/-/g,''),
-                new Date(hace24h).toISOString().slice(0,10).replace(/-/g,'')
+                new Date(hace24h).toISOString().slice(0,10).replace(/-/g,''),
+                new Date(hace48h).toISOString().slice(0,10).replace(/-/g,'')
             ])];
 
             let observaciones = [];
 
-            // Histórico: se conserva para calcular acumulados móviles de 6, 9, 12 y 24 horas.
+            // Histórico: se conserva para calcular acumulados móviles hasta 48 horas.
             for (const fecha of fechas) {
                 const urlHist = `https://api.weather.com/v2/pws/history/all?stationId=${id}&format=json&units=m&numericPrecision=decimal&date=${fecha}&apiKey=${API_KEY}`;
                 try {
@@ -4077,6 +4090,7 @@ let datosEstaciones = [];
                 precip6h: acumularHoras(6),
                 precip12h: acumularHoras(12),
                 total: acumularHoras(24),
+                precip48h: acumularHoras(48),
                 obsTimeUtc: ultima.obsTimeUtc
             };
         } catch(e) {
@@ -4207,13 +4221,14 @@ let datosEstaciones = [];
         const nuevaData = [];
         const ahora = Date.now();
         const hace24h = ahora - (24 * 60 * 60 * 1000);
+        const hace48h = ahora - (48 * 60 * 60 * 1000);
         const TAMANO_LOTE = 6; // Evita saturar la API con más de 100 solicitudes simultáneas.
 
         document.getElementById('status-actualizacion').innerText = "Actualizando estaciones...";
 
         for (let i = 0; i < ESTACIONES.length; i += TAMANO_LOTE) {
             const lote = ESTACIONES.slice(i, i + TAMANO_LOTE);
-            const resultados = await Promise.all(lote.map(id => cargarEstacion(id, ahora, hace24h)));
+            const resultados = await Promise.all(lote.map(id => cargarEstacion(id, ahora, hace24h, hace48h)));
             resultados.filter(Boolean).forEach(est => {
                 if (Number.isFinite(est.lat) && Number.isFinite(est.lon)) nuevaData.push(est);
             });
@@ -6922,6 +6937,259 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
 }
 </style>
 <div id="satma-credito-creador">Creado por "Claudio Martinez"</div>
+
+
+
+<!-- ===== SATMA v16_133 · MAPAS DE LLUVIA 1/3/6/12/24/48 H ===== -->
+<style id="satma-mapas-lluvia-estilos">
+#mapa-lluvia-control{
+    position:absolute; bottom:18px; left:calc(50% + 205px); transform:translateX(-50%);
+    z-index:1555; display:flex; flex-direction:column-reverse; align-items:stretch; min-width:126px
+}
+#btn-mapa-lluvia{
+    background:#0f766e; color:#fff; border:2px solid #fff; border-radius:7px;
+    padding:7px 13px; font-size:.82rem; font-weight:800; cursor:pointer;
+    box-shadow:0 3px 9px rgba(0,0,0,.45); white-space:nowrap
+}
+#btn-mapa-lluvia:hover,#btn-mapa-lluvia.abierto{background:#115e59}
+#menu-mapas-lluvia{
+    display:grid; grid-template-columns:1fr; gap:4px; max-height:0; opacity:0; overflow:hidden;
+    transform:translateY(8px); transition:max-height .22s ease,opacity .18s ease,transform .22s ease;
+    margin-bottom:5px; padding:0 4px; pointer-events:none
+}
+#menu-mapas-lluvia.abierto{
+    max-height:265px; opacity:1; transform:translateY(0); padding:6px 4px;
+    background:rgba(18,18,18,.96); border:1px solid #6b7280; border-radius:8px;
+    pointer-events:auto; box-shadow:0 4px 14px rgba(0,0,0,.45)
+}
+#menu-mapas-lluvia button{
+    border:1px solid #a7f3d0; background:#0d5b54; color:#fff; border-radius:5px;
+    padding:6px 8px; font-size:.72rem; font-weight:800; cursor:pointer
+}
+#menu-mapas-lluvia button:hover{background:#0f766e}
+#mapa3h-overlay{
+    display:none; position:fixed; inset:0; z-index:9200; background:rgba(8,15,24,.86);
+    align-items:center; justify-content:center; padding:14px; box-sizing:border-box
+}
+#mapa3h-overlay.visible{display:flex}
+#mapa3h-panel{
+    width:min(1180px,97vw); max-height:95vh; overflow:auto; background:#ececec; color:#111;
+    border:1px solid #808080; border-radius:8px; box-shadow:0 12px 36px rgba(0,0,0,.55);
+    padding:8px 10px 10px; box-sizing:border-box
+}
+#mapa3h-cabecera{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+#mapa3h-cabecera strong{font:900 15px/1.2 Arial,sans-serif;letter-spacing:.15px}
+#mapa3h-cerrar{border:0;background:#b91c1c;color:#fff;border-radius:5px;width:34px;height:30px;font-size:20px;font-weight:900;cursor:pointer}
+#mapa3h-canvas-wrap{position:relative;width:100%;background:#e8e8e8;border:1px solid #777;overflow:hidden}
+#mapa3h-canvas{display:block;width:100%;height:auto;aspect-ratio:1.50/1;background:#e9e9e9}
+#mapa3h-estado{margin-top:5px;text-align:center;font:700 11px/1.25 Arial,sans-serif;color:#333}
+@media(max-width:768px){
+  #mapa-lluvia-control{bottom:10px;left:calc(50% + 150px);min-width:103px}
+  #btn-mapa-lluvia{padding:5px 7px;font-size:.58rem}
+  #menu-mapas-lluvia button{font-size:.55rem;padding:5px 6px}
+  #mapa3h-overlay{padding:5px} #mapa3h-panel{width:99vw;padding:5px}
+  #mapa3h-cabecera strong{font-size:11px} #mapa3h-estado{font-size:9px}
+}
+</style>
+
+<div id="mapa3h-overlay" role="dialog" aria-modal="true" aria-labelledby="mapa3h-titulo">
+  <div id="mapa3h-panel">
+    <div id="mapa3h-cabecera">
+      <strong id="mapa3h-titulo">ACUMULADOS DE LLUVIAS · 3 HORAS</strong>
+      <button id="mapa3h-cerrar" type="button" aria-label="Cerrar mapa">×</button>
+    </div>
+    <div id="mapa3h-canvas-wrap"><canvas id="mapa3h-canvas" width="1200" height="800"></canvas></div>
+    <div id="mapa3h-estado">Mapa calculado con las estaciones disponibles del visor.</div>
+  </div>
+</div>
+
+<script id="satma-mapas-lluvia-script">
+(function(){
+  'use strict';
+  const overlay=document.getElementById('mapa3h-overlay');
+  const canvas=document.getElementById('mapa3h-canvas');
+  const ctx=canvas && canvas.getContext ? canvas.getContext('2d') : null;
+  const estado=document.getElementById('mapa3h-estado');
+  const titulo=document.getElementById('mapa3h-titulo');
+  const btn=document.getElementById('btn-mapa-lluvia');
+  const menu=document.getElementById('menu-mapas-lluvia');
+  const cerrar=document.getElementById('mapa3h-cerrar');
+  if(!overlay||!canvas||!ctx||!btn||!menu||!cerrar||!titulo) return;
+
+  let periodoActual='3h';
+
+  const PERIODOS={
+    '1h': {horas:1, campo:'precip1h'},
+    '3h': {horas:3, campo:'precip3h'},
+    '6h': {horas:6, campo:'precip6h'},
+    '12h':{horas:12,campo:'precip12h'},
+    '24h':{horas:24,campo:'total'},
+    '48h':{horas:48,campo:'precip48h'}
+  };
+
+  const ESCALA=[
+    [0,'#ffffff'],[0.5,'#eefbef'],[5,'#c9f7ca'],[10,'#67ef69'],[15,'#1fd52a'],
+    [20,'#078b37'],[25,'#006b2d'],[30,'#003f22'],[35,'#4d5d1b'],[45,'#d5dd28'],
+    [55,'#f2e629'],[65,'#e8c931'],[75,'#f0a12b'],[100,'#f28a1d'],[125,'#ef6515'],
+    [150,'#d93b14'],[175,'#b81212'],[200,'#8b0f18'],[250,'#f000cc'],[300,'#6f00ca'],
+    [350,'#4300a0'],[450,'#1d005c']
+  ];
+
+  function abrirMenu(forzar){
+    const abrir=(typeof forzar==='boolean')?forzar:!menu.classList.contains('abierto');
+    menu.classList.toggle('abierto',abrir);
+    btn.classList.toggle('abierto',abrir);
+    btn.setAttribute('aria-expanded',String(abrir));
+    menu.setAttribute('aria-hidden',String(!abrir));
+    btn.textContent=abrir?'Mapa lluvias ▴':'Mapa lluvias ▾';
+  }
+
+  function hexRgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+  function colorValor(v){
+    v=Math.max(0,Number(v)||0);
+    for(let i=ESCALA.length-1;i>=0;i--) if(v>=ESCALA[i][0]){
+      if(i===ESCALA.length-1) return hexRgb(ESCALA[i][1]);
+      const a=ESCALA[i],b=ESCALA[i+1],t=Math.max(0,Math.min(1,(v-a[0])/(b[0]-a[0])));
+      const ca=hexRgb(a[1]),cb=hexRgb(b[1]);
+      return ca.map((x,k)=>Math.round(x+(cb[k]-x)*t));
+    }
+    return [255,255,255];
+  }
+  function cadaCoord(geom,fn){
+    if(!geom) return;
+    const walk=a=>{
+      if(!Array.isArray(a)) return;
+      if(a.length>=2 && typeof a[0]==='number' && typeof a[1]==='number'){fn(a[0],a[1]);return;}
+      a.forEach(walk);
+    }; walk(geom.coordinates);
+  }
+  function limites(fc){
+    let minX=999,minY=999,maxX=-999,maxY=-999;
+    (fc&&fc.features||[]).forEach(f=>cadaCoord(f.geometry,(x,y)=>{minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);}));
+    return {minX,minY,maxX,maxY};
+  }
+  function pathGeom(c,g,proj){
+    if(!g) return;
+    const ring=r=>{if(!r||!r.length)return; const p0=proj(r[0][0],r[0][1]);c.moveTo(p0[0],p0[1]);for(let i=1;i<r.length;i++){const p=proj(r[i][0],r[i][1]);c.lineTo(p[0],p[1]);}c.closePath();};
+    if(g.type==='Polygon') g.coordinates.forEach(ring);
+    else if(g.type==='MultiPolygon') g.coordinates.forEach(poly=>poly.forEach(ring));
+  }
+  function centroGeom(g){
+    let sx=0,sy=0,n=0; cadaCoord(g,(x,y)=>{sx+=x;sy+=y;n++;}); return n?[sx/n,sy/n]:null;
+  }
+  function fechaTitulo(){
+    try{return new Intl.DateTimeFormat('es-DO',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(new Date()).toUpperCase();}
+    catch(_){return new Date().toLocaleDateString('es-DO').toUpperCase();}
+  }
+  function idw(lat,lon,pts){
+    let num=0,den=0,near=99;
+    for(const p of pts){
+      const dx=(lon-p.lon)*Math.cos(lat*Math.PI/180),dy=lat-p.lat;
+      const d2=dx*dx+dy*dy; near=Math.min(near,Math.sqrt(d2));
+      if(d2<0.000025) return p.v;
+      if(d2>1.30*1.30) continue;
+      const w=1/Math.pow(d2+0.0025,1.35); num+=w*p.v;den+=w;
+    }
+    if(!den || near>1.05) return 0;
+    return num/den;
+  }
+
+  function dibujar(periodo){
+    const cfg=PERIODOS[periodo]||PERIODOS['3h'];
+    periodoActual=periodo in PERIODOS ? periodo : '3h';
+
+    const prov=(typeof GEOJSON_CONTORNO_PROVINCIAS!=='undefined')?GEOJSON_CONTORNO_PROVINCIAS:null;
+    if(!prov||!Array.isArray(prov.features)){estado.textContent='No están disponibles los límites provinciales.';return;}
+
+    const fuenteEstaciones=(typeof datosEstaciones!=='undefined' && Array.isArray(datosEstaciones)) ? datosEstaciones : [];
+    const pts=fuenteEstaciones.map(e=>({
+      lat:Number(e.lat),
+      lon:Number(e.lon),
+      v:(typeof numeroLluvia==='function'?numeroLluvia(e[cfg.campo]):Number(e[cfg.campo])||0)
+    })).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)&&Number.isFinite(p.v));
+
+    titulo.textContent=`ACUMULADOS DE LLUVIAS · ${cfg.horas} ${cfg.horas===1?'HORA':'HORAS'}`;
+
+    const W=1200,H=800; canvas.width=W;canvas.height=H;
+    ctx.fillStyle='#e9e9e9';ctx.fillRect(0,0,W,H);
+    const L=125,R=28,T=72,B=52; const box=limites(prov);
+    const padx=.10,pady=.08; box.minX-=padx;box.maxX+=padx;box.minY-=pady;box.maxY+=pady;
+    const proj=(lon,lat)=>[L+(lon-box.minX)/(box.maxX-box.minX)*(W-L-R), T+(box.maxY-lat)/(box.maxY-box.minY)*(H-T-B)];
+    const inv=(x,y)=>[box.maxY-(y-T)/(H-T-B)*(box.maxY-box.minY), box.minX+(x-L)/(W-L-R)*(box.maxX-box.minX)];
+
+    ctx.save();ctx.strokeStyle='rgba(80,80,80,.20)';ctx.lineWidth=1;ctx.setLineDash([5,4]);ctx.font='12px Arial';ctx.fillStyle='#333';
+    for(let lon=Math.ceil(box.minX);lon<=Math.floor(box.maxX);lon++){let a=proj(lon,box.minY),b=proj(lon,box.maxY);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.fillText(Math.abs(lon)+'°O',a[0]-14,H-18);}
+    for(let lat=Math.ceil(box.minY);lat<=Math.floor(box.maxY);lat++){let a=proj(box.minX,lat),b=proj(box.maxX,lat);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.save();ctx.translate(18,a[1]+4);ctx.rotate(-Math.PI/2);ctx.fillText(lat+'°N',0,0);ctx.restore();}
+    ctx.restore();
+
+    if(pts.length){
+      const rw=360,rh=240, rc=document.createElement('canvas');rc.width=rw;rc.height=rh;const rctx=rc.getContext('2d');const img=rctx.createImageData(rw,rh);
+      for(let y=0;y<rh;y++) for(let x=0;x<rw;x++){
+        const px=L+(x/(rw-1))*(W-L-R), py=T+(y/(rh-1))*(H-T-B); const ll=inv(px,py); const v=idw(ll[0],ll[1],pts); const col=colorValor(v); const k=(y*rw+x)*4;
+        img.data[k]=col[0];img.data[k+1]=col[1];img.data[k+2]=col[2];img.data[k+3]=245;
+      }
+      rctx.putImageData(img,0,0);
+      const mask=document.createElement('canvas');mask.width=W;mask.height=H;const m=mask.getContext('2d');m.fillStyle='#fff';m.beginPath();prov.features.forEach(f=>pathGeom(m,f.geometry,proj));m.fill('evenodd');
+      const field=document.createElement('canvas');field.width=W;field.height=H;const fctx=field.getContext('2d');fctx.imageSmoothingEnabled=true;fctx.drawImage(rc,L,T,W-L-R,H-T-B);fctx.globalCompositeOperation='destination-in';fctx.drawImage(mask,0,0);
+      ctx.drawImage(field,0,0);
+    }else{
+      ctx.save();ctx.fillStyle='#ffffff';ctx.beginPath();prov.features.forEach(f=>pathGeom(ctx,f.geometry,proj));ctx.fill('evenodd');ctx.restore();
+    }
+
+    ctx.save();ctx.strokeStyle='#444';ctx.lineWidth=1.1;ctx.setLineDash([]);ctx.beginPath();prov.features.forEach(f=>pathGeom(ctx,f.geometry,proj));ctx.stroke();
+    ctx.font='700 8.5px Arial';ctx.fillStyle='#222';ctx.textAlign='center';ctx.textBaseline='middle';
+    prov.features.forEach(f=>{const c=centroGeom(f.geometry);if(!c)return;const p=proj(c[0],c[1]);const nm=String((f.properties||{}).name||'').toUpperCase();if(nm)ctx.fillText(nm,p[0],p[1]);});ctx.restore();
+
+    pts.filter(p=>p.v>0).forEach(p=>{const q=proj(p.lon,p.lat),c=colorValor(p.v);ctx.beginPath();ctx.arc(q[0],q[1],2.3,0,Math.PI*2);ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;ctx.fill();ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=.7;ctx.stroke();});
+
+    ctx.fillStyle='#111';ctx.font='900 18px Arial';ctx.textAlign='center';
+    ctx.fillText(`LLUVIAS ACUMULADAS EN ${cfg.horas} ${cfg.horas===1?'HORA':'HORAS'}`, (L+W-R)/2,28);
+    ctx.font='800 12px Arial';ctx.fillText(fechaTitulo(),(L+W-R)/2,48);
+
+    const vals=[450,350,300,250,200,175,150,125,100,75,65,55,45,35,30,25,20,15,10,5,.5,0];
+    const lx=14,ly=78,lw=42,lh=(H-T-B)/vals.length;ctx.textAlign='left';ctx.font='700 10px Arial';ctx.fillStyle='#111';ctx.fillText('Lluvias en (mm)',8,62);
+    vals.forEach((v,i)=>{const c=colorValor(v);ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;ctx.fillRect(lx,ly+i*lh,lw,lh+1);ctx.fillStyle='#111';ctx.fillText(String(v),lx+lw+6,ly+i*lh+lh*.72);});ctx.strokeStyle='#555';ctx.strokeRect(lx,ly,lw,lh*vals.length);
+
+    const nx=W-86,ny=112;ctx.save();ctx.translate(nx,ny);ctx.strokeStyle='#111';ctx.fillStyle='#f2f2f2';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-32);ctx.lineTo(15,28);ctx.lineTo(0,17);ctx.lineTo(-15,28);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(0,-32);ctx.lineTo(0,17);ctx.stroke();ctx.font='700 16px Arial';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.strokeStyle='#555';ctx.lineWidth=3;ctx.strokeText('N',0,-43);ctx.fillText('N',0,-43);ctx.restore();
+
+    const latm=(box.minY+box.maxY)/2, deg50=50/(111.32*Math.cos(latm*Math.PI/180)); const p0=proj(box.maxX-deg50-.18,box.minY+.12),p1=proj(box.maxX-.18,box.minY+.12); const sy=p0[1];
+    ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p0[0],sy);ctx.lineTo(p1[0],sy);ctx.stroke();ctx.beginPath();ctx.moveTo(p0[0],sy-6);ctx.lineTo(p0[0],sy+6);ctx.moveTo(p1[0],sy-6);ctx.lineTo(p1[0],sy+6);ctx.stroke();ctx.font='11px Arial';ctx.fillStyle='#111';ctx.textAlign='center';ctx.fillText('0',p0[0],sy-9);ctx.fillText('50 km',p1[0],sy-9);
+
+    const conLluvia=pts.filter(p=>p.v>0).length;
+    if(pts.length){
+      const max=Math.max.apply(null,pts.map(p=>p.v));
+      estado.textContent=`Acumulado observado ${cfg.horas} h · ${conLluvia} estaciones con lluvia · máximo de estación ${max.toFixed(1)} mm · actualización ${new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})}`;
+    }else{
+      estado.textContent=`Mapa base de acumulados ${cfg.horas} h · sin datos de estaciones disponibles en este momento.`;
+    }
+  }
+
+  function abrir(periodo){
+    periodoActual=periodo in PERIODOS ? periodo : '3h';
+    overlay.classList.add('visible');
+    document.body.style.overflow='hidden';
+    abrirMenu(false);
+    setTimeout(()=>dibujar(periodoActual),30);
+  }
+  function ocultar(){overlay.classList.remove('visible');document.body.style.overflow='';}
+
+  btn.addEventListener('click',()=>abrirMenu());
+  menu.querySelectorAll('button[data-periodo]').forEach(b=>{
+    b.addEventListener('click',()=>abrir(b.dataset.periodo||'3h'));
+  });
+  cerrar.addEventListener('click',ocultar);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)ocultar();});
+  document.addEventListener('click',e=>{
+    if(!document.getElementById('mapa-lluvia-control').contains(e.target)) abrirMenu(false);
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      if(overlay.classList.contains('visible')) ocultar();
+      else abrirMenu(false);
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
