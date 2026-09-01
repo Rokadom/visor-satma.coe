@@ -4076,6 +4076,51 @@ let datosEstaciones = [];
                     .reduce((s,x) => s + numeroLluvia(x.inc), 0);
             }
 
+            function inicioDiaLluvia12Z(referenciaMs) {
+                // República Dominicana = UTC-4 todo el año.
+                // El día operativo de lluvias inicia a las 08:00 RD = 12:00 UTC
+                // y termina a las 07:59 RD del día siguiente.
+                const d = new Date(referenciaMs);
+                let inicio = Date.UTC(
+                    d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+                    12, 0, 0, 0
+                );
+                if (referenciaMs < inicio) inicio -= 24 * 60 * 60 * 1000;
+                return inicio;
+            }
+
+            function acumularBloque12hOperativo() {
+                // Bloques fijos de 12 horas en República Dominicana:
+                // 08:00 a.m.-07:59 p.m.  = 12Z-23:59Z
+                // 08:00 p.m.-07:59 a.m.  = 00Z-11:59Z del día siguiente
+                const ahoraReal = Date.now();
+                const d = new Date(ahoraReal);
+                const hUTC = d.getUTCHours();
+                let inicio;
+                if (hUTC >= 12) {
+                    inicio = Date.UTC(
+                        d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+                        12, 0, 0, 0
+                    );
+                } else {
+                    inicio = Date.UTC(
+                        d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+                        0, 0, 0, 0
+                    );
+                }
+                return incrementos
+                    .filter(x => x.t > inicio && x.t <= ahoraReal)
+                    .reduce((s,x) => s + numeroLluvia(x.inc), 0);
+            }
+
+            function acumularDiaLluvia08a08() {
+                const ahoraReal = Date.now();
+                const inicio = inicioDiaLluvia12Z(ahoraReal);
+                return incrementos
+                    .filter(x => x.t > inicio && x.t <= ahoraReal)
+                    .reduce((s,x) => s + numeroLluvia(x.inc), 0);
+            }
+
             const tasaActual = numeroLluvia(ultima.metric?.precipRate);
             const precip15 = tasaActual / 4;
 
@@ -4088,8 +4133,8 @@ let datosEstaciones = [];
                 precip1h: acumular1hReciente(),
                 precip3h: acumularHoras(3),
                 precip6h: acumularHoras(6),
-                precip12h: acumularHoras(12),
-                total: acumularHoras(24),
+                precip12h: acumularBloque12hOperativo(),
+                total: acumularDiaLluvia08a08(),
                 precip48h: acumularHoras(48),
                 obsTimeUtc: ultima.obsTimeUtc
             };
@@ -4175,6 +4220,31 @@ let datosEstaciones = [];
                     .reduce((a,x) => a + x.mm, 0);
             }
 
+            function acumularBloque12hNOAA() {
+                const ahoraReal = Date.now();
+                const d = new Date(ahoraReal);
+                const hUTC = d.getUTCHours();
+                const inicio = hUTC >= 12
+                    ? Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0, 0)
+                    : Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0);
+                return incrementos
+                    .filter(x => x.t > inicio && x.t <= ahoraReal)
+                    .reduce((a,x) => a + x.mm, 0);
+            }
+
+            function acumularDiaLluviaNOAA08a08() {
+                const ahoraReal = Date.now();
+                const d = new Date(ahoraReal);
+                let inicio = Date.UTC(
+                    d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+                    12, 0, 0, 0
+                );
+                if (ahoraReal < inicio) inicio -= 24 * 3600000;
+                return incrementos
+                    .filter(x => x.t > inicio && x.t <= ahoraReal)
+                    .reduce((a,x) => a + x.mm, 0);
+            }
+
             let p15 = null;
             for (const k of ['AP1','AP2','AP3','AP4']) {
                 const x = parsear15MinNOAA(ultima[k]);
@@ -4183,7 +4253,7 @@ let datosEstaciones = [];
 
             // Si no existe AP1-AP4, no inventamos una lluvia de 15 min: usamos 0 sólo para colorear,
             // mientras el popup indicará N/D mediante la bandera noaa15Disponible.
-            const p1 = acumular1hRecienteNOAA(), p3 = acumular(3), p6 = acumular(6), p24 = acumular(24);
+            const p1 = acumular1hRecienteNOAA(), p3 = acumular(3), p6 = acumular(6), p24 = acumularDiaLluviaNOAA08a08();
 
             return {
                 id: cfg.id,
@@ -4196,7 +4266,7 @@ let datosEstaciones = [];
                 precip1h: p1,
                 precip3h: p3,
                 precip6h: p6,
-                precip12h: Math.min(numeroLluvia(p6) * 2, numeroLluvia(total24 || 0)),
+                precip12h: acumularBloque12hNOAA(),
                 total: p24,
                 noaa15Disponible: p15 !== null,
                 noaa30Disponible: false,
@@ -6998,7 +7068,7 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
       <strong id="mapa3h-titulo">ACUMULADOS DE LLUVIAS · 3 HORAS</strong>
       <button id="mapa3h-cerrar" type="button" aria-label="Cerrar mapa">×</button>
     </div>
-    <div id="mapa3h-canvas-wrap"><canvas id="mapa3h-canvas" width="1200" height="800"></canvas></div>
+    <div id="mapa3h-canvas-wrap"><canvas id="mapa3h-canvas" width="1480" height="800"></canvas></div>
     <div id="mapa3h-estado">Mapa calculado con las estaciones disponibles del visor.</div>
   </div>
 </div>
@@ -7028,11 +7098,10 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
   };
 
   const ESCALA=[
-    [0,'#ffffff'],[0.5,'#eefbef'],[5,'#c9f7ca'],[10,'#67ef69'],[15,'#1fd52a'],
+    [0.5,'#eefbef'],[5,'#c9f7ca'],[10,'#67ef69'],[15,'#1fd52a'],
     [20,'#078b37'],[25,'#006b2d'],[30,'#003f22'],[35,'#4d5d1b'],[45,'#d5dd28'],
     [55,'#f2e629'],[65,'#e8c931'],[75,'#f0a12b'],[100,'#f28a1d'],[125,'#ef6515'],
-    [150,'#d93b14'],[175,'#b81212'],[200,'#8b0f18'],[250,'#f000cc'],[300,'#6f00ca'],
-    [350,'#4300a0'],[450,'#1d005c']
+    [150,'#d93b14'],[175,'#b81212'],[200,'#8b0f18']
   ];
 
   function abrirMenu(forzar){
@@ -7047,6 +7116,7 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
   function hexRgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
   function colorValor(v){
     v=Math.max(0,Number(v)||0);
+    if(v<0.5) return [255,255,255];
     for(let i=ESCALA.length-1;i>=0;i--) if(v>=ESCALA[i][0]){
       if(i===ESCALA.length-1) return hexRgb(ESCALA[i][1]);
       const a=ESCALA[i],b=ESCALA[i+1],t=Math.max(0,Math.min(1,(v-a[0])/(b[0]-a[0])));
@@ -7081,6 +7151,51 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
     try{return new Intl.DateTimeFormat('es-DO',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(new Date()).toUpperCase();}
     catch(_){return new Date().toLocaleDateString('es-DO').toUpperCase();}
   }
+
+  function horaPeriodoRD(ms){
+    return new Intl.DateTimeFormat('es-DO',{
+      timeZone:'America/Santo_Domingo',
+      hour:'numeric', minute:'2-digit', hour12:true
+    }).format(new Date(ms))
+      .replace(/a\.\s*m\./i,'a.m.')
+      .replace(/p\.\s*m\./i,'p.m.')
+      .replace(/AM/i,'a.m.')
+      .replace(/PM/i,'p.m.');
+  }
+
+  function textoPeriodoMapa(periodo){
+    const ahora=Date.now();
+    const dRD=new Date(ahora-4*3600000);
+    let inicio, fin=ahora;
+
+    if(periodo==='12h'){
+      // Bloques fijos: 08:00 a.m.-07:59 p.m. y 08:00 p.m.-07:59 a.m.
+      const h=dRD.getUTCHours();
+      if(h>=8 && h<20){
+        inicio=Date.UTC(dRD.getUTCFullYear(),dRD.getUTCMonth(),dRD.getUTCDate(),12,0,0,0);
+        fin=Date.UTC(dRD.getUTCFullYear(),dRD.getUTCMonth(),dRD.getUTCDate()+1,0,0,0)-60000;
+      }else if(h>=20){
+        inicio=Date.UTC(dRD.getUTCFullYear(),dRD.getUTCMonth(),dRD.getUTCDate()+1,0,0,0);
+        fin=Date.UTC(dRD.getUTCFullYear(),dRD.getUTCMonth(),dRD.getUTCDate()+1,12,0,0,0)-60000;
+      }else{
+        inicio=Date.UTC(dRD.getUTCFullYear(),dRD.getUTCMonth(),dRD.getUTCDate(),0,0,0,0);
+        fin=Date.UTC(dRD.getUTCFullYear(),dRD.getUTCMonth(),dRD.getUTCDate(),12,0,0,0)-60000;
+      }
+    }else if(periodo==='24h'){
+      // Día operativo fijo: 08:00 a.m.-07:59 a.m. del día siguiente.
+      const h=dRD.getUTCHours();
+      const diaInicio=(h>=8)?dRD.getUTCDate():dRD.getUTCDate()-1;
+      inicio=Date.UTC(dRD.getUTCFullYear(),dRD.getUTCMonth(),diaInicio,12,0,0,0);
+      fin=inicio+24*3600000-60000;
+    }else{
+      // 1, 3, 6 y 48 h conservan el período relativo correspondiente.
+      const horas=(PERIODOS[periodo]||PERIODOS['3h']).horas;
+      inicio=ahora-horas*3600000;
+      fin=ahora;
+    }
+
+    return `PERÍODO DESDE ${horaPeriodoRD(inicio)} HASTA ${horaPeriodoRD(fin)}`;
+  }
   function idw(lat,lon,pts){
     let num=0,den=0,near=99;
     for(const p of pts){
@@ -7102,17 +7217,70 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
     if(!prov||!Array.isArray(prov.features)){estado.textContent='No están disponibles los límites provinciales.';return;}
 
     const fuenteEstaciones=(typeof datosEstaciones!=='undefined' && Array.isArray(datosEstaciones)) ? datosEstaciones : [];
+    function nombreTablaEstacion(e){
+      const id=String(e?.id||'').trim().toUpperCase();
+
+      // 1) Mantener los nombres personalizados ya definidos en el visor.
+      if(typeof NOMBRES_ESTACIONES_SATMA!=='undefined' && NOMBRES_ESTACIONES_SATMA[id]){
+        return NOMBRES_ESTACIONES_SATMA[id];
+      }
+
+      // 2) Intentar el municipio real donde cae la estación.
+      if(typeof nombreEstacionSATMA==='function'){
+        const n=String(nombreEstacionSATMA(e)||'').trim();
+        if(n && n.toUpperCase()!=='MUNICIPIO') return n;
+      }
+
+      // 3) Si el punto quedó justo fuera de un polígono municipal, usar el
+      //    municipio etiquetado más cercano, pero sólo a una distancia prudente.
+      const lat=Number(e?.lat), lon=Number(e?.lon);
+      if(Number.isFinite(lat) && Number.isFinite(lon) &&
+         typeof GEOJSON_ETIQUETAS_MUNICIPIOS!=='undefined' &&
+         Array.isArray(GEOJSON_ETIQUETAS_MUNICIPIOS.features)){
+        let mejor=null, mejorD2=Infinity;
+        for(const f of GEOJSON_ETIQUETAS_MUNICIPIOS.features){
+          const c=f?.geometry?.coordinates;
+          const nom=String(f?.properties?.nombre||'').trim();
+          if(!Array.isArray(c)||c.length<2||!nom) continue;
+          const dx=(lon-Number(c[0]))*Math.cos(lat*Math.PI/180);
+          const dy=lat-Number(c[1]);
+          const d2=dx*dx+dy*dy;
+          if(d2<mejorD2){mejorD2=d2;mejor=nom;}
+        }
+        if(mejor && Math.sqrt(mejorD2)<=0.30){
+          return mejor
+            .replace(/\bD\.?\s*M\.?\b/gi,'')
+            .replace(/\s+/g,' ')
+            .trim();
+        }
+      }
+
+      // 4) Nunca mostrar la palabra genérica "Municipio" en la tabla.
+      return String(e?.nombre||e?.name||id||'Estación').trim();
+    }
+
     const pts=fuenteEstaciones.map(e=>({
       lat:Number(e.lat),
       lon:Number(e.lon),
-      v:(typeof numeroLluvia==='function'?numeroLluvia(e[cfg.campo]):Number(e[cfg.campo])||0)
+      v:(typeof numeroLluvia==='function'?numeroLluvia(e[cfg.campo]):Number(e[cfg.campo])||0),
+      nombre:nombreTablaEstacion(e),
+      obsTimeUtc:e.obsTimeUtc||null
     })).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)&&Number.isFinite(p.v));
 
-    titulo.textContent=`ACUMULADOS DE LLUVIAS · ${cfg.horas} ${cfg.horas===1?'HORA':'HORAS'}`;
+    if(periodoActual==='24h'){
+      titulo.textContent='ACUMULADOS DE LLUVIAS · DÍA 08:00 A.M. - 07:59 A.M.';
+    }else if(periodoActual==='12h'){
+      const h=new Date().getHours();
+      titulo.textContent = (h>=8 && h<20)
+        ? 'ACUMULADOS DE LLUVIAS · 08:00 A.M. - 07:59 P.M.'
+        : 'ACUMULADOS DE LLUVIAS · 08:00 P.M. - 07:59 A.M.';
+    }else{
+      titulo.textContent=`ACUMULADOS DE LLUVIAS · ${cfg.horas} ${cfg.horas===1?'HORA':'HORAS'}`;
+    }
 
-    const W=1200,H=800; canvas.width=W;canvas.height=H;
+    const W=1480,H=800; canvas.width=W;canvas.height=H;
     ctx.fillStyle='#e9e9e9';ctx.fillRect(0,0,W,H);
-    const L=125,R=28,T=72,B=52; const box=limites(prov);
+    const L=125,R=300,T=88,B=52; const box=limites(prov);
     const padx=.10,pady=.08; box.minX-=padx;box.maxX+=padx;box.minY-=pady;box.maxY+=pady;
     const proj=(lon,lat)=>[L+(lon-box.minX)/(box.maxX-box.minX)*(W-L-R), T+(box.maxY-lat)/(box.maxY-box.minY)*(H-T-B)];
     const inv=(x,y)=>[box.maxY-(y-T)/(H-T-B)*(box.maxY-box.minY), box.minX+(x-L)/(W-L-R)*(box.maxX-box.minX)];
@@ -7145,12 +7313,69 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
     ctx.fillStyle='#111';ctx.font='900 18px Arial';ctx.textAlign='center';
     ctx.fillText(`LLUVIAS ACUMULADAS EN ${cfg.horas} ${cfg.horas===1?'HORA':'HORAS'}`, (L+W-R)/2,28);
     ctx.font='800 12px Arial';ctx.fillText(fechaTitulo(),(L+W-R)/2,48);
+    ctx.font='800 11px Arial';ctx.fillText(textoPeriodoMapa(periodoActual),(L+W-R)/2,66);
 
-    const vals=[450,350,300,250,200,175,150,125,100,75,65,55,45,35,30,25,20,15,10,5,.5,0];
+    const vals=[200,175,150,125,100,75,65,55,45,35,30,25,20,15,10,5,.5];
     const lx=14,ly=78,lw=42,lh=(H-T-B)/vals.length;ctx.textAlign='left';ctx.font='700 10px Arial';ctx.fillStyle='#111';ctx.fillText('Lluvias en (mm)',8,62);
     vals.forEach((v,i)=>{const c=colorValor(v);ctx.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;ctx.fillRect(lx,ly+i*lh,lw,lh+1);ctx.fillStyle='#111';ctx.fillText(String(v),lx+lw+6,ly+i*lh+lh*.72);});ctx.strokeStyle='#555';ctx.strokeRect(lx,ly,lw,lh*vals.length);
 
-    const nx=W-86,ny=112;ctx.save();ctx.translate(nx,ny);ctx.strokeStyle='#111';ctx.fillStyle='#f2f2f2';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-32);ctx.lineTo(15,28);ctx.lineTo(0,17);ctx.lineTo(-15,28);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(0,-32);ctx.lineTo(0,17);ctx.stroke();ctx.font='700 16px Arial';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.strokeStyle='#555';ctx.lineWidth=3;ctx.strokeText('N',0,-43);ctx.fillText('N',0,-43);ctx.restore();
+
+    // Tabla derecha: 10 estaciones con mayor acumulado del período seleccionado.
+    const top10=pts
+      .filter(p=>p.v>0)
+      .sort((a,b)=>b.v-a.v)
+      .slice(0,10);
+
+    const tx=W-272, ty=205, tw=252, rowH=30, headerH=34;
+    ctx.save();
+    ctx.fillStyle='#111';
+    ctx.font='900 14px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('TOTAL ACUMULADOS DE LLUVIAS',tx+tw/2,ty-18);
+
+    // Cabecera
+    ctx.fillStyle='#b8c0b8';
+    ctx.strokeStyle='#111';
+    ctx.lineWidth=1.5;
+    ctx.fillRect(tx,ty,tw,headerH);
+    ctx.strokeRect(tx,ty,tw,headerH);
+    const colEst=182;
+    ctx.beginPath();ctx.moveTo(tx+colEst,ty);ctx.lineTo(tx+colEst,ty+headerH);ctx.stroke();
+    ctx.fillStyle='#111';
+    ctx.font='900 13px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('ESTACIÓN',tx+colEst/2,ty+22);
+    ctx.fillText('TOTAL',tx+colEst+(tw-colEst)/2,ty+22);
+
+    if(top10.length){
+      top10.forEach((p,i)=>{
+        const y=ty+headerH+i*rowH;
+        ctx.fillStyle=(i%2===0)?'#eeeeee':'#f8f8f8';
+        ctx.fillRect(tx,y,tw,rowH);
+        ctx.strokeStyle='#111';ctx.lineWidth=1.2;ctx.strokeRect(tx,y,tw,rowH);
+        ctx.beginPath();ctx.moveTo(tx+colEst,y);ctx.lineTo(tx+colEst,y+rowH);ctx.stroke();
+
+        let nom=String(p.nombre||'Estación').toUpperCase();
+        if(nom.length>24) nom=nom.slice(0,23)+'…';
+        ctx.fillStyle='#111';
+        ctx.font='800 11px Arial';
+        ctx.textAlign='left';
+        ctx.fillText(nom,tx+7,y+19);
+        ctx.font='900 12px Arial';
+        ctx.textAlign='center';
+        ctx.fillText(p.v.toFixed(1),tx+colEst+(tw-colEst)/2,y+19);
+      });
+    }else{
+      const y=ty+headerH;
+      ctx.fillStyle='#f7f7f7';
+      ctx.fillRect(tx,y,tw,rowH*2);
+      ctx.strokeStyle='#111';ctx.strokeRect(tx,y,tw,rowH*2);
+      ctx.fillStyle='#555';ctx.font='700 11px Arial';ctx.textAlign='center';
+      ctx.fillText('SIN ESTACIONES CON LLUVIA',tx+tw/2,y+35);
+    }
+    ctx.restore();
+
+    const nx=W-360,ny=112;ctx.save();ctx.translate(nx,ny);ctx.strokeStyle='#111';ctx.fillStyle='#f2f2f2';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,-32);ctx.lineTo(15,28);ctx.lineTo(0,17);ctx.lineTo(-15,28);ctx.closePath();ctx.fill();ctx.stroke();ctx.beginPath();ctx.moveTo(0,-32);ctx.lineTo(0,17);ctx.stroke();ctx.font='700 16px Arial';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.strokeStyle='#555';ctx.lineWidth=3;ctx.strokeText('N',0,-43);ctx.fillText('N',0,-43);ctx.restore();
 
     const latm=(box.minY+box.maxY)/2, deg50=50/(111.32*Math.cos(latm*Math.PI/180)); const p0=proj(box.maxX-deg50-.18,box.minY+.12),p1=proj(box.maxX-.18,box.minY+.12); const sy=p0[1];
     ctx.strokeStyle='#222';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p0[0],sy);ctx.lineTo(p1[0],sy);ctx.stroke();ctx.beginPath();ctx.moveTo(p0[0],sy-6);ctx.lineTo(p0[0],sy+6);ctx.moveTo(p1[0],sy-6);ctx.lineTo(p1[0],sy+6);ctx.stroke();ctx.font='11px Arial';ctx.fillStyle='#111';ctx.textAlign='center';ctx.fillText('0',p0[0],sy-9);ctx.fillText('50 km',p1[0],sy-9);
@@ -7158,9 +7383,29 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
     const conLluvia=pts.filter(p=>p.v>0).length;
     if(pts.length){
       const max=Math.max.apply(null,pts.map(p=>p.v));
-      estado.textContent=`Acumulado observado ${cfg.horas} h · ${conLluvia} estaciones con lluvia · máximo de estación ${max.toFixed(1)} mm · actualización ${new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})}`;
+      let periodoTxt;
+      if(periodoActual==='24h'){
+        periodoTxt='Día de lluvia 08:00 a.m.-07:59 a.m. RD (12Z-11:59Z)';
+      }else if(periodoActual==='12h'){
+        const h=new Date().getHours();
+        periodoTxt=(h>=8 && h<20)
+          ? 'Bloque 12 h: 08:00 a.m.-07:59 p.m. RD (12Z-23:59Z)'
+          : 'Bloque 12 h: 08:00 p.m.-07:59 a.m. RD (00Z-11:59Z)';
+      }else{
+        periodoTxt=`Acumulado observado ${cfg.horas} h`;
+      }
+      estado.textContent=`${periodoTxt} · ${conLluvia} estaciones con lluvia · máximo de estación ${max.toFixed(1)} mm · actualización ${new Date().toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})}`;
     }else{
-      estado.textContent=`Mapa base de acumulados ${cfg.horas} h · sin datos de estaciones disponibles en este momento.`;
+      if(periodoActual==='24h'){
+        estado.textContent='Mapa base del día de lluvia 08:00 a.m.-07:59 a.m. RD (12Z-11:59Z) · sin datos de estaciones disponibles.';
+      }else if(periodoActual==='12h'){
+        const h=new Date().getHours();
+        estado.textContent=(h>=8 && h<20)
+          ? 'Mapa base del bloque 08:00 a.m.-07:59 p.m. RD · sin datos de estaciones disponibles.'
+          : 'Mapa base del bloque 08:00 p.m.-07:59 a.m. RD · sin datos de estaciones disponibles.';
+      }else{
+        estado.textContent=`Mapa base de acumulados ${cfg.horas} h · sin datos de estaciones disponibles en este momento.`;
+      }
     }
   }
 
