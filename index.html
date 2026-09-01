@@ -7194,6 +7194,9 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
       fin=ahora;
     }
 
+    if(periodo==='24h'){
+      return 'PERÍODO DE LLUVIAS DESDE 8:00 A.M., DEL DÍA DE AYER HASTA HOY 7:59 A.M.';
+    }
     return `PERÍODO DESDE ${horaPeriodoRD(inicio)} HASTA ${horaPeriodoRD(fin)}`;
   }
   function idw(lat,lon,pts){
@@ -7279,7 +7282,7 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
     }
 
     const W=1480,H=800; canvas.width=W;canvas.height=H;
-    ctx.fillStyle='#e9e9e9';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e9e9e9';ctx.fillRect(0,0,W,H); // fondo gris del diseño operativo
     const L=125,R=300,T=88,B=52; const box=limites(prov);
     const padx=.10,pady=.08; box.minX-=padx;box.maxX+=padx;box.minY-=pady;box.maxY+=pady;
     const proj=(lon,lat)=>[L+(lon-box.minX)/(box.maxX-box.minX)*(W-L-R), T+(box.maxY-lat)/(box.maxY-box.minY)*(H-T-B)];
@@ -7314,6 +7317,23 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
     ctx.fillText(`LLUVIAS ACUMULADAS EN ${cfg.horas} ${cfg.horas===1?'HORA':'HORAS'}`, (L+W-R)/2,28);
     ctx.font='800 12px Arial';ctx.fillText(fechaTitulo(),(L+W-R)/2,48);
     ctx.font='800 11px Arial';ctx.fillText(textoPeriodoMapa(periodoActual),(L+W-R)/2,66);
+
+    // Información agregada al diseño operativo del mapa.
+    ctx.save();
+    // Reubicado hacia la izquierda para no chocar con la flecha del Norte.
+    ctx.fillStyle='#111111';
+    ctx.font='900 18px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('Red Nacional de Estaciones Met. Automaticas', W-720, 110);
+
+    // Marca de agua suave: visible, pero sin competir con la información meteorológica.
+    ctx.globalAlpha=0.28;
+    ctx.fillStyle='#777777';
+    ctx.font='800 20px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('Preparado por Claudio Martinez', (L+W-R)/2+145, H-178);
+    ctx.globalAlpha=1;
+    ctx.restore();
 
     const vals=[200,175,150,125,100,75,65,55,45,35,30,25,20,15,10,5,.5];
     const lx=14,ly=78,lw=42,lh=(H-T-B)/vals.length;ctx.textAlign='left';ctx.font='700 10px Arial';ctx.fillStyle='#111';ctx.fillText('Lluvias en (mm)',8,62);
