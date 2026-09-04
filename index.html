@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visor COE - Monitor de Lluvias · v16_131</title>
+    <!-- v16_149 GitHub: usuarios nuevos incluidos y herramientas COE servidas por ruta relativa. -->
+    <!-- v16_146: acceso de Temperaturas/Viento/Viento superior/Presión corregido a la ruta RRFS real V41_7_13. -->
+    <!-- v16_147: elimina parámetros ?producto y ?t de la ruta file:/// para compatibilidad con Chrome/Windows 7. -->
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
      Base v16_92: contornos municipales reconstruidos desde el KML original con alta precisión (~10 m),
@@ -106,7 +109,7 @@
         #submenu-lluvias.abierto{display:block;}
         #submenu-lluvias .btn-modo{margin:4px 0;padding:7px 8px;font-size:.78rem;background:#126b2b;border-color:#bce2c6;}
         #submenu-lluvias .btn-modo.activo{background:#1e88e5;border-color:#90caf9;box-shadow:0 0 8px rgba(30,136,229,.42);}
-        .btn-herramienta-futura{color:#fff;border-radius:6px;padding:8px 10px;margin:4px 0;width:100%;font-size:.80rem;font-weight:900;border:1px solid rgba(255,255,255,.5);cursor:default;}
+        .btn-herramienta-futura{color:#fff;border-radius:6px;padding:8px 10px;margin:4px 0;width:100%;font-size:.80rem;font-weight:900;border:1px solid rgba(255,255,255,.5);cursor:pointer;}
         .btn-herr-temp{background:#9f2525;border-color:#ff6b6b;}
         .btn-herr-viento{background:#244d78;border-color:#6caee8;}
         .btn-herr-viento-sup{background:#63328a;border-color:#c58cff;}
@@ -1218,7 +1221,23 @@
             .satma-grid-lon { transform: translate(-50%, -12px); }
         }
 
-    </style>
+    
+        /* v16_144 · Herramientas meteorológicas funcionales dentro del visor */
+        #visor-herramientas-overlay{
+            position:fixed; inset:0; z-index:20050; background:#07141c; display:none;
+        }
+        #visor-herramientas-overlay.visible{display:block;}
+        #visor-herramientas-frame{
+            position:absolute; inset:0; width:100%; height:100%; border:0; background:#07141c;
+        }
+        #cerrar-herramientas-overlay{
+            position:absolute; right:14px; top:10px; z-index:20060;
+            background:#b71c1c; color:#fff; border:1px solid #fff; border-radius:6px;
+            padding:8px 12px; font-weight:900; cursor:pointer;
+            box-shadow:0 2px 8px rgba(0,0,0,.45);
+        }
+
+</style>
 
 <style id="satma-panel-derecho-compacto">
 /* Panel derecho compacto SATMA */
@@ -1519,10 +1538,10 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
             <button id="btn-12h" class="btn-modo" onclick="cambiarModo('12h')">Lluvias 12 h (mm)</button>
             <button id="btn-24h" class="btn-modo" onclick="cambiarModo('24h')">Lluvias 24 h (mm)</button>
         </div>
-        <button class="btn-herramienta-futura btn-herr-temp" type="button" disabled>Temperaturas</button>
-        <button class="btn-herramienta-futura btn-herr-viento" type="button" disabled>Fuerza del viento</button>
-        <button class="btn-herramienta-futura btn-herr-viento-sup" type="button" disabled>Viento superior</button>
-        <button class="btn-herramienta-futura btn-herr-presion" type="button" disabled>Presión</button>
+        <button id="btn-herr-temp" class="btn-herramienta-futura btn-herr-temp" type="button" onclick="abrirHerramientaMeteorologica('temperaturas')">Temperaturas</button>
+        <button id="btn-herr-viento" class="btn-herramienta-futura btn-herr-viento" type="button" onclick="abrirHerramientaMeteorologica('viento')">Fuerza del viento</button>
+        <button id="btn-herr-viento-sup" class="btn-herramienta-futura btn-herr-viento-sup" type="button" onclick="abrirHerramientaMeteorologica('viento-superior')">Viento superior</button>
+        <button id="btn-herr-presion" class="btn-herramienta-futura btn-herr-presion" type="button" onclick="abrirHerramientaMeteorologica('presion')">Presión</button>
         <button id="btn-modelo-hispaniola" class="btn-herramienta-futura btn-herr-modelo" type="button" disabled title="Reservado para integración futura">MODELO HISPANIOLA</button>
         <button id="btn-filtro" class="btn-modo activo" onclick="toggleFiltro()">Solo con Lluvias</button>
         <button id="btn-radar" class="btn-modo activo" onclick="toggleRadar()">📡 Radar Meteorológico</button>
@@ -5244,7 +5263,9 @@ let datosEstaciones = [];
         "CarlosZ": "Flordelsol#Bani",
         "JoseB": "Nagua#ne",
         "PolancoR": "Santiago#911",
-        "MejiaH": "Bombero#hm"
+        "MejiaH": "Bombero#hm",
+        "GloriaC": "Directora#nac",
+        "Pronostico2026": "Monitor#1525nc"
 };
 
         function mostrarLogin() {
@@ -7454,6 +7475,34 @@ window.addEventListener('online',()=>{ if(atcfActivo) cargarDatosTropicalATCF(tr
     }
   });
 })();
+</script>
+
+
+<div id="visor-herramientas-overlay" aria-hidden="true">
+  <button id="cerrar-herramientas-overlay" type="button" onclick="cerrarHerramientaMeteorologica()">Regresar al visor</button>
+  <iframe id="visor-herramientas-frame" title="Herramientas Meteorológicas SATMA"></iframe>
+</div>
+
+<script>
+function abrirHerramientaMeteorologica(producto){
+    const overlay=document.getElementById('visor-herramientas-overlay');
+    const frame=document.getElementById('visor-herramientas-frame');
+    if(!overlay||!frame) return;
+    const base='herramientas.html';
+    // GitHub Pages: herramienta alojada en el mismo directorio/origen.
+    frame.src=base+'?producto='+encodeURIComponent(producto)+'&v=149';
+    overlay.classList.add('visible');
+    overlay.setAttribute('aria-hidden','false');
+}
+function cerrarHerramientaMeteorologica(){
+    const overlay=document.getElementById('visor-herramientas-overlay');
+    const frame=document.getElementById('visor-herramientas-frame');
+    if(overlay){
+        overlay.classList.remove('visible');
+        overlay.setAttribute('aria-hidden','true');
+    }
+    if(frame) frame.src='about:blank';
+}
 </script>
 
 </body>

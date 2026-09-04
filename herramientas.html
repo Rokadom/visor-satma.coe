@@ -2892,5 +2892,44 @@ cargarRed();setInterval(cargarRed,5*60*1000);
   else activarDesdeParametro();
 })();
 </script>
+
+<script id="satma-github-producto-auto">
+(function(){
+  function productoSolicitado(){
+    try{
+      var q=new URLSearchParams(window.location.search);
+      return (q.get('producto')||'').toLowerCase();
+    }catch(e){ return ''; }
+  }
+  function activar(){
+    var p=productoSolicitado();
+    var mapa={
+      'temperaturas':'btn-temperaturas',
+      'viento':'btn-viento',
+      'viento-superior':'btn-viento-superior',
+      'presion':'btn-presion'
+    };
+    var id=mapa[p];
+    if(!id) return;
+    var n=0;
+    var timer=setInterval(function(){
+      n++;
+      var b=document.getElementById(id);
+      if(b){
+        clearInterval(timer);
+        try{ b.click(); }catch(e){}
+      }else if(n>=30){
+        clearInterval(timer);
+      }
+    },200);
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',activar);
+  }else{
+    activar();
+  }
+})();
+</script>
+
 </body>
 </html>

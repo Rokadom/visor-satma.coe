@@ -1,0 +1,18 @@
+VISOR COE v16_149 - PAQUETE PARA GITHUB PAGES
+
+Suba estos archivos juntos a la RAIZ del repositorio que publica GitHub Pages:
+
+1. index.html
+2. herramientas.html
+
+IMPORTANTE:
+- index.html contiene los dos usuarios nuevos.
+- NO renombre herramientas.html.
+- Los botones Temperaturas, Fuerza del viento, Viento superior y Presion
+  llaman a herramientas.html mediante ruta relativa, compatible con GitHub Pages.
+- Si GitHub Pages sigue mostrando una version anterior, espere a que termine
+  el despliegue y haga Ctrl+F5 en el navegador.
+
+Usuarios nuevos incluidos:
+GloriaC
+Pronostico2026
