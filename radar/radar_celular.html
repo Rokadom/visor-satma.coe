@@ -96,39 +96,44 @@ input[type=range]{width:155px}
 
 <style id="mobileV2CSS">
 @media (max-width:900px){
-  #top{top:8px;left:12px;right:12px;transform:none;min-width:0;width:auto;padding:10px 8px;border-radius:12px}
-  #title{font-size:16px;line-height:1.15;white-space:nowrap}
+  #top{top:8px;left:10px;right:10px;transform:none;min-width:0;width:auto;padding:9px 7px;border-radius:12px;box-sizing:border-box}
+  #title{font-size:15px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:clip;text-align:center}
   #status{display:none}
 
   .leaflet-control-zoom{margin-top:112px!important;margin-left:16px!important}
 
-  #anim115{left:50%;bottom:16px;transform:translateX(-50%);width:340px;max-width:calc(100vw - 28px);
-    box-sizing:border-box;padding:8px 9px;white-space:normal;text-align:center;border-radius:9px}
-  #anim115 button{font-size:15px;padding:10px 13px;margin:3px}
-  #aPrev115,#aNext115{width:52px}
-  #aPlay115{min-width:178px;font-size:18px!important}
-  #time115{display:block;min-width:0;width:100%;box-sizing:border-box;font-size:25px;margin:4px 0;padding:9px 6px}
-  #speed115{display:flex;margin:3px 0 0;gap:4px;justify-content:center;flex-wrap:wrap}
-  #speed115 button{flex:1 1 30%;min-width:88px}
+  #anim115{left:50%;right:auto;bottom:10px;transform:translateX(-50%);width:calc(100vw - 40px);max-width:620px;
+    box-sizing:border-box;padding:7px 8px;white-space:normal;text-align:center;border-radius:9px}
+  #anim115 button{font-size:14px;padding:9px 11px;margin:2px}
+  #aPrev115,#aNext115{width:46px}
+  #aPlay115{min-width:0;width:44%;font-size:17px!important}
+  #time115{display:block;min-width:0;width:100%;box-sizing:border-box;font-size:23px;margin:3px 0;padding:7px 5px}
+  #speed115{display:flex;margin:2px 0 0;gap:3px;justify-content:center;flex-wrap:nowrap}
+  #speed115 button{flex:1 1 0;min-width:0}
   #downloadVideoBtn,#videoStatus{display:none!important}
-  #auto13{display:flex;width:100%;box-sizing:border-box;margin:4px 0 0;padding:7px 0 0;border-left:0;border-top:1px solid #496576;
-    justify-content:center;align-items:center;gap:8px}
-  #auto13 .title{font-size:15px}
+  #auto13{display:flex;width:100%;box-sizing:border-box;margin:3px 0 0;padding:6px 0 0;border-left:0;border-top:1px solid #496576;
+    justify-content:center;align-items:center;gap:6px}
+  #auto13 .title{font-size:14px}
   #auto13 .line{display:none!important}
-  #auto13 button{font-size:14px;padding:9px 12px}
+  #auto13 button{font-size:13px;padding:8px 10px;margin:1px}
 
-  #convBtn{right:12px;bottom:252px;font-size:16px;padding:12px 14px;border-radius:8px}
-  #prodRadarBtn{right:12px;bottom:198px;font-size:16px;padding:12px 14px;border-radius:8px}
-  #convPanel,#prodRadarPanel{top:72px;left:8px;right:8px;width:auto;max-height:48vh;font-size:13px}
+  #convBtn{right:8px;bottom:222px;font-size:14px;padding:10px 12px;border-radius:8px}
+  #prodRadarBtn{right:8px;bottom:174px;font-size:14px;padding:10px 12px;border-radius:8px}
+  #convPanel,#prodRadarPanel{top:68px;left:8px;right:8px;width:auto;max-height:48vh;font-size:13px}
 
   .leaflet-control-attribution{font-size:9px!important;max-width:55vw;white-space:nowrap;overflow:hidden}
 }
 @media (max-width:430px){
-  #title{font-size:14px}
-  #anim115{width:350px;max-width:calc(100vw - 20px);bottom:10px}
-  #aPlay115{min-width:165px}
-  #convBtn{bottom:250px;font-size:15px}
-  #prodRadarBtn{bottom:196px;font-size:15px}
+  #top{left:8px;right:8px;padding:8px 6px}
+  #title{font-size:12px}
+  #anim115{width:calc(100vw - 24px);bottom:8px;padding:6px 6px}
+  #anim115 button{font-size:13px;padding:8px 8px;margin:1px}
+  #aPrev115,#aNext115{width:42px}
+  #aPlay115{width:46%;font-size:16px!important}
+  #time115{font-size:21px;padding:6px 4px}
+  #convBtn{right:6px;bottom:205px;font-size:13px;padding:9px 10px}
+  #prodRadarBtn{right:6px;bottom:162px;font-size:13px;padding:9px 10px}
+  #auto13 .title{font-size:13px}
 }
 </style>
 
