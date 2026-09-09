@@ -39,13 +39,13 @@ input[type=range]{width:155px}
    Los PNG originales y el analisis de celdas/seguimiento permanecen intactos. */
 .leaflet-image-layer.radar-echo-soft{
   image-rendering:auto!important;
-  filter:blur(1.15px) saturate(1.32) contrast(1.04) brightness(1.02);
+  filter:blur(1.85px) saturate(1.30) contrast(1.02) brightness(1.02);
   will-change:filter,transform;
   backface-visibility:hidden;
 }
 .leaflet-image-layer.radar-echo-main{
   image-rendering:auto!important;
-  filter:blur(.28px) saturate(1.20) contrast(1.08) brightness(1.03);
+  filter:blur(.18px) saturate(1.22) contrast(1.10) brightness(1.03);
   will-change:filter,transform;
   backface-visibility:hidden;
 }
@@ -178,8 +178,8 @@ const $=id=>document.getElementById(id);
 const RADAR_BOUNDS=[[12.743945,-81.767979],[23.863055,-61.158021]]; // calibración IDAC + ajuste fino horizontal adicional 1% (vertical y centro sin cambios)
 // Visualizacion tipo Windy: base suavizada + capa principal definida.
 // No cambia el PNG fuente ni los algoritmos de celdas convectivas/seguimiento.
-const ECHO_OPACITY=.84;
-const ECHO_SOFT_OPACITY=.30;
+const ECHO_OPACITY=.88;
+const ECHO_SOFT_OPACITY=.38;
 function currentBounds(){
   return RADAR_BOUNDS;
 }
@@ -1541,6 +1541,6 @@ function render(tracks,current){
 </script>
 
 
-<!-- ECOS PC V6 · suavizado visual tipo Windy; celdas/seguimiento intactos · 2026-09-09 -->
+<!-- ECOS PC V7 · mayor suavizado de transicion; nucleos fuertes definidos; celdas/seguimiento intactos · 2026-09-09 -->
 </body>
 </html>
