@@ -1555,5 +1555,39 @@ function render(tracks,current){
 })();
 </script>
 
+
+<style id="mobileV2FinalCSS">
+/* Ajuste móvil V2 final: solo disposición, sin tocar radar/capas/georreferenciación */
+@media (max-width:900px){
+  #top{left:8px!important;right:8px!important;top:8px!important;width:auto!important;min-width:0!important;transform:none!important;box-sizing:border-box!important;padding:8px 6px!important}
+  #title{font-size:clamp(11px,3.6vw,15px)!important;line-height:1.1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important}
+
+  #anim115{left:50%!important;right:auto!important;bottom:8px!important;transform:translateX(-50%)!important;width:calc(100vw - 20px)!important;max-width:620px!important;box-sizing:border-box!important;padding:6px!important;white-space:normal!important;text-align:center!important;border-radius:9px!important}
+  #anim115 button{margin:1px!important;padding:7px 8px!important}
+  #aPrev115,#aNext115{width:40px!important}
+  #aPlay115{width:48%!important;min-width:0!important;font-size:15px!important}
+  #time115{display:block!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:3px 0!important;padding:5px 4px!important;font-size:20px!important}
+  #speed115{display:flex!important;width:100%!important;margin:2px 0 0!important;gap:2px!important;justify-content:center!important;flex-wrap:nowrap!important}
+  #speed115 button{flex:1 1 0!important;min-width:0!important;margin:1px!important;padding:7px 4px!important}
+  #auto13{display:flex!important;width:100%!important;box-sizing:border-box!important;margin:2px 0 0!important;padding:5px 0 0!important;border-left:0!important;border-top:1px solid #496576!important;justify-content:center!important;align-items:center!important;gap:4px!important}
+  #auto13 .line{display:none!important}
+  #auto13 .title{font-size:13px!important}
+  #auto13 button{font-size:12px!important;padding:7px 8px!important;margin:0!important}
+
+  /* Botones laterales más compactos, más juntos y pegados al borde derecho */
+  #convBtn{right:4px!important;bottom:190px!important;font-size:12px!important;padding:8px 9px!important;border-radius:7px!important}
+  #prodRadarBtn{right:4px!important;bottom:150px!important;font-size:12px!important;padding:8px 9px!important;border-radius:7px!important}
+}
+@media (max-width:430px){
+  #title{font-size:11px!important}
+  #anim115{width:calc(100vw - 12px)!important;bottom:6px!important;padding:5px!important}
+  #aPrev115,#aNext115{width:38px!important}
+  #aPlay115{width:50%!important;font-size:14px!important}
+  #time115{font-size:18px!important;padding:5px 3px!important}
+  #convBtn{right:3px!important;bottom:184px!important;font-size:11px!important;padding:7px 8px!important}
+  #prodRadarBtn{right:3px!important;bottom:146px!important;font-size:11px!important;padding:7px 8px!important}
+}
+</style>
+
 </body>
 </html>
