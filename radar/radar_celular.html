@@ -250,18 +250,17 @@ function nombreProvinciaFeature(f){
 async function fijarPuertoPlataMovil(){
   if(!esVersionCelular()) return false;
 
-  // Ventana geografica fija solicitada para celular:
-  // solo el sector marcado por el usuario (costa/norte de Puerto Plata,
-  // Puerto Plata-Sosua y franja inmediata al sur), sin mostrar el resto del pais.
-  // RECORTE FIJO 2026-09-09 12:54: sector exacto marcado en amarillo por el usuario.
-  // Oeste: entorno de Imbert/Altamira; Este: Sosua; Sur: Cordillera Septentrional; Norte: Atlantico inmediato.
-  const bounds=L.latLngBounds([[19.50,-71.20],[20.20,-70.36]]);
+  // Ventana geografica fija solicitada para celular.
+  // Ajuste V4: reproduce el encuadre de referencia aprobado por el usuario:
+  // costa norte completa de Puerto Plata, desde el oeste de Luperon/Villa Isabela
+  // hasta Sosua y alrededores, con la franja de Los Hidalgos-Imbert-Altamira-Esperanza
+  // en la parte inferior y solamente el Atlantico inmediato al norte.
+  const bounds=L.latLngBounds([[19.43,-71.42],[20.06,-70.18]]);
 
-  // Leaflet puede agregar terreno fuera del rectangulo para respetar la relacion de aspecto.
-  // Por eso ajustamos al rectangulo y acercamos un nivel adicional: asi no aparecen Santiago,
-  // La Vega, Valverde ni otras provincias fuera del cuadro solicitado.
+  // Usar el rectangulo completo, SIN acercar un nivel adicional. El contenedor movil
+  // tiene proporcion panoramica para que el mismo sector del ejemplo quepa completo.
   map.fitBounds(bounds,{padding:[0,0],animate:false});
-  const z=Math.min(map.getZoom()+1, 11);
+  const z=map.getZoom();
   map.setView(bounds.getCenter(),z,{animate:false});
   map.setMinZoom(z);
   map.setMaxZoom(z);
@@ -1654,9 +1653,11 @@ function render(tracks,current){
     right:8px!important;
     top:72px!important;
     width:calc(100vw - 16px)!important;
-    height:52vh!important;
+    /* Proporcion panoramica similar al cuadro de referencia: muestra Puerto Plata
+       completa de oeste a este sin llenar la pantalla con mar ni provincias del sur. */
+    height:calc((100vw - 16px) / 1.47)!important;
     min-height:0!important;
-    max-height:560px!important;
+    max-height:520px!important;
     border-radius:0!important;
     overflow:hidden!important;
   }
@@ -1666,6 +1667,6 @@ function render(tracks,current){
 }
 </style>
 <!-- Ventana movil fija Puerto Plata · recorte solicitado por el usuario · 2026-09-09 -->
-<!-- RECORTE FIJO PUERTO PLATA V3 · cuadro amarillo · 2026-09-09 12:54 -->
+<!-- RECORTE FIJO PUERTO PLATA V4 · encuadre panoramico aprobado · 2026-09-09 -->
 </body>
 </html>
