@@ -301,8 +301,12 @@ async function init(){
   setTimeout(function(){
     map.invalidateSize(false);
 
-    const fixedCenter=map.getCenter();
+    // Desplazar ligeramente el encuadre hacia Puerto Rico (este),
+    // mostrando un poco menos del lado de Haití.
+    const baseCenter=map.getCenter();
+    const fixedCenter=L.latLng(baseCenter.lat, baseCenter.lng + 0.42);
     const overviewZoom=map.getZoom();
+    map.setView(fixedCenter,overviewZoom,{animate:false});
 
     // No permitir alejar más que la vista general actual.
     map.setMinZoom(overviewZoom);
@@ -1650,6 +1654,6 @@ function render(tracks,current){
 </script>
 
 
-<!-- RADAR PC V13 · zoom permitido sin desplazamiento: centro fijo / vista general mínima / zoom 18 · 2026-09-09 -->
+<!-- RADAR PC V14 · centro fijo desplazado 0.42 grados hacia Puerto Rico · 2026-09-09 -->
 </body>
 </html>
