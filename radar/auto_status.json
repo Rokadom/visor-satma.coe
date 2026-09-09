@@ -1,11 +1,11 @@
 {
   "enabled": true,
   "check_seconds": 120,
-  "updating": true,
-  "last_check_epoch": 1788958401,
-  "last_update_epoch": 1788958416,
-  "latest_remote": "1788958320021.png",
-  "last_processed_remote": "1788958320021.png",
-  "generation": 2,
-  "message": "Barrido IDAC más reciente incorporado: 1788958320021.png"
+  "updating": false,
+  "last_check_epoch": 0,
+  "last_update_epoch": 0,
+  "latest_remote": "",
+  "last_processed_remote": "",
+  "generation": 0,
+  "message": "Monitor activo; primera consulta falló: unknown encoding: idna"
 }
