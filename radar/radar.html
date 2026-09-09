@@ -33,6 +33,23 @@ input[type=range]{width:155px}
 .prov-product-tip{background:rgba(4,20,31,.96);color:#fff;border:1px solid #7892a3;
  box-shadow:0 2px 8px #0008;font-weight:700}
 
+
+/* ===== PRESENTACION DE ECOS ESTILO SUAVIZADO (PC) =====
+   Solo afecta la visualizacion del overlay Leaflet.
+   Los PNG originales y el analisis de celdas/seguimiento permanecen intactos. */
+.leaflet-image-layer.radar-echo-soft{
+  image-rendering:auto!important;
+  filter:blur(1.15px) saturate(1.32) contrast(1.04) brightness(1.02);
+  will-change:filter,transform;
+  backface-visibility:hidden;
+}
+.leaflet-image-layer.radar-echo-main{
+  image-rendering:auto!important;
+  filter:blur(.28px) saturate(1.20) contrast(1.08) brightness(1.03);
+  will-change:filter,transform;
+  backface-visibility:hidden;
+}
+
 </style>
 
 <style id="productosRadarCSS">
@@ -151,7 +168,7 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
  {maxZoom:18}).addTo(map);
 
-let data=null, idx=0, origLayer=null, echoLayer=null, showOrig=false, showEcho=true;
+let data=null, idx=0, origLayer=null, echoLayer=null, echoSmoothLayer=null, showOrig=false, showEcho=true;
 const $=id=>document.getElementById(id);
 
 // Georreferenciación final ya calibrada.
@@ -159,7 +176,10 @@ const $=id=>document.getElementById(id);
 // Georreferenciación ajustada al encuadre geográfico real del visor IDAC.
 // Calibrada con referencias visibles de Hispaniola, Puerto Rico y BVI.
 const RADAR_BOUNDS=[[12.743945,-81.767979],[23.863055,-61.158021]]; // calibración IDAC + ajuste fino horizontal adicional 1% (vertical y centro sin cambios)
-const ECHO_OPACITY=.92;
+// Visualizacion tipo Windy: base suavizada + capa principal definida.
+// No cambia el PNG fuente ni los algoritmos de celdas convectivas/seguimiento.
+const ECHO_OPACITY=.84;
+const ECHO_SOFT_OPACITY=.30;
 function currentBounds(){
   return RADAR_BOUNDS;
 }
@@ -169,8 +189,17 @@ function applyLayers(){
  const b=currentBounds();
  if(origLayer){map.removeLayer(origLayer);origLayer=null}
  if(echoLayer){map.removeLayer(echoLayer);echoLayer=null}
+ if(echoSmoothLayer){map.removeLayer(echoSmoothLayer);echoSmoothLayer=null}
  if(showEcho){
-  echoLayer=L.imageOverlay('capas/'+f.layer+'?t='+Date.now(),b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
+  const src='capas/'+f.layer+'?t='+Date.now();
+  // Subcapa visual: disimula bloques sin modificar los datos del barrido.
+  echoSmoothLayer=L.imageOverlay(src,b,{
+    opacity:ECHO_SOFT_OPACITY,interactive:false,className:'radar-echo-soft'
+  }).addTo(map);
+  // Capa principal: mantiene definicion y refuerza la paleta.
+  echoLayer=L.imageOverlay(src,b,{
+    opacity:ECHO_OPACITY,interactive:false,className:'radar-echo-main'
+  }).addTo(map);
  }
  const _fi0=$('fi'); if(_fi0) _fi0.textContent='';
  const _st0=$('status'); if(_st0) _st0.textContent='Radar propiedad del IDAC, modificado por Claudio Martinez';
@@ -1511,5 +1540,7 @@ function render(tracks,current){
 })();
 </script>
 
+
+<!-- ECOS PC V6 · suavizado visual tipo Windy; celdas/seguimiento intactos · 2026-09-09 -->
 </body>
 </html>
