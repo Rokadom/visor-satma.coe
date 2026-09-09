@@ -1,0 +1,105 @@
+{
+  "image_width": 1920,
+  "image_height": 898,
+  "echo_union_bbox_px": [
+    734,
+    58,
+    1568,
+    722
+  ],
+  "palette_rgb": [
+    [
+      80,
+      200,
+      232
+    ],
+    [
+      256,
+      0,
+      256
+    ],
+    [
+      0,
+      112,
+      144
+    ],
+    [
+      256,
+      192,
+      0
+    ],
+    [
+      0,
+      192,
+      192
+    ],
+    [
+      256,
+      232,
+      0
+    ],
+    [
+      256,
+      160,
+      0
+    ],
+    [
+      256,
+      96,
+      0
+    ],
+    [
+      240,
+      16,
+      0
+    ],
+    [
+      32,
+      256,
+      32
+    ],
+    [
+      0,
+      224,
+      16
+    ],
+    [
+      0,
+      192,
+      40
+    ],
+    [
+      0,
+      168,
+      176
+    ],
+    [
+      0,
+      152,
+      56
+    ],
+    [
+      0,
+      128,
+      96
+    ],
+    [
+      256,
+      256,
+      32
+    ],
+    [
+      256,
+      128,
+      0
+    ],
+    [
+      224,
+      8,
+      16
+    ]
+  ],
+  "status": "EXTRACCION_LISTA_PARA_GEORREFERENCIAR",
+  "georeference": "GEOREFERENCIACION_FINAL",
+  "note": "Las capas eco_completo_XX.png son transparentes y conservan la paleta radar detectada del propio producto."
+}
