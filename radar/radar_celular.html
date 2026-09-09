@@ -250,32 +250,17 @@ function nombreProvinciaFeature(f){
 async function fijarPuertoPlataMovil(){
   if(!esVersionCelular()) return false;
 
-  // Ajustar exactamente a la geometria de la provincia cuando el GeoJSON este disponible.
-  let bounds=null;
-  try{
-    const r=await fetch('provincias_rd.geojson?t='+Date.now(),{cache:'no-store'});
-    if(r.ok){
-      const gj=await r.json();
-      const feat=(gj.features||[]).find(f=>
-        nombreProvinciaFeature(f).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes('puerto plata')
-      );
-      if(feat){
-        const tmp=L.geoJSON(feat);
-        const b=tmp.getBounds();
-        if(b&&b.isValid()) bounds=b;
-      }
-    }
-  }catch(e){}
+  // Ventana geografica fija solicitada para celular:
+  // solo el sector marcado por el usuario (costa/norte de Puerto Plata,
+  // Puerto Plata-Sosua y franja inmediata al sur), sin mostrar el resto del pais.
+  const bounds=L.latLngBounds([[19.43,-71.32],[20.34,-70.30]]);
 
-  // Respaldo aproximado, solo si no se pudo leer la provincia.
-  if(!bounds) bounds=L.latLngBounds([[19.52,-71.24],[19.96,-70.12]]);
-
-  // Encuadre de Puerto Plata y bloqueo total del mapa en celular.
-  map.fitBounds(bounds,{padding:[6,6],animate:false});
+  // El mapa movil usa exactamente esta ventana y queda totalmente bloqueado.
+  map.fitBounds(bounds,{padding:[0,0],animate:false});
   const z=map.getZoom();
   map.setMinZoom(z);
   map.setMaxZoom(z);
-  map.setMaxBounds(bounds.pad(0.03));
+  map.setMaxBounds(bounds);
 
   if(map.dragging) map.dragging.disable();
   if(map.touchZoom) map.touchZoom.disable();
@@ -1653,5 +1638,28 @@ function render(tracks,current){
 </style>
 
 <!-- V2 móvil: hora de barrido visible; AUTO RADAR oculto en móvil · 2026-09-09 -->
+
+<style id="mobilePuertoPlataVentanaFija">
+/* Ventana fija Puerto Plata: en celular solo se muestra el recorte solicitado. */
+@media (max-width:768px){
+  html,body{background:#07111c!important;overflow:hidden!important;}
+  #map{
+    position:fixed!important;
+    left:8px!important;
+    right:8px!important;
+    top:72px!important;
+    width:calc(100vw - 16px)!important;
+    height:52vh!important;
+    min-height:0!important;
+    max-height:560px!important;
+    border-radius:0!important;
+    overflow:hidden!important;
+  }
+  /* Los botones de producto quedan asociados al borde derecho de la ventana. */
+  #convBtn{right:6px!important;bottom:188px!important;}
+  #prodRadarBtn{right:6px!important;bottom:148px!important;}
+}
+</style>
+<!-- Ventana movil fija Puerto Plata · recorte solicitado por el usuario · 2026-09-09 -->
 </body>
 </html>
