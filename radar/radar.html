@@ -747,15 +747,21 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  const loading=document.getElementById('prodLoading');
  const timeBox=document.getElementById('prodRadarTime');
 
+ if(!btn || !panel || !list || !loading || !timeBox){
+   console.error('Producto radar: faltan controles HTML requeridos.');
+   return;
+ }
+
  let geo=null, maskCanvas=null, maskCtx=null, maskKey='', analysisSeq=0;
  let productoRadarActivo=true;
 
  let muniLayer=null;
  const muniFeatureStats=new Map();
-  let muniLayer=null;
-  const muniFeatureStats=new Map();
-  function ensureMuniLayer(){}
-  function refreshMunicipalityLayer(){}
+
+ // Capa municipal reservada para el producto radar.
+ // Estas funciones se mantienen neutras para no alterar el mapa principal.
+ function ensureMuniLayer(){}
+ function refreshMunicipalityLayer(){}
 
   let municipalityNames=[''];
  let municipalityStats=[];
@@ -1645,6 +1651,6 @@ function render(tracks,current){
 </script>
 
 
-<!-- RADAR PC V15 · desplazamiento libre dentro de RD: límite mitad Haití / mitad Puerto Rico · 2026-09-09 -->
+<!-- RADAR PC V16 · Producto radar corregido + desplazamiento limitado RD · 2026-09-09 -->
 </body>
 </html>
