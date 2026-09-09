@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visor COE - Monitor de Lluvias · v16_131</title>
-    <!-- v16_149 GitHub: usuarios nuevos incluidos y herramientas COE servidas por ruta relativa. -->
+    <title>Visor COE - Monitor de Lluvias · v16_153</title>
     <!-- v16_146: acceso de Temperaturas/Viento/Viento superior/Presión corregido a la ruta RRFS real V41_7_13. -->
     <!-- v16_147: elimina parámetros ?producto y ?t de la ruta file:/// para compatibilidad con Chrome/Windows 7. -->
+    <!-- v16_148: Temperaturas/Viento/Viento superior/Presión usan herramientas.html local del COE, sin RRFS. -->
+    <!-- v16_153: Selector superior Radar A / Radar RD. Radar A conserva RainViewer y su opacidad; Radar RD usa el radar publicado en GitHub. -->
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
      Base v16_92: contornos municipales reconstruidos desde el KML original con alta precisión (~10 m),
@@ -1237,6 +1238,113 @@
             box-shadow:0 2px 8px rgba(0,0,0,.45);
         }
 
+
+        /* ===== v16_153 · Selector Radar A / Radar RD ===== */
+        #selector-radares-satma{
+            position:absolute; top:42px; left:8px; z-index:1900;
+            display:flex; gap:8px; align-items:flex-start;
+        }
+        #radar-a-grupo-satma,
+        #radar-rd-grupo-satma{
+            display:flex;
+            flex-direction:column;
+            align-items:stretch;
+            gap:5px;
+        }
+        .radar-mini-panel{
+            width:96px;
+            box-sizing:border-box;
+            padding:5px 5px 4px;
+            border:1px solid rgba(255,255,255,.35);
+            border-radius:5px;
+            background:rgba(4,32,50,.94);
+            color:#fff;
+            box-shadow:0 2px 6px rgba(0,0,0,.45);
+            font:700 9px/1.15 Arial,sans-serif;
+        }
+        #opacidad-radar-a-superior .op-linea{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        #opacidad-radar-a-superior label{white-space:nowrap;}
+        #opacidad-radar-a-superior input[type="range"]{
+            width:48px;
+            height:12px;
+            margin:0;
+            padding:0;
+        }
+        #opacidad-radar-a-superior .op-valor{
+            min-width:22px;
+            text-align:right;
+            font-weight:900;
+        }
+        .radar-mini-hora{
+            margin-top:4px;
+            padding-top:4px;
+            border-top:1px solid rgba(255,255,255,.20);
+            text-align:center;
+            color:#9ee7ff;
+            font-weight:900;
+            letter-spacing:.15px;
+            white-space:nowrap;
+        }
+        #radar-rd-controles{
+            display:flex;
+            flex-direction:column;
+            gap:4px;
+        }
+        #radar-rd-movimiento{
+            width:100%;
+            border:1px solid #79b8ff;
+            border-radius:4px;
+            padding:4px 3px;
+            background:#0d4f80;
+            color:#fff;
+            font:900 9px Arial,sans-serif;
+            cursor:pointer;
+        }
+        #radar-rd-movimiento.reproduciendo{
+            background:#b71c1c;
+            border-color:#ffb3b3;
+        }
+        #radar-rd-cuadro{
+            text-align:center;
+            color:#cfd8dc;
+            font-size:8px;
+            font-weight:800;
+        }
+        .satma-radar-selector-btn{
+            min-width:88px; padding:8px 13px;
+            border:3px solid #263bff; border-radius:2px;
+            background:#073352; color:#33ff35;
+            font:900 15px/1.05 Arial,sans-serif;
+            cursor:pointer; box-shadow:0 2px 7px rgba(0,0,0,.55);
+            text-shadow:0 1px 2px #000;
+        }
+        .satma-radar-selector-btn.activo{
+            background:#0c5f36; border-color:#fff; color:#fff;
+            box-shadow:0 0 9px rgba(51,255,53,.55),0 2px 7px rgba(0,0,0,.55);
+        }
+        .satma-radar-selector-btn.inactivo{
+            background:#263238;
+            border-color:#607d8b;
+            color:#b0bec5;
+            box-shadow:none;
+        }
+        #btn-radar{display:none !important;}
+        .radar-control-extra.oculto-radar-satma{display:none !important;}
+        /* v16_153: panel lateral original del radar eliminado de la interfaz.
+           Se conserva internamente para no romper la lógica existente. */
+        .radar-control-extra{display:none !important;}
+        @media(max-width:768px){
+            #selector-radares-satma{top:38px;left:5px;gap:5px;}
+            .radar-mini-panel{width:76px;padding:4px;font-size:8px;}
+            #radar-rd-movimiento{font-size:8px;padding:4px 2px;}
+            #opacidad-radar-a-superior input[type="range"]{width:32px;}
+            .satma-radar-selector-btn{min-width:68px;padding:6px 8px;font-size:11px;border-width:2px;}
+        }
+
 </style>
 
 <style id="satma-panel-derecho-compacto">
@@ -1759,6 +1867,27 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
 
 <div id="nhc-estado" role="status" aria-live="polite"></div>
 <div id="mapa"></div>
+    <div id="selector-radares-satma" aria-label="Selector de radares">
+        <div id="radar-a-grupo-satma">
+            <button id="btn-radar-a-superior" class="satma-radar-selector-btn activo" type="button" onclick="activarRadarSATMA('A')">Radar A</button>
+            <div id="opacidad-radar-a-superior" class="radar-mini-panel">
+                <div class="op-linea">
+                    <label for="radar-opacidad-superior">Opacidad</label>
+                    <input id="radar-opacidad-superior" type="range" min="0" max="100" value="65" oninput="cambiarOpacidadRadarSuperior(this.value)">
+                    <span id="radar-opacidad-superior-valor" class="op-valor">65%</span>
+                </div>
+                <div id="radar-a-hora-superior" class="radar-mini-hora">Hora: --:--</div>
+            </div>
+        </div>
+        <div id="radar-rd-grupo-satma">
+            <button id="btn-radar-rd-superior" class="satma-radar-selector-btn" type="button" onclick="activarRadarSATMA('RD')">Radar RD</button>
+            <div id="radar-rd-controles" class="radar-mini-panel" style="display:none">
+                <button id="radar-rd-movimiento" type="button" onclick="toggleMovimientoRadarRD()">▶ Movimiento</button>
+                <div id="radar-rd-hora" class="radar-mini-hora">Hora: --:-- UTC</div>
+                <div id="radar-rd-cuadro">Cuadro --/--</div>
+            </div>
+        </div>
+    </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1876,6 +2005,9 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     mapa.createPane('satma-radar');
     mapa.getPane('satma-radar').style.zIndex = 230;
     mapa.getPane('satma-radar').style.pointerEvents = 'none';
+    mapa.createPane('satma-radar-rd');
+    mapa.getPane('satma-radar-rd').style.zIndex = 231;
+    mapa.getPane('satma-radar-rd').style.pointerEvents = 'none';
 
 
     // Orden SATMA de capas meteorológicas y de referencia:
@@ -1949,6 +2081,18 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     let provinciasVisibles = true;
     let radarVisible = true;
     let capaRadar = null;
+
+    // v16_153 · Radar RD publicado en GitHub
+    let radarSeleccionadoSATMA = 'NINGUNO';
+    let capaRadarRD = null;
+    let radarRDData = null;
+    let radarRDIndice = -1;
+    let radarRDAnimando = false;
+    let radarRDTimer = null;
+    const RADAR_RD_INTERVALO_MS = 900;
+    const RADAR_RD_BOUNDS = [[12.743945,-81.767979],[23.863055,-61.158021]];
+    const RADAR_RD_JSON_URL = 'https://rokadom.github.io/visor-satma.coe/radar/radar_rd.json';
+    const RADAR_RD_CAPAS_BASE = 'https://rokadom.github.io/visor-satma.coe/radar/capas/';
     let radarHost = null;
     let radarPathActual = null;
     let radarTimeActual = null;
@@ -3064,9 +3208,27 @@ let datosEstaciones = [];
 
     function actualizarTextoRadar(texto, error = false) {
         const el = document.getElementById('radar-hora');
-        if (!el) return;
-        el.innerText = texto;
-        el.style.color = error ? '#ef9a9a' : '#90caf9';
+        if (el) {
+            el.innerText = texto;
+            el.style.color = error ? '#ef9a9a' : '#90caf9';
+        }
+
+        // v16_153 · Hora compacta bajo Radar A.
+        const horaSup = document.getElementById('radar-a-hora-superior');
+        if (horaSup) {
+            if (error) {
+                horaSup.textContent = 'Hora: no disponible';
+                horaSup.style.color = '#ff9f9f';
+            } else if (radarTimeActual) {
+                const d = new Date(radarTimeActual * 1000);
+                horaSup.textContent = 'Hora: ' + d.toLocaleTimeString('es-DO', {
+                    hour:'2-digit', minute:'2-digit', hour12:false
+                });
+                horaSup.style.color = '#9ee7ff';
+            } else if (String(texto).toLowerCase().includes('actualizando')) {
+                horaSup.textContent = 'Hora: actualizando…';
+            }
+        }
     }
 
     function actualizarIndiceRadar() {
@@ -3108,6 +3270,8 @@ let datosEstaciones = [];
     }
 
     function mostrarFrameRadar(indice, forzar = false) {
+        if(radarSeleccionadoSATMA !== 'A') return;
+
         if (!radarFrames.length) return;
         const total = radarFrames.length;
         radarFrameIndice = ((indice % total) + total) % total;
@@ -3231,6 +3395,278 @@ let datosEstaciones = [];
         setTimeout(() => mapa.invalidateSize(), 150);
     }
 
+
+
+    function localizarControlOpacidadRadarOriginal(){
+        const input = document.getElementById('radar-opacidad');
+        if(!input) return null;
+        // Busca el contenedor visual inmediato que contiene etiqueta + slider + porcentaje.
+        let n = input.parentElement;
+        while(n && n !== document.body){
+            const txt = (n.textContent || '').toLowerCase();
+            if(txt.includes('opacidad') && n.querySelector('#radar-opacidad')){
+                return n;
+            }
+            n = n.parentElement;
+        }
+        return null;
+    }
+
+    function sacarOpacidadDelPanelRadar(){
+        const original = localizarControlOpacidadRadarOriginal();
+        if(original) original.style.display = 'none';
+
+        const oldInput = document.getElementById('radar-opacidad');
+        const nuevo = document.getElementById('radar-opacidad-superior');
+        const valor = document.getElementById('radar-opacidad-superior-valor');
+        if(oldInput && nuevo){
+            let v = parseFloat(oldInput.value);
+            if(Number.isFinite(v)){
+                // El control original puede trabajar 0..1 o 0..100.
+                if(parseFloat(oldInput.max || '1') <= 1) v *= 100;
+                nuevo.value = Math.round(v);
+                if(valor) valor.textContent = Math.round(v) + '%';
+            }
+        }
+    }
+
+    function cambiarOpacidadRadarSuperior(valor){
+        const pct = Math.max(0, Math.min(100, Number(valor) || 0));
+        const etiqueta = document.getElementById('radar-opacidad-superior-valor');
+        if(etiqueta) etiqueta.textContent = Math.round(pct) + '%';
+
+        // Sincroniza con el control original para conservar toda su lógica existente.
+        const oldInput = document.getElementById('radar-opacidad');
+        if(oldInput){
+            const max = parseFloat(oldInput.max || '1');
+            oldInput.value = max <= 1 ? (pct / 100) : pct;
+            oldInput.dispatchEvent(new Event('input', {bubbles:true}));
+            oldInput.dispatchEvent(new Event('change', {bubbles:true}));
+        }else if(capaRadar && capaRadar.setOpacity){
+            capaRadar.setOpacity(pct / 100);
+        }
+    }
+
+    function mostrarControlesRadarA(mostrar){
+        // El panel lateral original permanece oculto permanentemente.
+        // Solo se muestra el control compacto de opacidad bajo Radar A.
+        const opSuperior = document.getElementById('opacidad-radar-a-superior');
+        if(opSuperior) opSuperior.style.display = mostrar ? '' : 'none';
+    }
+
+    function actualizarBotonesRadaresSATMA(){
+        const a = document.getElementById('btn-radar-a-superior');
+        const rd = document.getElementById('btn-radar-rd-superior');
+
+        if(a){
+            const activoA = radarSeleccionadoSATMA === 'A';
+            a.classList.toggle('activo', activoA);
+            a.classList.toggle('inactivo', !activoA);
+        }
+        if(rd){
+            const activoRD = radarSeleccionadoSATMA === 'RD';
+            rd.classList.toggle('activo', activoRD);
+            rd.classList.toggle('inactivo', !activoRD);
+        }
+    }
+
+    function quitarRadarRD(){
+        if(capaRadarRD && mapa.hasLayer(capaRadarRD)) mapa.removeLayer(capaRadarRD);
+    }
+
+    function obtenerFramesRadarRD(){
+        if(!radarRDData) return [];
+        if(Array.isArray(radarRDData.frames)) return radarRDData.frames;
+        if(Array.isArray(radarRDData.radar)) return radarRDData.radar;
+        if(Array.isArray(radarRDData.capas)) return radarRDData.capas;
+        if(Array.isArray(radarRDData)) return radarRDData;
+        return [];
+    }
+
+    function rutaCapaRadarRD(frame){
+        if(!frame) return null;
+        if(typeof frame === 'string') return frame;
+        return frame.layer || frame.file || frame.filename || frame.png || frame.image || frame.url || null;
+    }
+
+    function epochRadarRD(frame){
+        if(!frame) return 0;
+        const a = String(frame.token || '');
+        let m = a.match(/(\d{13})/);
+        if(m) return Number(m[1]);
+        m = a.match(/(\d{10})/);
+        if(m) return Number(m[1]) * 1000;
+
+        const b = String(frame.layer || frame.file || frame.filename || '');
+        m = b.match(/(\d{13})/);
+        if(m) return Number(m[1]);
+        m = b.match(/(\d{10})/);
+        if(m) return Number(m[1]) * 1000;
+        return 0;
+    }
+
+    function actualizarInfoRadarRD(frame, total){
+        const hora = document.getElementById('radar-rd-hora');
+        const cuadro = document.getElementById('radar-rd-cuadro');
+        const e = epochRadarRD(frame);
+
+        if(hora){
+            if(e){
+                const d = new Date(e);
+                hora.textContent = 'Hora: ' + d.toLocaleTimeString('es-DO',{
+                    timeZone:'UTC', hour:'2-digit', minute:'2-digit',
+                    second:'2-digit', hour12:false
+                }) + ' UTC';
+            }else{
+                hora.textContent = 'Hora: --:-- UTC';
+            }
+        }
+        if(cuadro) cuadro.textContent = total ? ('Cuadro ' + (radarRDIndice+1) + '/' + total) : 'Cuadro --/--';
+    }
+
+    function mostrarRadarRD(indice){
+        if(radarSeleccionadoSATMA !== 'RD') return;
+
+        const frames = obtenerFramesRadarRD();
+        if(!frames.length) return;
+
+        if(typeof indice === 'number'){
+            radarRDIndice = ((indice % frames.length) + frames.length) % frames.length;
+        }else if(radarRDIndice < 0 || radarRDIndice >= frames.length){
+            radarRDIndice = frames.length - 1;
+        }
+
+        const frame = frames[radarRDIndice];
+        const ruta = rutaCapaRadarRD(frame);
+        if(!ruta) return;
+
+        quitarRadarRD();
+        const srcBase = /^https?:\/\//i.test(ruta)
+            ? ruta
+            : RADAR_RD_CAPAS_BASE + String(ruta).replace(/^capas\//,'');
+        const src = srcBase + (srcBase.includes('?') ? '&' : '?') + 't=' + Date.now();
+
+        capaRadarRD = L.imageOverlay(src, RADAR_RD_BOUNDS, {
+            pane:'satma-radar-rd',
+            opacity:0.92,
+            interactive:false
+        }).addTo(mapa);
+
+        actualizarInfoRadarRD(frame, frames.length);
+    }
+
+    function detenerMovimientoRadarRD(){
+        radarRDAnimando = false;
+        if(radarRDTimer){
+            clearTimeout(radarRDTimer);
+            radarRDTimer = null;
+        }
+        const btn = document.getElementById('radar-rd-movimiento');
+        if(btn){
+            btn.textContent = '▶ Movimiento';
+            btn.classList.remove('reproduciendo');
+        }
+    }
+
+    function tickMovimientoRadarRD(){
+        if(!radarRDAnimando || radarSeleccionadoSATMA !== 'RD') return;
+        const frames = obtenerFramesRadarRD();
+        if(frames.length < 2){
+            detenerMovimientoRadarRD();
+            return;
+        }
+        mostrarRadarRD(radarRDIndice + 1);
+        const pausa = (radarRDIndice === frames.length - 1) ? 1500 : RADAR_RD_INTERVALO_MS;
+        radarRDTimer = setTimeout(tickMovimientoRadarRD, pausa);
+    }
+
+    function toggleMovimientoRadarRD(){
+        const frames = obtenerFramesRadarRD();
+        if(radarRDAnimando){
+            detenerMovimientoRadarRD();
+            return;
+        }
+        if(frames.length < 2) return;
+        radarRDAnimando = true;
+        const btn = document.getElementById('radar-rd-movimiento');
+        if(btn){
+            btn.textContent = '⏸ Pausa';
+            btn.classList.add('reproduciendo');
+        }
+        tickMovimientoRadarRD();
+    }
+
+    async function cargarRadarRD(){
+        try{
+            const r = await fetch(RADAR_RD_JSON_URL + '?t=' + Date.now(), {cache:'no-store'});
+            if(!r.ok) throw new Error('HTTP ' + r.status);
+            radarRDData = await r.json();
+            const fs = obtenerFramesRadarRD();
+            if(!radarRDAnimando && fs.length) radarRDIndice = fs.length - 1;
+            if(radarSeleccionadoSATMA === 'RD') mostrarRadarRD(radarRDIndice);
+        }catch(e){
+            console.warn('Radar RD no disponible:', e);
+        }
+    }
+
+    function activarRadarSATMA(tipo){
+        const tipoNormalizado = (tipo === 'RD') ? 'RD' : 'A';
+
+        // Segundo clic sobre el radar activo: apagarlo y dejar el mapa sin radar.
+        if(radarSeleccionadoSATMA === tipoNormalizado){
+            detenerAnimacionRadar();
+            detenerMovimientoRadarRD();
+
+            radarSeleccionadoSATMA = 'NINGUNO';
+            radarVisible = false;
+
+            if(capaRadar && mapa.hasLayer(capaRadar)) mapa.removeLayer(capaRadar);
+            quitarRadarRD();
+
+            mostrarControlesRadarA(false);
+            const controlesRD = document.getElementById('radar-rd-controles');
+            if(controlesRD) controlesRD.style.display = 'none';
+
+            actualizarBotonesRadaresSATMA();
+            return;
+        }
+
+        radarSeleccionadoSATMA = tipoNormalizado;
+        actualizarBotonesRadaresSATMA();
+
+        const controlesRD = document.getElementById('radar-rd-controles');
+
+        if(radarSeleccionadoSATMA === 'A'){
+            detenerMovimientoRadarRD();
+            if(controlesRD) controlesRD.style.display = 'none';
+            quitarRadarRD();
+
+            radarVisible = true;
+            mostrarControlesRadarA(true);
+
+            if(!radarFrames.length){
+                cargarRadarRainViewer();
+            }else{
+                mostrarFrameRadar(radarFrameIndice >= 0 ? radarFrameIndice : radarFrames.length - 1, true);
+            }
+
+        }else if(radarSeleccionadoSATMA === 'RD'){
+            detenerAnimacionRadar();
+
+            radarVisible = false;
+            if(capaRadar && mapa.hasLayer(capaRadar)) mapa.removeLayer(capaRadar);
+
+            mostrarControlesRadarA(false);
+            if(controlesRD) controlesRD.style.display = '';
+
+            if(!radarRDData){
+                cargarRadarRD();
+            }else{
+                mostrarRadarRD(radarRDIndice >= 0 ? radarRDIndice : undefined);
+            }
+        }
+    }
+
     function toggleRadar() {
         radarVisible = !radarVisible;
         const btn = document.getElementById('btn-radar');
@@ -3245,6 +3681,21 @@ let datosEstaciones = [];
 
         if (!radarFrames.length) {
             cargarRadarRainViewer();
+    cargarRadarRD();
+
+    // v16_153: iniciar con el mapa limpio, sin radares activos.
+    radarSeleccionadoSATMA = 'NINGUNO';
+    radarVisible = false;
+    if(capaRadar && mapa.hasLayer(capaRadar)) mapa.removeLayer(capaRadar);
+    quitarRadarRD();
+
+    actualizarBotonesRadaresSATMA();
+    mostrarControlesRadarA(false);
+
+    const controlesRDInicial = document.getElementById('radar-rd-controles');
+    if(controlesRDInicial) controlesRDInicial.style.display = 'none';
+
+    setTimeout(sacarOpacidadDelPanelRadar, 0);
             return;
         }
 
@@ -4364,6 +4815,7 @@ let datosEstaciones = [];
 
     setInterval(cargar, 120000);
     setInterval(cargarRadarRainViewer, 300000);
+    setInterval(cargarRadarRD, 60000);
     setInterval(cargarSismosCombinados, 300000);
 
     // ===== Boletín automático de lluvias de la última hora =====
@@ -7489,8 +7941,9 @@ function abrirHerramientaMeteorologica(producto){
     const frame=document.getElementById('visor-herramientas-frame');
     if(!overlay||!frame) return;
     const base='herramientas.html';
-    // GitHub Pages: herramienta alojada en el mismo directorio/origen.
-    frame.src=base+'?producto='+encodeURIComponent(producto)+'&v=149';
+    // Herramientas Meteorológicas propias del visor COE.
+    // Se cargan desde la MISMA carpeta del visor para evitar bloqueos file:/// entre carpetas.
+    frame.src=base+'?producto='+encodeURIComponent(producto)+'&t='+Date.now();
     overlay.classList.add('visible');
     overlay.setAttribute('aria-hidden','false');
 }
