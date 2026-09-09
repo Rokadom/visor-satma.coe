@@ -255,10 +255,11 @@ async function fijarPuertoPlataMovil(){
   // costa norte completa de Puerto Plata, desde el oeste de Luperon/Villa Isabela
   // hasta Sosua y alrededores, con la franja de Los Hidalgos-Imbert-Altamira-Esperanza
   // en la parte inferior y solamente el Atlantico inmediato al norte.
-  const bounds=L.latLngBounds([[19.43,-71.42],[20.06,-70.18]]);
+  const bounds=L.latLngBounds([[19.50,-71.35],[20.00,-70.15]]);
 
-  // Usar el rectangulo completo, SIN acercar un nivel adicional. El contenedor movil
-  // tiene proporcion panoramica para que el mismo sector del ejemplo quepa completo.
+  // IMPORTANTE: Leaflet debe recalcular el tamaño REAL del contenedor móvil antes
+  // de calcular el zoom. Sin esto puede encuadrar Turks & Caicos en lugar de Puerto Plata.
+  map.invalidateSize(false);
   map.fitBounds(bounds,{padding:[0,0],animate:false});
   const z=map.getZoom();
   map.setView(bounds.getCenter(),z,{animate:false});
@@ -1644,29 +1645,44 @@ function render(tracks,current){
 <!-- V2 móvil: hora de barrido visible; AUTO RADAR oculto en móvil · 2026-09-09 -->
 
 <style id="mobilePuertoPlataVentanaFija">
-/* Ventana fija Puerto Plata: en celular solo se muestra el recorte solicitado. */
+/* V5 · Puerto Plata celular: mapa correcto + sin gran fondo negro entre mapa y controles. */
 @media (max-width:768px){
   html,body{background:#07111c!important;overflow:hidden!important;}
+  :root{--pp-top:72px;--pp-gap:8px;--pp-map-h:calc((100vw - 16px) / 1.47);}
+
   #map{
     position:fixed!important;
-    left:8px!important;
-    right:8px!important;
-    top:72px!important;
+    left:8px!important;right:8px!important;top:var(--pp-top)!important;
     width:calc(100vw - 16px)!important;
-    /* Proporcion panoramica similar al cuadro de referencia: muestra Puerto Plata
-       completa de oeste a este sin llenar la pantalla con mar ni provincias del sur. */
-    height:calc((100vw - 16px) / 1.47)!important;
-    min-height:0!important;
-    max-height:520px!important;
-    border-radius:0!important;
-    overflow:hidden!important;
+    height:var(--pp-map-h)!important;min-height:0!important;max-height:520px!important;
+    border-radius:0!important;overflow:hidden!important;
   }
-  /* Los botones de producto quedan asociados al borde derecho de la ventana. */
-  #convBtn{right:6px!important;bottom:188px!important;}
-  #prodRadarBtn{right:6px!important;bottom:148px!important;}
+
+  /* Los botones quedan inmediatamente debajo del mapa, no flotando en medio del fondo negro. */
+  #convBtn{
+    position:fixed!important;right:6px!important;bottom:auto!important;
+    top:calc(var(--pp-top) + var(--pp-map-h) + 10px)!important;
+  }
+  #prodRadarBtn{
+    position:fixed!important;right:6px!important;bottom:auto!important;
+    top:calc(var(--pp-top) + var(--pp-map-h) + 52px)!important;
+  }
+
+  /* Panel de animación justo debajo de los botones laterales. */
+  #anim115{
+    position:fixed!important;bottom:auto!important;
+    top:calc(var(--pp-top) + var(--pp-map-h) + 100px)!important;
+  }
+}
+@media (max-width:430px){
+  :root{--pp-top:72px;--pp-map-h:calc((100vw - 12px) / 1.47);}
+  #map{left:6px!important;right:6px!important;width:calc(100vw - 12px)!important;}
+  #convBtn{right:4px!important;}
+  #prodRadarBtn{right:4px!important;}
 }
 </style>
 <!-- Ventana movil fija Puerto Plata · recorte solicitado por el usuario · 2026-09-09 -->
 <!-- RECORTE FIJO PUERTO PLATA V4 · encuadre panoramico aprobado · 2026-09-09 -->
+<!-- PUERTO PLATA MOVIL V5 · corregido tamaño Leaflet y eliminado hueco negro · 2026-09-09 -->
 </body>
 </html>
