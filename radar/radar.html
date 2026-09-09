@@ -293,45 +293,36 @@ async function init(){
   idx=Math.max(0,(data.frames||[]).length-1);
   applyLayers();
 
-  // V13 · Vista fija PC:
-  // Se conserva exactamente este encuadre como vista general.
-  // El usuario puede hacer zoom hacia adentro, pero NO desplazar el mapa
-  // horizontalmente ni verticalmente.
+  // V15 · Desplazamiento limitado a RD y entorno inmediato:
+  // Se puede mover el mapa para recorrer toda República Dominicana,
+  // pero sin pasar aproximadamente de la mitad de Haití al oeste
+  // ni de la mitad de Puerto Rico al este.
   map.fitBounds([[17.35,-74.65],[20.15,-67.95]]);
   setTimeout(function(){
     map.invalidateSize(false);
 
-    // Desplazar ligeramente el encuadre hacia Puerto Rico (este),
-    // mostrando un poco menos del lado de Haití.
-    const baseCenter=map.getCenter();
-    const fixedCenter=L.latLng(baseCenter.lat, baseCenter.lng + 0.42);
+    // Mantener esta vista general como máximo alejamiento.
     const overviewZoom=map.getZoom();
-    map.setView(fixedCenter,overviewZoom,{animate:false});
-
-    // No permitir alejar más que la vista general actual.
     map.setMinZoom(overviewZoom);
-
-    // Permitir acercamiento hasta el máximo del mapa base.
     map.setMaxZoom(18);
 
-    // Bloquear cualquier desplazamiento/paneo.
-    if(map.dragging) map.dragging.disable();
-    if(map.keyboard) map.keyboard.disable();
-    if(map.boxZoom) map.boxZoom.disable();
+    // Límites operativos de desplazamiento.
+    // Oeste: ~mitad de Haití. Este: ~mitad de Puerto Rico.
+    // Norte/sur dejan margen suficiente para recorrer todo RD.
+    const limitesRD=L.latLngBounds(
+      [17.00,-73.10],
+      [20.65,-66.20]
+    );
+    map.setMaxBounds(limitesRD);
 
-    // Mantener siempre el mismo centro al cambiar el zoom.
-    map.on('zoomend',function(){
-      map.setView(fixedCenter,map.getZoom(),{animate:false});
-    });
+    // Permitir desplazamiento y zoom normales dentro del área.
+    if(map.dragging) map.dragging.enable();
+    if(map.keyboard) map.keyboard.enable();
+    if(map.boxZoom) map.boxZoom.enable();
 
-    // En caso de que algún evento externo intente mover el mapa,
-    // devolverlo inmediatamente al centro fijo.
-    map.on('moveend',function(){
-      const c=map.getCenter();
-      if(Math.abs(c.lat-fixedCenter.lat)>1e-8 || Math.abs(c.lng-fixedCenter.lng)>1e-8){
-        map.setView(fixedCenter,map.getZoom(),{animate:false});
-      }
-    });
+    // Si el mapa intenta salir por inercia, devolverlo al límite permitido.
+    map.options.maxBoundsViscosity=1.0;
+    map.panInsideBounds(limitesRD,{animate:false});
   },80);
  }catch(e){
   const _st1=$('status'); if(_st1) _st1.textContent='Error cargando capas: '+e.message;
@@ -1654,6 +1645,6 @@ function render(tracks,current){
 </script>
 
 
-<!-- RADAR PC V14 · centro fijo desplazado 0.42 grados hacia Puerto Rico · 2026-09-09 -->
+<!-- RADAR PC V15 · desplazamiento libre dentro de RD: límite mitad Haití / mitad Puerto Rico · 2026-09-09 -->
 </body>
 </html>
