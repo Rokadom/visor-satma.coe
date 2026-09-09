@@ -293,15 +293,41 @@ async function init(){
   idx=Math.max(0,(data.frames||[]).length-1);
   applyLayers();
 
-  // V12 · Zoom PC:
-  // Esta vista general queda como el máximo alejamiento permitido.
-  // Se puede acercar libremente hasta el nivel 18 del mapa base.
+  // V13 · Vista fija PC:
+  // Se conserva exactamente este encuadre como vista general.
+  // El usuario puede hacer zoom hacia adentro, pero NO desplazar el mapa
+  // horizontalmente ni verticalmente.
   map.fitBounds([[17.35,-74.65],[20.15,-67.95]]);
   setTimeout(function(){
     map.invalidateSize(false);
+
+    const fixedCenter=map.getCenter();
     const overviewZoom=map.getZoom();
+
+    // No permitir alejar más que la vista general actual.
     map.setMinZoom(overviewZoom);
+
+    // Permitir acercamiento hasta el máximo del mapa base.
     map.setMaxZoom(18);
+
+    // Bloquear cualquier desplazamiento/paneo.
+    if(map.dragging) map.dragging.disable();
+    if(map.keyboard) map.keyboard.disable();
+    if(map.boxZoom) map.boxZoom.disable();
+
+    // Mantener siempre el mismo centro al cambiar el zoom.
+    map.on('zoomend',function(){
+      map.setView(fixedCenter,map.getZoom(),{animate:false});
+    });
+
+    // En caso de que algún evento externo intente mover el mapa,
+    // devolverlo inmediatamente al centro fijo.
+    map.on('moveend',function(){
+      const c=map.getCenter();
+      if(Math.abs(c.lat-fixedCenter.lat)>1e-8 || Math.abs(c.lng-fixedCenter.lng)>1e-8){
+        map.setView(fixedCenter,map.getZoom(),{animate:false});
+      }
+    });
   },80);
  }catch(e){
   const _st1=$('status'); if(_st1) _st1.textContent='Error cargando capas: '+e.message;
@@ -1624,6 +1650,6 @@ function render(tracks,current){
 </script>
 
 
-<!-- RADAR PC V12 · zoom limitado: vista general como máximo alejamiento / acercamiento hasta nivel 18 · 2026-09-09 -->
+<!-- RADAR PC V13 · zoom permitido sin desplazamiento: centro fijo / vista general mínima / zoom 18 · 2026-09-09 -->
 </body>
 </html>
