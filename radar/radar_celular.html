@@ -218,6 +218,8 @@ function applyLayers(){
  }
  const _fi0=$('fi'); if(_fi0) _fi0.textContent='';
  const _st0=$('status'); if(_st0) _st0.textContent='Radar propiedad del IDAC, modificado por Claudio Martinez';
+ // Mantener visible la hora UTC del barrido en cada cambio de cuadro.
+ if(typeof window.refresh124==='function') window.refresh124();
 }
 const prev0=$('prev'), next0=$('next');
 if(prev0) prev0.onclick=()=>{if(!data)return;idx=(idx-1+data.frames.length)%data.frames.length;applyLayers()};
@@ -317,15 +319,19 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    return null;
  }
  function clock115(f){
-   const e=epoch115(f);
-   if(!e || !Number.isFinite(e)) return '--:--:--';
+   let e=0;
+   try{
+     if(typeof radarFrameEpoch==='function') e=radarFrameEpoch(f);
+   }catch(_e){}
+   if(!e) e=epoch115(f);
+   if(!e || !Number.isFinite(e)) return '--:--:-- UTC';
    const d=new Date(e);
    return d.toLocaleTimeString('es-DO',{timeZone:'UTC',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+' UTC';
  }
  function refresh124(){
    const n=total115(), f=frame115();
    const c=clock115(f);
-   const _t=document.getElementById('time115'); if(_t) _t.textContent=c;
+   const _t=document.getElementById('time115'); if(_t) _t.textContent='Barrido: '+c;
    const _ai=document.getElementById('aInfo115'); if(_ai) _ai.textContent =
      n ? ((idx+1)+'/'+n+' · '+(f.token||f.layer||'barrido')+' · mapa fijo')
        : 'esperando capas…';
@@ -1569,10 +1575,13 @@ function render(tracks,current){
   #time115{display:block!important;width:100%!important;min-width:0!important;box-sizing:border-box!important;margin:3px 0!important;padding:5px 4px!important;font-size:20px!important}
   #speed115{display:flex!important;width:100%!important;margin:2px 0 0!important;gap:2px!important;justify-content:center!important;flex-wrap:nowrap!important}
   #speed115 button{flex:1 1 0!important;min-width:0!important;margin:1px!important;padding:7px 4px!important}
-  #auto13{display:flex!important;width:100%!important;box-sizing:border-box!important;margin:2px 0 0!important;padding:5px 0 0!important;border-left:0!important;border-top:1px solid #496576!important;justify-content:center!important;align-items:center!important;gap:4px!important}
-  #auto13 .line{display:none!important}
-  #auto13 .title{font-size:13px!important}
-  #auto13 button{font-size:12px!important;padding:7px 8px!important;margin:0!important}
+  /* En celular se oculta AUTO RADAR/Actualizar para priorizar la hora de cada barrido. */
+  #auto13{display:none!important}
+
+  /* Hora del barrido siempre visible y destacada durante la animación. */
+  #time115{display:block!important;visibility:visible!important;opacity:1!important;width:100%!important;min-width:0!important;
+    box-sizing:border-box!important;margin:4px 0 3px!important;padding:6px 4px!important;font-size:19px!important;line-height:1.1!important;
+    font-weight:900!important;background:#102b3b!important;border:1px solid #8aa5b6!important;border-radius:5px!important;color:#fff!important}
 
   /* Botones laterales más compactos, más juntos y pegados al borde derecho */
   #convBtn{right:4px!important;bottom:190px!important;font-size:12px!important;padding:8px 9px!important;border-radius:7px!important}
@@ -1583,11 +1592,12 @@ function render(tracks,current){
   #anim115{width:calc(100vw - 12px)!important;bottom:6px!important;padding:5px!important}
   #aPrev115,#aNext115{width:38px!important}
   #aPlay115{width:50%!important;font-size:14px!important}
-  #time115{font-size:18px!important;padding:5px 3px!important}
+  #time115{font-size:17px!important;padding:5px 3px!important}
   #convBtn{right:3px!important;bottom:184px!important;font-size:11px!important;padding:7px 8px!important}
   #prodRadarBtn{right:3px!important;bottom:146px!important;font-size:11px!important;padding:7px 8px!important}
 }
 </style>
 
+<!-- V2 móvil: hora de barrido visible; AUTO RADAR oculto en móvil · 2026-09-09 -->
 </body>
 </html>
