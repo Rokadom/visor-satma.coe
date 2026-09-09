@@ -116,48 +116,65 @@ input[type=range]{width:155px}
   position:fixed;left:12px;top:50%;transform:translateY(-50%);
   z-index:100080;background:rgba(4,20,31,.94);color:#fff;
   border:1px solid #7892a3;border-radius:7px;padding:8px 9px;
-  font:11px Arial;box-shadow:0 2px 8px #0008;pointer-events:none;
+  font:10px Arial;box-shadow:0 2px 8px #0008;pointer-events:none;
 }
 #radarScale .rsTitle{
   font-weight:900;text-align:center;margin-bottom:7px;font-size:11px;
   letter-spacing:.2px;color:#d9edf7
 }
 #radarScale .rsHead{
-  display:grid;grid-template-columns:54px 22px 74px;gap:5px;
-  align-items:end;margin-bottom:4px;font-size:9px;font-weight:900;color:#b9ccd8;
+  display:grid;grid-template-columns:42px 24px 48px;gap:5px;
+  align-items:end;margin-bottom:3px;font-size:9px;font-weight:900;color:#b9ccd8;
   text-align:center
 }
 #radarScale .rsRow{
-  display:grid;grid-template-columns:54px 22px 74px;gap:5px;
-  align-items:center;margin:2px 0;white-space:nowrap
+  display:grid;grid-template-columns:42px 24px 48px;gap:5px;
+  align-items:center;margin:0;white-space:nowrap
 }
 #radarScale .rsDbz{
   text-align:right;font-weight:900;color:#fff;font-variant-numeric:tabular-nums
 }
 #radarScale .rsColor{
-  width:22px;height:16px;border:1px solid #ffffff88;box-sizing:border-box
+  width:24px;height:15px;border-left:1px solid #ffffff88;border-right:1px solid #ffffff88;
+  box-sizing:border-box
 }
-#radarScale .rsIntensity{
-  text-align:left;font-weight:800;color:#fff
+#radarScale .rsRow:first-of-type .rsColor{border-top:1px solid #ffffff88}
+#radarScale .rsMmh{
+  text-align:left;font-weight:800;color:#fff;font-variant-numeric:tabular-nums
 }
-#radarScale .rsVery{background:#e53a25}
-#radarScale .rsStrong{background:#f2cf16}
-#radarScale .rsModerate{background:#19b84a}
-#radarScale .rsWeak{background:#25b9d0}
+#radarScale .c60{background:#c000c8}
+#radarScale .c55{background:#e3268c}
+#radarScale .c50{background:#e53a25}
+#radarScale .c45{background:#f27d20}
+#radarScale .c40{background:#f2cf16}
+#radarScale .c35{background:#79d226}
+#radarScale .c30{background:#19b84a}
+#radarScale .c25{background:#18c7a1}
+#radarScale .c20{background:#25b9d0}
+#radarScale .c15{background:#62d6ff}
+#radarScale .rsNote{
+  margin-top:6px;font-size:8px;color:#9fb3bf;text-align:center;line-height:1.2
+}
 </style>
 
 </head>
 <body>
 <div id="map"></div>
 
-<div id="radarScale" aria-label="Escala de reflectividad radar en dBZ">
+<div id="radarScale" aria-label="Escala extendida de reflectividad radar">
  <div class="rsTitle">REFLECTIVIDAD</div>
- <div class="rsHead"><span>dBZ</span><span></span><span>mm/h aprox.</span></div>
- <div class="rsRow"><span class="rsDbz">50–60</span><span class="rsColor rsVery"></span><span class="rsIntensity">49–205</span></div>
- <div class="rsRow"><span class="rsDbz">40–50</span><span class="rsColor rsStrong"></span><span class="rsIntensity">12–49</span></div>
- <div class="rsRow"><span class="rsDbz">30–40</span><span class="rsColor rsModerate"></span><span class="rsIntensity">3–12</span></div>
- <div class="rsRow"><span class="rsDbz">20–30</span><span class="rsColor rsWeak"></span><span class="rsIntensity">0.6–3</span></div>
-<div style="margin-top:6px;font-size:8px;color:#9fb3bf;text-align:center">Estimación Z–R</div>
+ <div class="rsHead"><span>dBZ</span><span></span><span>mm/h</span></div>
+ <div class="rsRow"><span class="rsDbz">60</span><span class="rsColor c60"></span><span class="rsMmh">200</span></div>
+ <div class="rsRow"><span class="rsDbz">55</span><span class="rsColor c55"></span><span class="rsMmh">100</span></div>
+ <div class="rsRow"><span class="rsDbz">50</span><span class="rsColor c50"></span><span class="rsMmh">50</span></div>
+ <div class="rsRow"><span class="rsDbz">45</span><span class="rsColor c45"></span><span class="rsMmh">25</span></div>
+ <div class="rsRow"><span class="rsDbz">40</span><span class="rsColor c40"></span><span class="rsMmh">12</span></div>
+ <div class="rsRow"><span class="rsDbz">35</span><span class="rsColor c35"></span><span class="rsMmh">6</span></div>
+ <div class="rsRow"><span class="rsDbz">30</span><span class="rsColor c30"></span><span class="rsMmh">3</span></div>
+ <div class="rsRow"><span class="rsDbz">25</span><span class="rsColor c25"></span><span class="rsMmh">1</span></div>
+ <div class="rsRow"><span class="rsDbz">20</span><span class="rsColor c20"></span><span class="rsMmh">0.6</span></div>
+ <div class="rsRow"><span class="rsDbz">15</span><span class="rsColor c15"></span><span class="rsMmh">0.2</span></div>
+ <div class="rsNote">mm/h aproximados · relación Z–R</div>
 </div>
 <div id="top">
  <div id="title">RADAR RD · ACTUALIZACIÓN AUTOMÁTICA · TIEMPO REAL</div>
@@ -1597,6 +1614,6 @@ function render(tracks,current){
 </script>
 
 
-<!-- RADAR PC V10 · escala dBZ izquierda / mm-h derecha + AUTO RADAR por color · 2026-09-09 -->
+<!-- RADAR PC V11 · escala extendida 15-60 dBZ / 0.2-200 mm-h + AUTO RADAR por color · 2026-09-09 -->
 </body>
 </html>
