@@ -292,7 +292,17 @@ async function init(){
   ordenarBarridosCronologicamente(data);
   idx=Math.max(0,(data.frames||[]).length-1);
   applyLayers();
+
+  // V12 · Zoom PC:
+  // Esta vista general queda como el máximo alejamiento permitido.
+  // Se puede acercar libremente hasta el nivel 18 del mapa base.
   map.fitBounds([[17.35,-74.65],[20.15,-67.95]]);
+  setTimeout(function(){
+    map.invalidateSize(false);
+    const overviewZoom=map.getZoom();
+    map.setMinZoom(overviewZoom);
+    map.setMaxZoom(18);
+  },80);
  }catch(e){
   const _st1=$('status'); if(_st1) _st1.textContent='Error cargando capas: '+e.message;
  }
@@ -1614,6 +1624,6 @@ function render(tracks,current){
 </script>
 
 
-<!-- RADAR PC V11 · escala extendida 15-60 dBZ / 0.2-200 mm-h + AUTO RADAR por color · 2026-09-09 -->
+<!-- RADAR PC V12 · zoom limitado: vista general como máximo alejamiento / acercamiento hasta nivel 18 · 2026-09-09 -->
 </body>
 </html>
