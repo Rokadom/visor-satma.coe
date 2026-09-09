@@ -237,6 +237,58 @@ function ordenarBarridosCronologicamente(j){
  return j;
 }
 
+// ===== ENCUADRE FIJO PUERTO PLATA · SOLO VERSION CELULAR =====
+function esVersionCelular(){
+  return window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+}
+
+function nombreProvinciaFeature(f){
+  const p=(f&&f.properties)||{};
+  return String(p.name||p.NAME||p.NAME_1||p.Provincia||p.provincia||p.PROVINCIA||p.NOMBRE||p.nombre||'');
+}
+
+async function fijarPuertoPlataMovil(){
+  if(!esVersionCelular()) return false;
+
+  // Ajustar exactamente a la geometria de la provincia cuando el GeoJSON este disponible.
+  let bounds=null;
+  try{
+    const r=await fetch('provincias_rd.geojson?t='+Date.now(),{cache:'no-store'});
+    if(r.ok){
+      const gj=await r.json();
+      const feat=(gj.features||[]).find(f=>
+        nombreProvinciaFeature(f).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes('puerto plata')
+      );
+      if(feat){
+        const tmp=L.geoJSON(feat);
+        const b=tmp.getBounds();
+        if(b&&b.isValid()) bounds=b;
+      }
+    }
+  }catch(e){}
+
+  // Respaldo aproximado, solo si no se pudo leer la provincia.
+  if(!bounds) bounds=L.latLngBounds([[19.52,-71.24],[19.96,-70.12]]);
+
+  // Encuadre de Puerto Plata y bloqueo total del mapa en celular.
+  map.fitBounds(bounds,{padding:[6,6],animate:false});
+  const z=map.getZoom();
+  map.setMinZoom(z);
+  map.setMaxZoom(z);
+  map.setMaxBounds(bounds.pad(0.03));
+
+  if(map.dragging) map.dragging.disable();
+  if(map.touchZoom) map.touchZoom.disable();
+  if(map.doubleClickZoom) map.doubleClickZoom.disable();
+  if(map.scrollWheelZoom) map.scrollWheelZoom.disable();
+  if(map.boxZoom) map.boxZoom.disable();
+  if(map.keyboard) map.keyboard.disable();
+  if(map.tap) map.tap.disable();
+  if(map.zoomControl) map.zoomControl.remove();
+
+  return true;
+}
+
 async function init(){
  try{
   data=await fetch('radar_rd.json?t='+Date.now(),{cache:'no-store'}).then(r=>{
@@ -246,7 +298,9 @@ async function init(){
   ordenarBarridosCronologicamente(data);
   idx=Math.max(0,(data.frames||[]).length-1);
   applyLayers();
-  map.fitBounds([[17.35,-74.65],[20.15,-67.95]]);
+  if(!(await fijarPuertoPlataMovil())){
+    map.fitBounds([[17.35,-74.65],[20.15,-67.95]]);
+  }
  }catch(e){
   const _st1=$('status'); if(_st1) _st1.textContent='Error cargando capas: '+e.message;
  }
