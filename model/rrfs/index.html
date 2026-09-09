@@ -1,0 +1,893 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<!-- V41.7.5: guía movida fuera del zoom + nota inferior eliminada -->
+<title>RRFS HISPANIOLA · 24H ONLINE</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+html,body,#map{height:100%;margin:0;background:#061622;font-family:Arial,sans-serif}
+#top{position:absolute;z-index:1000;top:10px;left:50%;transform:translateX(-50%);background:rgba(5,15,25,.94);color:#fff;padding:9px 16px;border-radius:8px;border:1px solid #687783;font-weight:bold}
+#products,#forecast,#accum{position:absolute;z-index:1000;left:50%;transform:translateX(-50%);background:rgba(5,15,25,.94);padding:5px 7px;border-radius:8px}
+#products{bottom:72px;white-space:nowrap}
+#accum{bottom:112px;white-space:nowrap}
+#forecast{
+ bottom:4px;
+ width:min(1180px,calc(100vw - 18px));
+ box-sizing:border-box;
+ display:grid;
+ grid-template-columns:repeat(24,minmax(0,1fr));
+ gap:2px;
+ white-space:normal;
+}
+#forecast .groupLabel{
+ grid-column:1/-1;
+ margin:0 0 2px 2px;
+ line-height:14px;
+}
+#forecast button{
+ margin:0;
+ padding:1px 2px;
+ min-width:0;
+ font-size:10px;
+ line-height:11px;
+ height:19px;
+}
+.groupLabel{color:#fff;font-size:11px;font-weight:bold;margin-right:5px}
+
+#products,#accum{padding:3px 6px}
+#products button,#accum button{
+ margin:1px;
+ padding:4px 7px;
+ font-size:12px;
+ line-height:14px;
+ height:29px;
+}
+
+button{margin:2px;padding:7px 9px;background:#263a49;color:white;border:1px solid #87949e;border-radius:5px;font-weight:bold;cursor:pointer}
+button.active{background:#168de2}button:disabled{opacity:.35;cursor:not-allowed}
+#status{position:absolute;z-index:1000;bottom:154px;left:50%;transform:translateX(-50%);background:rgba(5,15,25,.94);color:#fff;padding:7px 12px;border-radius:7px;font-size:12px;max-width:88%;text-align:center}
+@media(max-width:1100px){
+ #forecast{grid-template-columns:repeat(12,minmax(0,1fr));}
+ #products{bottom:112px}
+ #accum{bottom:152px}
+ #status{bottom:194px}
+}
+ #products{bottom:206px}
+ #accum{bottom:162px}
+ #status{bottom:250px}
+}
+#legend{position:absolute;z-index:1000;left:10px;top:72px;background:rgba(5,15,25,.92);color:white;padding:8px;border-radius:7px;font-size:12px;min-width:92px}
+#legend.precipLegend{padding:10px 11px;font-size:14px;min-width:112px;line-height:1.18}
+#legend.precipLegend .sw{width:22px;height:12px;margin-right:7px}
+#btnAyuda{position:absolute;z-index:1002;left:38px;top:286px;width:27px;height:27px;border-radius:50%;padding:0;margin:0;background:rgba(5,15,25,.94);border:1px solid #9aa7b0;color:#fff;font-size:17px;font-weight:bold;line-height:25px;text-align:center}
+#btnAyuda:hover{background:#168de2}
+#panelAyuda{display:none;position:absolute;z-index:1003;left:78px;top:276px;width:330px;max-width:calc(100vw - 150px);background:rgba(5,15,25,.97);color:#fff;border:1px solid #87949e;border-radius:8px;padding:11px 12px;font-size:12px;line-height:1.35;box-shadow:0 3px 14px rgba(0,0,0,.45)}
+#panelAyuda.visible{display:block}
+#panelAyuda .ayudaTitulo{font-size:14px;font-weight:900;margin-bottom:6px;color:#fff}
+#panelAyuda .ayudaSub{font-weight:800;color:#a9dcff;margin-top:7px}
+#cerrarAyuda{float:right;margin:-3px -3px 4px 8px;padding:2px 7px;font-size:13px}
+
+#btnInicio{position:absolute;z-index:1001;right:12px;top:10px;background:rgba(5,15,25,.94);color:#fff;padding:9px 13px;border:1px solid #87949e;border-radius:7px;font-weight:bold;cursor:pointer}
+#btnInicio:hover{background:#168de2}
+#hint{position:absolute;z-index:1000;right:12px;top:72px;background:rgba(5,15,25,.92);color:#fff;padding:7px 10px;border-radius:7px;font-size:12px}
+.sw{display:inline-block;width:18px;height:10px;margin-right:5px}canvas.rrfs{position:absolute;left:0;top:0;pointer-events:none}
+.rrfsTip{background:rgba(3,15,25,.95);color:#fff;border:1px solid #9aa7b0;border-radius:6px;padding:7px 9px;box-shadow:none;font-size:12px}
+.severeTip{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}.severeTip:before{display:none!important}
+</style></head><body>
+<div id="map"></div><div id="top">RRFS HISPANIOLA · MODELO DE ALTA RESOLUCIÓN · 24 HORAS</div>
+
+<button id="btnAyuda" type="button" title="Guía rápida del producto">ⓘ</button>
+<div id="panelAyuda" role="dialog" aria-label="Guía rápida del producto">
+ <button id="cerrarAyuda" type="button">×</button>
+ <div id="contenidoAyuda"></div>
+</div>
+<div id="legend"></div><div id="hint">Pase el mouse sobre un municipio</div>
+<div id="status">Conectando...</div>
+<div id="products"><span class="groupLabel">PRODUCTO:</span></div>
+<div id="accum"><span class="groupLabel">LLUVIA / ACUMULADO:</span></div>
+<div id="forecast"><span class="groupLabel">TIEMPO DEL PRONÓSTICO:</span></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+document.addEventListener('click',function(){
+ if(typeof hideSeaPrecipTip==='function' && selectedProduct!=='precip')hideSeaPrecipTip();
+});
+</script><script>
+const SERVER='rrfs-static';
+
+// RRFS HISPANIOLA 24H ONLINE:
+// traduce las llamadas del visor original a JSON estáticos publicados en GitHub Pages.
+const _rrfsFetchNativo = window.fetch.bind(window);
+window.fetch = function(input, init){
+  const url = (typeof input === 'string') ? input : (input && input.url ? input.url : '');
+  if(url.indexOf(SERVER + '/list') === 0 || url.indexOf(SERVER + '/status') === 0){
+    return _rrfsFetchNativo('datos/catalog.json?t=' + Date.now(), init);
+  }
+  if(url.indexOf(SERVER + '/field?') === 0){
+    const q = url.split('?')[1] || '';
+    const p = new URLSearchParams(q);
+    const prod = p.get('product') || 'precip';
+    const h = parseInt(p.get('h') || '3', 10);
+    const w = parseInt(p.get('window') || '3', 10);
+    const file = 'datos/' + prod + '_f' + String(h).padStart(3,'0') + '_w' + String(w).padStart(2,'0') + '.json?t=' + Date.now();
+    return _rrfsFetchNativo(file, init);
+  }
+  return _rrfsFetchNativo(input, init);
+};
+const map=L.map('map').setView([18.75,-70.2],7);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Esri'}).addTo(map);
+
+
+const helpGuide={
+ precip:{
+  title:'Precipitación',
+  what:'Lluvia pronosticada por hora o acumulada para el período seleccionado.',
+  read:'Use LLUVIA 1 H para ver la precipitación de una hora concreta y ACUM. 3 H, 6 H, 9 H, 12 H o 24 H para evaluar el total del período. La escala resalta desde 0.1 mm para mostrar mejor lluvia débil y moderada.',
+  key:'Útil para vigilancia de lluvias fuertes e inundación; no equivale por sí solo a una alerta.'
+ },
+ tmp:{
+  title:'Temperatura 2 m',
+  what:'Temperatura del aire aproximadamente a 2 metros sobre la superficie.',
+  read:'Permite localizar zonas cálidas o frescas. Aire muy cálido puede favorecer inestabilidad cuando existe suficiente humedad.',
+  key:'Debe interpretarse junto con punto de rocío, CAPE y nubosidad.'
+ },
+ dpt:{
+  title:'Punto de rocío 2 m',
+  what:'Medida directa del contenido de humedad cerca de la superficie.',
+  read:'Valores altos indican aire más húmedo. En ambiente tropical, valores cercanos o superiores a 20 °C suelen representar humedad abundante.',
+  key:'Mayor humedad puede alimentar convección, pero no garantiza tormentas.'
+ },
+ cape:{
+  title:'CAPE',
+  what:'Energía potencial disponible para corrientes ascendentes convectivas.',
+  read:'Como guía: <500 baja; 1000–2500 moderada; 2500–3500 alta; >3500 muy alta.',
+  key:'CAPE alto necesita un mecanismo de ascenso y CIN suficientemente débil para producir tormentas.'
+ },
+ cin:{
+  title:'CIN',
+  what:'Energía que inhibe el inicio de la convección; actúa como una “tapa”.',
+  read:'Magnitud pequeña facilita el desarrollo. Magnitud grande puede impedir tormentas hasta que exista calentamiento o forzamiento suficiente.',
+  key:'CIN fuerte no elimina el riesgo si luego la tapa se rompe.'
+ },
+ hlcy:{
+  title:'Helicidad 0–3 km',
+  what:'Mide el potencial de giro del flujo en los primeros 3 km.',
+  read:'Valores crecientes indican un ambiente más favorable a corrientes ascendentes rotatorias.',
+  key:'Es más útil combinada con CAPE y cizalladura; no confirma una supercélula por sí sola.'
+ },
+ refc:{
+  title:'Reflectividad',
+  what:'Intensidad simulada del eco de precipitación en dBZ.',
+  read:'Ecos mayores suelen indicar precipitación o convección más intensa; valores >50 dBZ pueden acompañar núcleos fuertes.',
+  key:'Es reflectividad del modelo, no radar observado en tiempo real.'
+ },
+ gust:{
+  title:'Ráfagas',
+  what:'Velocidad máxima pronosticada de ráfagas cerca de superficie.',
+  read:'Valores más altos señalan mayor potencial de viento fuerte local.',
+  key:'Compare con DCAPE y reflectividad cuando busque ráfagas convectivas.'
+ },
+ wind:{
+  title:'Viento 10 m',
+  what:'Velocidad del viento aproximadamente a 10 m sobre la superficie.',
+  read:'Describe el viento ambiental cercano al suelo, no necesariamente la ráfaga máxima.',
+  key:'Para tiempo severo conviene compararlo con Ráfagas y DCAPE.'
+ },
+ inest:{
+  title:'Inestabilidad',
+  what:'Clasificación simplificada basada en CAPE.',
+  read:'Amarillo: ligera; naranja: moderada; rojo: muy inestable; marrón: extremadamente inestable.',
+  key:'Es una ayuda visual. No sustituye el análisis conjunto de CIN, humedad y cizalladura.'
+ },
+ scp:{
+  title:'Supercélula',
+  what:'Índice derivado del RRFS usando CAPE de superficie + helicidad efectiva + cizalladura efectiva.',
+  read:'Valores positivos crecientes indican un ambiente progresivamente más favorable a supercélulas.',
+  key:'Es un producto derivado/experimental del visor, no un aviso oficial.'
+ },
+ mxuphl25:{
+  title:'MXUPHL 2–5 km',
+  what:'Máxima helicidad de corriente ascendente simulada entre 2 y 5 km.',
+  read:'Núcleos localizados y valores altos pueden señalar corrientes ascendentes rotatorias organizadas.',
+  key:'Muy útil para localizar posibles mesociclones simulados; confirme con reflectividad y otros campos.'
+ },
+ mxuphl03:{
+  title:'MXUPHL 0–3 km',
+  what:'Máxima helicidad de corriente ascendente simulada entre 0 y 3 km.',
+  read:'Resalta rotación de bajo nivel asociada a corrientes ascendentes del modelo.',
+  key:'Interprételo junto con helicidad, EFHL, EBWD y reflectividad.'
+ },
+ efhl:{
+  title:'Helicidad efectiva · EFHL',
+  what:'Helicidad relativa a la tormenta calculada en la capa efectiva de inflow.',
+  read:'Aproximadamente 100–200 m²/s² puede apoyar rotación; valores >200–300 indican un ambiente más favorable cuando existe CAPE suficiente.',
+  key:'Es más específica para tormentas organizadas que una helicidad fija de 0–3 km.'
+ },
+ ebwd:{
+  title:'Cizalladura efectiva · EBWD',
+  what:'Magnitud de la cizalladura del viento en la capa efectiva, derivada de UESH y VESH.',
+  read:'Como guía: <10 m/s débil; 10–20 m/s moderada; >20 m/s fuerte para organización convectiva.',
+  key:'Es uno de los ingredientes principales del producto Supercélula.'
+ },
+ dcape:{
+  title:'DCAPE',
+  what:'Energía potencial disponible para corrientes descendentes.',
+  read:'Como guía: <500 J/kg limitada; 500–1000 moderada; >1000 mayor potencial de downdrafts fuertes.',
+  key:'Úselo junto con Ráfagas, humedad y reflectividad para evaluar microburst.'
+ },
+ severo:{
+  title:'Severo',
+  what:'Diagnóstico combinado del visor con precipitación, CAPE, CIN, helicidad 0–3 km, reflectividad y ráfagas, reforzado con Supercélula (SCP), MXUPHL 2–5 km, MXUPHL 0–3 km, helicidad efectiva (EFHL), cizalladura efectiva (EBWD) y DCAPE cuando están disponibles.',
+  read:'Los polígonos resaltan áreas con potencial Moderado, Alto o Muy Alto. Los productos avanzados pueden mantener una señal severa aun cuando la lluvia o la reflectividad simulada estén ligeramente desplazadas respecto de la tormenta real.',
+  key:'Es una herramienta diagnóstica/experimental basada en RRFS; no equivale a una alerta meteorológica oficial.'
+ }
+};
+
+function actualizarAyuda(){
+ const g=helpGuide[selectedProduct]||{title:defs[selectedProduct]?.name||'Producto',what:'Sin descripción disponible.',read:'',key:''};
+ document.getElementById('contenidoAyuda').innerHTML=
+  '<div class="ayudaTitulo">'+g.title+'</div>'+
+  '<div class="ayudaSub">¿Qué muestra?</div><div>'+g.what+'</div>'+
+  '<div class="ayudaSub">Interpretación rápida</div><div>'+g.read+'</div>'+
+  '<div class="ayudaSub">Clave de análisis</div><div>'+g.key+'</div>';
+}
+
+const defs={
+ precip:{name:'Precipitación',unit:'mm',min:0.1,alpha:.58,stops:[[0.1,'#b7f7c5'],[1,'#2ecc40'],[2,'#19bd73'],[5,'#00a98f'],[10,'#0099c6'],[15,'#168de2'],[20,'#0868d8'],[30,'#5a36a8'],[40,'#8d2fb0'],[50,'#b12aa9'],[75,'#ee1745'],[100,'#ff7a00'],[150,'#ffd400'],[200,'#ffffff']]},
+ tmp:{name:'Temperatura 2 m',unit:'°C',min:-2,max:38,alpha:.42,stops:[[-2,'#5d2ca3'],[5,'#315bd1'],[10,'#00a7d8'],[15,'#27bca1'],[20,'#4fbd59'],[24,'#d5d53a'],[27,'#f4c12e'],[30,'#ff941f'],[33,'#f45b2b'],[36,'#df3030'],[38,'#b92c93']]},
+ dpt:{name:'Punto de rocío 2 m',unit:'°C',min:5,max:30,alpha:.62,stops:[[5,'#2748d8'],[10,'#009fd8'],[15,'#00b7a5'],[18,'#2fbd67'],[20,'#6acb48'],[22,'#d7dc32'],[24,'#f7c229'],[26,'#ff8a1e'],[28,'#ed3e30'],[30,'#b728a1']]},
+ cape:{name:'CAPE',unit:'J/kg',min:100,alpha:.48,stops:[[100,'#bfe98c'],[250,'#73d16b'],[500,'#3fbd55'],[1000,'#e2db36'],[1500,'#f6ad2a'],[2000,'#f06a2a'],[3000,'#e13a35'],[4000,'#cf2ca3'],[5000,'#6c2ca4']]},
+ inest:{name:'Inest',unit:'J/kg',min:0,alpha:1,stops:[[0,'#ffd700'],[1000,'#ff8c00'],[2500,'#ff0000'],[3500,'#8b4513']]},
+ cin:{name:'CIN',unit:'J/kg',min:10,abs:true,alpha:.50,legendNegative:true,stops:[[10,'#8bd6e8'],[25,'#44c9b1'],[50,'#4eb94f'],[100,'#e0d43b'],[200,'#f08a24'],[300,'#e33a32'],[500,'#812ca8']]},
+ hlcy:{name:'Helicidad 0–3 km',unit:'m²/s²',min:25,alpha:.48,stops:[[25,'#8bd6e8'],[50,'#55c9b3'],[100,'#62bf5f'],[150,'#e3d83b'],[200,'#f19a27'],[300,'#e33b32'],[400,'#b92ca5']]},
+ refc:{name:'Reflectividad',unit:'dBZ',min:5,alpha:.64,stops:[[5,'#43b84d'],[15,'#00b6a1'],[25,'#168bd2'],[35,'#f1dd2f'],[45,'#ff8a22'],[55,'#e73632'],[65,'#bd2aa4']]},
+ gust:{name:'Ráfagas',unit:'km/h',min:10,alpha:.46,stops:[[10,'#70d5dc'],[20,'#36b96a'],[30,'#ded83e'],[40,'#f39a27'],[50,'#e63b34'],[70,'#c12da5'],[90,'#672b9e']]},
+ wind:{name:'Viento 10 m',unit:'km/h',min:5,alpha:.44,stops:[[5,'#70d5dc'],[10,'#42bd82'],[20,'#75c945'],[30,'#e0d83a'],[40,'#f29b25'],[50,'#e33b32'],[70,'#b62ca3']]},
+ scp:{name:'Supercélula',unit:'índice',min:0.5,alpha:.62,stops:[[0.5,'#2c7bb6'],[1,'#00a6ca'],[2,'#00ccbc'],[3,'#90eb9d'],[4,'#ffff8c'],[6,'#f9d057'],[8,'#f29e2e'],[10,'#e76818'],[12,'#d7191c'],[15,'#c51b8a'],[20,'#7a0177'],[30,'#ffffff']]},
+ mxuphl25:{name:'MXUPHL 2–5 km',unit:'m²/s²',min:25,alpha:.62,stops:[[25,'#6baed6'],[50,'#41b6c4'],[75,'#2ca25f'],[100,'#addd8e'],[150,'#fee08b'],[200,'#fdae61'],[300,'#f46d43'],[500,'#d73027'],[750,'#7b3294']]},
+ mxuphl03:{name:'MXUPHL 0–3 km',unit:'m²/s²',min:25,alpha:.62,stops:[[25,'#6baed6'],[50,'#41b6c4'],[75,'#2ca25f'],[100,'#addd8e'],[150,'#fee08b'],[200,'#fdae61'],[300,'#f46d43'],[500,'#d73027'],[750,'#7b3294']]},
+ efhl:{name:'Helicidad efectiva',unit:'m²/s²',min:25,alpha:.52,stops:[[25,'#8bd6e8'],[50,'#55c9b3'],[100,'#62bf5f'],[150,'#e3d83b'],[250,'#f19a27'],[350,'#e33b32'],[500,'#b92ca5']]},
+ ebwd:{name:'Cizalladura efectiva',unit:'m/s',min:5,alpha:.50,stops:[[5,'#8bd6e8'],[10,'#55c9b3'],[15,'#62bf5f'],[20,'#e3d83b'],[25,'#f19a27'],[30,'#e33b32'],[40,'#b92ca5']]},
+ dcape:{name:'DCAPE',unit:'J/kg',min:100,alpha:.50,stops:[[100,'#8bd6e8'],[250,'#55c9b3'],[500,'#62bf5f'],[750,'#e3d83b'],[1000,'#f19a27'],[1500,'#e33b32'],[2000,'#b92ca5']]}, 
+
+ severo:{name:'Severo',unit:'Potencial',min:1,alpha:.58,stops:[[1,'#ffd83d'],[2,'#ff941f'],[3,'#e53935'],[4,'#8b2f6b']]}
+};
+let selectedProduct='precip',selectedWindow=1,selectedHour=1,currentMeta=null,municipios=null,pointHash=new Map(),severeHash=new Map(),catalog=null,currentDataVersion=null,currentRun=null,drGeoms=[],drIndex=[],drMaskCache=new Map();
+let productButtons=new Map(),hourButtons=new Map(),windowButtons=new Map();const HASH=.04;
+const btnAyuda=document.getElementById('btnAyuda'),panelAyuda=document.getElementById('panelAyuda'),cerrarAyuda=document.getElementById('cerrarAyuda');
+btnAyuda.addEventListener('click',()=>{actualizarAyuda();panelAyuda.classList.toggle('visible')});
+cerrarAyuda.addEventListener('click',()=>panelAyuda.classList.remove('visible'));
+
+
+function dataProduct(){
+ if(selectedProduct==='inest')return 'cape';
+ if(selectedProduct==='severo')return 'cape';
+ return selectedProduct
+}
+function productHours(){const p=dataProduct();return (catalog&&catalog.products&&catalog.products[p])?(catalog.products[p].hours||[]):[]}
+function inestClass(v){if(v>=3500)return {label:'Extremadamente inestable',color:'#8b4513'};if(v>=2500)return {label:'Muy inestable',color:'#ff0000'};if(v>=1000)return {label:'Moderadamente inestable',color:'#ff8c00'};return {label:'Ligeramente inestable',color:'#ffd700'}}
+function valForColor(v){return defs[selectedProduct].abs?Math.abs(v):v}
+function alphaFor(v,lat,lon){
+ const p=selectedProduct, x=valForColor(v);
+ if(p==='precip') return x<1?.24:(x<5?.36:(x<10?.48:(x<20?.58:.68)));
+ if(p==='refc') return x<15?.34:(x<25?.46:(x<35?.58:.72));
+ if(p==='tmp'){
+   // Resalta La Española y mantiene muy tenue el resto del dominio.
+   // Caja aproximada de la isla para mejorar el contraste sin alterar datos.
+   const onIsland=(lat>=17.35 && lat<=20.15 && lon>=-74.65 && lon<=-68.15);
+   if(onIsland){
+     if(v>=24 && v<=31) return .34;
+     if((v>=21 && v<24) || (v>31 && v<=33)) return .42;
+     if((v>=18 && v<21) || (v>33 && v<=35)) return .50;
+     if((v>=12 && v<18) || (v>35 && v<=37)) return .58;
+     return .64;
+   }else{
+     if(v>=24 && v<=31) return .025;
+     if((v>=21 && v<24) || (v>31 && v<=33)) return .045;
+     if((v>=18 && v<21) || (v>33 && v<=35)) return .065;
+     return .085;
+   }
+ }
+ if(p==='dpt'){
+   // V27: colores de punto de rocío más vivos dentro de RD.
+   // La máscara ya elimina mar/Haití/PR, así que podemos usar mayor opacidad.
+   if(v<12)return .48;
+   if(v<16)return .52;
+   if(v<20)return .56;
+   if(v<23)return .60;
+   if(v<26)return .64;
+   if(v<28)return .68;
+   return .72;
+ }
+ if(p==='cape') return x<250?.10:(x<500?.16:(x<1000?.24:(x<2000?.36:.52)));
+ if(p==='cin') return x<25?.10:(x<50?.16:(x<100?.24:(x<200?.34:.48)));
+ if(p==='hlcy') return x<50?.10:(x<100?.18:(x<150?.26:(x<250?.38:.50)));
+ if(p==='gust') return x<20?.06:(x<30?.12:(x<40?.20:(x<50?.30:.44)));
+ if(p==='wind') return x<10?.06:(x<20?.12:(x<30?.20:(x<40?.30:.42)));
+ if(p==='efhl') return x<50?.10:(x<100?.18:(x<200?.28:(x<300?.40:.52)));
+ if(p==='ebwd') return x<10?.10:(x<15?.18:(x<20?.28:(x<25?.40:.52)));
+ if(p==='dcape') return x<250?.08:(x<500?.16:(x<750?.26:(x<1000?.38:.52)));
+ return .40;
+}
+function color(v){const d=defs[selectedProduct];let x=valForColor(v);if(d.max!=null)x=Math.min(d.max,x);if(d.min!=null&&selectedProduct!=='precip')x=Math.max(d.min,x);let c=d.stops[0][1];for(const s of d.stops)if(x>=s[0])c=s[1];return c}
+function updateLegend(){
+ const d=defs[selectedProduct];
+ const legend=document.getElementById('legend');
+ legend.classList.toggle('precipLegend',selectedProduct==='precip');
+ if(selectedProduct==='severo'){
+  document.getElementById('legend').innerHTML='<b>Alertas de tiempo severo</b><br>'+
+  '<div><span class="sw" style="background:transparent;border:2px solid #8b2f6b;box-sizing:border-box"></span>Potencial Muy Alto</div>'+
+  '<div><span class="sw" style="background:transparent;border:2px solid #e53935;box-sizing:border-box"></span>Potencial Alto</div>'+
+  '<div><span class="sw" style="background:transparent;border:2px solid #ff941f;box-sizing:border-box"></span>Potencial Moderado</div>'+
+  '<div style="opacity:.72;margin-top:3px">Potencial Bajo: sin polígono</div>'+
+  '<small>Diagnóstico combinado RRFS</small>'; return;
+ }
+ if(selectedProduct==='inest'){
+  document.getElementById('legend').innerHTML='<b>Inestabilidad CAPE</b><br><small>J/kg</small><br>'+
+  '<div><span class="sw" style="background:#8b4513"></span>3500+ · Extremadamente inestable</div>'+
+  '<div><span class="sw" style="background:#ff0000"></span>2500–3500 · Muy inestable</div>'+
+  '<div><span class="sw" style="background:#ff8c00"></span>1000–2500 · Moderadamente inestable</div>'+
+  '<div><span class="sw" style="background:#ffd700"></span>0–1000 · Ligeramente inestable</div>'; return;
+ }
+ const openEnded=!['tmp','dpt'].includes(selectedProduct);
+ const legendStops=selectedProduct==='precip'?d.stops.slice().reverse():d.stops;
+ legend.innerHTML='<b>'+d.name+'</b><br><small>'+d.unit+'</small><br>'+
+ legendStops.map((s,i)=>{
+   let lab=d.legendNegative?('−'+s[0]):String(s[0]);
+   if(selectedProduct==='precip'){
+     if(s[0]===d.stops[d.stops.length-1][0])lab+='+';
+   }else if(openEnded&&i===legendStops.length-1){
+     lab+=(d.legendNegative?' o menor':'+');
+   }
+   return '<div><span class="sw" style="background:'+s[1]+'"></span>'+lab+'</div>';
+ }).join('')+
+ (selectedProduct==='precip'?'<div style="margin-top:6px;padding-top:6px;border-top:1px solid #52616c;font-size:12px"><span class="sw" style="background:#8b4513"></span>ALERTA: lluvia + CAPE ≥ 3500</div><div style="margin-top:4px;opacity:.8;font-size:12px">Dominio regional · tierra + mar</div>':'')+
+  ((['tmp','dpt','cape','cin','hlcy','refc','gust','wind','inest','mxuphl25','mxuphl03'].includes(selectedProduct))?'<div style="margin-top:5px;padding-top:5px;border-top:1px solid #52616c;opacity:.8">Dominio regional · tierra + mar</div>':'');
+}
+function hashKey(lat,lon){return Math.round(lat/HASH)+','+Math.round(lon/HASH)}
+function buildHash(points){pointHash=new Map();for(const p of points){const k=hashKey(p[0],p[1]);if(!pointHash.has(k))pointHash.set(k,[]);pointHash.get(k).push(p)}}
+function nearestValue(lat,lon){let best=null,bd=1e9,iy=Math.round(lat/HASH),ix=Math.round(lon/HASH);for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const a=pointHash.get((iy+dy)+','+(ix+dx))||[];for(const p of a){const d=(p[0]-lat)*(p[0]-lat)+(p[1]-lon)*(p[1]-lon);if(d<bd){bd=d;best=p}}}return best}
+
+function buildSevereHash(points){
+ severeHash=new Map();
+ for(const p of points||[]){
+   const k=hashKey(p[0],p[1]);
+   if(!severeHash.has(k))severeHash.set(k,[]);
+   severeHash.get(k).push(p);
+ }
+}
+function nearestSevere(lat,lon){
+ let best=null,bd=1e9,iy=Math.round(lat/HASH),ix=Math.round(lon/HASH);
+ for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+   const a=severeHash.get((iy+dy)+','+(ix+dx))||[];
+   for(const p of a){
+     const d=(p[0]-lat)*(p[0]-lat)+(p[1]-lon)*(p[1]-lon);
+     if(d<bd){bd=d;best=p}
+   }
+ }
+ return best;
+}
+function severeClass(cat){
+ if(cat>=4)return {label:'Potencial Muy Alto',short:'POTENCIAL MUY ALTO',color:'#8b2f6b',text:'#fff'};
+ if(cat===3)return {label:'Potencial Alto',short:'POTENCIAL ALTO',color:'#e53935',text:'#fff'};
+ if(cat===2)return {label:'Potencial Moderado',short:'POTENCIAL MODERADO',color:'#ff941f',text:'#111'};
+ return {label:'Potencial Bajo',short:'POTENCIAL BAJO',color:'#ffd83d',text:'#111'};
+}
+
+
+const SEV_STEP=.028;
+
+function severeCellKey(lat,lon){
+ return Math.round(lat/SEV_STEP)+','+Math.round(lon/SEV_STEP);
+}
+
+function severeThresholdComponents(points,minCat){
+ // IMPORTANT: threshold nesting, SPC-style:
+ // moderate includes moderate+high+very-high;
+ // high includes high+very-high;
+ // very-high includes only very-high.
+ const byKey=new Map();
+ for(const p of (points||[])){
+   if(p[2] < minCat || !insideDR(p[0],p[1]))continue;
+   byKey.set(severeCellKey(p[0],p[1]),p);
+ }
+ if(!byKey.size)return [];
+ const seen=new Set(), comps=[];
+ const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+ for(const [k,p] of byKey){
+   if(seen.has(k))continue;
+   const q=[k],g=[]; seen.add(k);
+   while(q.length){
+     const kk=q.pop(),pp=byKey.get(kk); if(!pp)continue;
+     g.push(pp);
+     const [iy,ix]=kk.split(',').map(Number);
+     for(const [dy,dx] of dirs){
+       const nk=(iy+dy)+','+(ix+dx);
+       if(byKey.has(nk)&&!seen.has(nk)){seen.add(nk);q.push(nk)}
+     }
+   }
+   comps.push(g);
+ }
+ return comps;
+}
+
+function severeBoundaryLoops(group){
+ // Build oriented outer edges from occupied grid cells, then trace closed loops.
+ const occupied=new Set(group.map(p=>severeCellKey(p[0],p[1])));
+ const edges=[];
+ const add=(a,b)=>edges.push([a,b]);
+ for(const k of occupied){
+   const [iy,ix]=k.split(',').map(Number);
+   // corners in integer half-grid coordinates (x2,y2), avoiding floating key errors.
+   const L=2*ix-1,R=2*ix+1,B=2*iy-1,T=2*iy+1;
+   // clockwise oriented edges around occupied cells
+   if(!occupied.has((iy+1)+','+ix)) add([L,T],[R,T]); // north
+   if(!occupied.has(iy+','+(ix+1))) add([R,T],[R,B]); // east
+   if(!occupied.has((iy-1)+','+ix)) add([R,B],[L,B]); // south
+   if(!occupied.has(iy+','+(ix-1))) add([L,B],[L,T]); // west
+ }
+ const byStart=new Map();
+ const kpt=p=>p[0]+','+p[1];
+ edges.forEach((e,i)=>{
+   const k=kpt(e[0]); if(!byStart.has(k))byStart.set(k,[]);
+   byStart.get(k).push(i);
+ });
+ const used=new Set(), loops=[];
+ for(let i=0;i<edges.length;i++){
+   if(used.has(i))continue;
+   const loop=[edges[i][0]], first=edges[i][0];
+   let cur=edges[i][1], ei=i; used.add(ei);
+   let guard=0;
+   while(guard++<edges.length+10){
+     loop.push(cur);
+     if(cur[0]===first[0]&&cur[1]===first[1])break;
+     const cands=(byStart.get(kpt(cur))||[]).filter(j=>!used.has(j));
+     if(!cands.length)break;
+     ei=cands[0];used.add(ei);cur=edges[ei][1];
+   }
+   if(loop.length>=5 && loop[loop.length-1][0]===first[0] && loop[loop.length-1][1]===first[1]){
+     loops.push(loop);
+   }
+ }
+ // convert half-grid coordinates to lat/lon
+ return loops.map(loop=>loop.map(q=>[q[1]*SEV_STEP/2,q[0]*SEV_STEP/2]));
+}
+
+function rdp(points,eps){
+ if(points.length<3)return points;
+ const a=points[0],b=points[points.length-1];
+ let maxd=0,idx=0;
+ const vx=b[1]-a[1],vy=b[0]-a[0],den=vx*vx+vy*vy || 1;
+ for(let i=1;i<points.length-1;i++){
+   const wx=points[i][1]-a[1],wy=points[i][0]-a[0];
+   let t=(wx*vx+wy*vy)/den;t=Math.max(0,Math.min(1,t));
+   const px=a[1]+t*vx,py=a[0]+t*vy;
+   const dx=points[i][1]-px,dy=points[i][0]-py,d=Math.sqrt(dx*dx+dy*dy);
+   if(d>maxd){maxd=d;idx=i}
+ }
+ if(maxd>eps){
+   const l=rdp(points.slice(0,idx+1),eps),r=rdp(points.slice(idx),eps);
+   return l.slice(0,-1).concat(r);
+ }
+ return [a,b];
+}
+
+function chaikinClosed(points,passes=2){
+ let pts=points.slice();
+ // remove duplicated closing point
+ if(pts.length>1 && pts[0][0]===pts[pts.length-1][0] && pts[0][1]===pts[pts.length-1][1])pts.pop();
+ for(let pass=0;pass<passes;pass++){
+   const out=[];
+   for(let i=0;i<pts.length;i++){
+     const a=pts[i],b=pts[(i+1)%pts.length];
+     out.push([.75*a[0]+.25*b[0],.75*a[1]+.25*b[1]]);
+     out.push([.25*a[0]+.75*b[0],.25*a[1]+.75*b[1]]);
+   }
+   pts=out;
+ }
+ if(pts.length)pts.push(pts[0]);
+ return pts;
+}
+
+function polygonAreaLatLon(loop){
+ let a=0;
+ for(let i=0;i<loop.length-1;i++)a+=loop[i][1]*loop[i+1][0]-loop[i+1][1]*loop[i][0];
+ return Math.abs(a)/2;
+}
+
+function severeLabelPoint(loop){
+ // centroid approximation; fallback to mean
+ let x=0,y=0,a=0;
+ for(let i=0;i<loop.length-1;i++){
+   const x0=loop[i][1],y0=loop[i][0],x1=loop[i+1][1],y1=loop[i+1][0];
+   const f=x0*y1-x1*y0;a+=f;x+=(x0+x1)*f;y+=(y0+y1)*f;
+ }
+ if(Math.abs(a)>1e-9)return [y/(3*a),x/(3*a)];
+ let sy=0,sx=0,n=Math.max(1,loop.length-1);
+ for(let i=0;i<n;i++){sy+=loop[i][0];sx+=loop[i][1]}
+ return [sy/n,sx/n];
+}
+
+function drawSevereSPC(ctx,m,topLeft,points,minCat,color,label,minCells){
+ const comps=severeThresholdComponents(points,minCat);
+ for(const g of comps){
+   if(g.length<minCells)continue;
+   const loops=severeBoundaryLoops(g);
+   for(let loop of loops){
+     if(polygonAreaLatLon(loop)<0.004)continue;
+     // simplify first, then smooth for broad SPC-like contours
+     loop=rdp(loop,0.018);
+     if(loop.length<4)continue;
+     if(loop[0]!==loop[loop.length-1])loop=loop.concat([loop[0]]);
+     loop=chaikinClosed(loop,2);
+     const pts=loop.map(ll=>m.latLngToLayerPoint(ll).subtract(topLeft));
+     if(pts.length<4)continue;
+
+     ctx.save();
+     ctx.beginPath();
+     ctx.moveTo(pts[0].x,pts[0].y);
+     for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);
+     ctx.closePath();
+
+     // nearly transparent interior, preserving satellite map.
+     ctx.globalAlpha=.10;
+     ctx.fillStyle=color;
+     ctx.fill();
+
+     ctx.globalAlpha=.96;
+     ctx.strokeStyle=color;
+     ctx.lineWidth=minCat===4?4.2:(minCat===3?3.5:3.0);
+     ctx.lineJoin='round';
+     ctx.lineCap='round';
+     ctx.stroke();
+
+     // V39: solo polígonos. Se eliminan por completo las etiquetas de texto
+     // dentro de las zonas de potencial severo.
+     ctx.restore();
+   }
+ }
+}
+
+function pointInRing(lon,lat,ring){
+ let inside=false;
+ for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+   const xi=ring[i][0], yi=ring[i][1], xj=ring[j][0], yj=ring[j][1];
+   const hit=((yi>lat)!=(yj>lat)) && (lon < (xj-xi)*(lat-yi)/((yj-yi)||1e-12)+xi);
+   if(hit)inside=!inside;
+ }
+ return inside;
+}
+function pointInGeom(lon,lat,g){
+ if(!g)return false;
+ if(g.type==='Polygon'){
+   if(!g.coordinates || !g.coordinates.length)return false;
+   if(!pointInRing(lon,lat,g.coordinates[0]))return false;
+   for(let i=1;i<g.coordinates.length;i++) if(pointInRing(lon,lat,g.coordinates[i])) return false;
+   return true;
+ }
+ if(g.type==='MultiPolygon'){
+   for(const poly of g.coordinates){
+     if(!poly || !poly.length)continue;
+     if(!pointInRing(lon,lat,poly[0]))continue;
+     let hole=false;
+     for(let i=1;i<poly.length;i++) if(pointInRing(lon,lat,poly[i])){hole=true;break}
+     if(!hole)return true;
+   }
+ }
+ return false;
+}
+function geomBBox(g){
+ let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+ const scan=(a)=>{
+   if(!Array.isArray(a))return;
+   if(a.length>=2 && typeof a[0]==='number' && typeof a[1]==='number'){
+     const x=a[0],y=a[1]; if(x<minx)minx=x;if(x>maxx)maxx=x;if(y<miny)miny=y;if(y>maxy)maxy=y;
+   }else for(const q of a)scan(q);
+ };
+ scan(g.coordinates);
+ return [minx,miny,maxx,maxy];
+}
+function buildDRIndex(){
+ drIndex=drGeoms.map(g=>({g,b:geomBBox(g)}));
+ drMaskCache.clear();
+}
+function insideDR(lat,lon){
+ // Grid RRFS is fixed; cache the result so each grid point is classified only once.
+ const key=lat.toFixed(4)+','+lon.toFixed(4);
+ if(drMaskCache.has(key))return drMaskCache.get(key);
+ let ok=false;
+ for(const it of drIndex){
+   const b=it.b;
+   if(lon<b[0]||lon>b[2]||lat<b[1]||lat>b[3])continue;
+   if(pointInGeom(lon,lat,it.g)){ok=true;break;}
+ }
+ drMaskCache.set(key,ok);
+ return ok;
+}
+
+function propName(p){if(!p)return'Municipio';for(const k of ['MUNICIPIO','Municipio','municipio','NOM_MUN','NOM_MUNIC','NOMBRE_MUN','NAME_2','NOMBRE','Nombre','nombre','NAME','name'])if(p[k]!=null&&String(p[k]).trim())return String(p[k]).trim();for(const k of Object.keys(p)){const l=k.toLowerCase(),v=p[k];if((l.includes('mun')||l.includes('nombre')||l.includes('name'))&&v!=null&&String(v).trim()&&!/^\d+$/.test(String(v).trim()))return String(v).trim()}return'Municipio'}
+
+fetch('https://raw.githubusercontent.com/jeancharlyjs/GEOJSON-RepublicaDominicana/main/Municipio/Municipio.geojson').then(r=>r.json()).then(g=>{
+ drGeoms=(g.features||[]).map(f=>f.geometry).filter(Boolean);
+ buildDRIndex();
+ if(typeof layer!=='undefined') layer.draw();
+ municipios=L.geoJSON(g,{style:{color:'#aeb5bb',weight:0.88,opacity:0.78,fillOpacity:0},onEachFeature:(f,l)=>{
+  l.on('mousemove',e=>{
+   if(!currentMeta)return;
+   const nm=propName(f.properties||{});
+   if(selectedProduct==='severo'){
+     const sp=nearestSevere(e.latlng.lat,e.latlng.lng);
+     if(!sp){l.closeTooltip();return}
+     const sc=severeClass(sp[2]);
+     const line='<div style="background:'+sc.color+';color:'+sc.text+';padding:7px 10px;border:2px solid '+sc.color+';border-radius:5px;text-align:center;min-width:110px"><b>'+nm+'</b><br><span style="font-weight:bold">'+sc.label+'</span></div>';
+     l.bindTooltip(line,{sticky:true,className:'rrfsTip severeTip',direction:'top',opacity:1}).openTooltip(e.latlng);
+     return;
+   }
+   const p=nearestValue(e.latlng.lat,e.latlng.lng),v=p?p[2]:0,d=defs[selectedProduct];
+   let shown,line;
+   if(selectedProduct==='inest'){const c=inestClass(v);shown=v.toFixed(0)+' J/kg';line='<b>'+nm+'</b><br>CAPE: <b>'+shown+'</b><br><span style="color:'+c.color+';font-weight:bold">'+c.label+'</span>';}
+   else {if(selectedProduct==='precip' && (!p || v<1)) shown='< 1.0 mm';else shown=v.toFixed((selectedProduct==='refc'||selectedProduct==='mxuphl25'||selectedProduct==='mxuphl03')?0:1)+' '+d.unit;line='<b>'+nm+'</b><br>'+d.name+': <b>'+shown+'</b>';}
+   if(selectedProduct==='precip')line+='<br><span style="opacity:.75">Acumulado '+selectedWindow+' h · Pronóstico +'+selectedHour+' h · periodo '+currentMeta.start_hour+'-'+currentMeta.end_hour+' h</span>';
+   else {
+     let clean=cleanLevel(currentMeta.level);
+     let levelTxt=(selectedProduct==='refc'||selectedProduct==='inest'||selectedProduct==='scp')?'':(clean?' · '+clean:'');
+     line+='<br><span style="opacity:.75">Pronóstico +'+selectedHour+' h'+levelTxt+'</span>';
+   }
+   l.bindTooltip(line,{sticky:true,className:'rrfsTip',direction:'top',opacity:1}).openTooltip(e.latlng)
+  });
+  l.on('mouseout',()=>l.closeTooltip());
+ }}).addTo(map);
+});
+
+
+// V41.6 - valor de precipitación sobre el mar.
+// En municipios se conserva el tooltip territorial original.
+// Fuera de RD se muestra SOLO el acumulado, por ejemplo: 28.6 mm.
+const seaPrecipTip=document.createElement('div');
+seaPrecipTip.style.cssText='position:absolute;display:none;z-index:10000;pointer-events:none;background:rgba(5,16,25,.92);color:#fff;border:1px solid #9aa4ab;border-radius:5px;padding:5px 8px;font-weight:700;font-size:12px;white-space:nowrap;';
+map.getContainer().appendChild(seaPrecipTip);
+
+function hideSeaPrecipTip(){seaPrecipTip.style.display='none'}
+
+function seaPrecipValue(lat,lon){
+  if(selectedProduct!=='precip')return null;
+
+  // Dentro de RD manda exclusivamente la etiqueta municipal existente.
+  if(lat>=17.45&&lat<=20.05&&lon>=-72.05&&lon<=-68.20&&insideDR(lat,lon))return null;
+
+  // V41.7: usar la misma cuadrícula que ya carga el visor mediante buildHash().
+  // La V41.6 intentaba consultar una variable "points" que no existe globalmente.
+  const p=nearestValue(lat,lon);
+  if(!p||p.length<3)return null;
+
+  const plat=+p[0],plon=+p[1],pv=+p[2];
+  if(!isFinite(plat)||!isFinite(plon)||!isFinite(pv))return null;
+
+  // Mostrar el valor solo cuando el cursor está realmente sobre/cerca
+  // de una celda RRFS de precipitación, evitando saltar a ecos lejanos.
+  const cos=Math.cos(lat*Math.PI/180);
+  const dy=plat-lat,dx=(plon-lon)*cos,d2=dx*dx+dy*dy;
+  if(d2>(0.040*0.040))return null;
+
+  const val=valForColor(pv);
+  if(!isFinite(val)||val<1.0)return null;
+  return val;
+}
+
+map.on('mousemove',function(e){
+  if(selectedProduct!=='precip'){hideSeaPrecipTip();return}
+  const v=seaPrecipValue(e.latlng.lat,e.latlng.lng);
+  if(v===null){hideSeaPrecipTip();return}
+  seaPrecipTip.textContent=(Math.round(v*10)/10).toFixed(1)+' mm';
+  seaPrecipTip.style.left=(e.containerPoint.x+14)+'px';
+  seaPrecipTip.style.top=(e.containerPoint.y+14)+'px';
+  seaPrecipTip.style.display='block';
+});
+map.on('mouseout',hideSeaPrecipTip);
+
+function regionalSevereProduct(){
+  // V41.7.2 FINAL
+  // Regional tierra + mar:
+  // Precipitación, CIN, Helicidad 0-3 km, Reflectividad,
+  // Supercélula y MXUPHL 2-5 / 0-3 km.
+  // Limitados visualmente a República Dominicana:
+  // Temperatura 2 m, Punto de rocío 2 m, CAPE, Ráfagas,
+  // Viento 10 m e Inest.
+  // Severo mantiene su lógica propia de polígonos sobre RD.
+  return ['precip','cin','hlcy','refc',
+          'scp','mxuphl25','mxuphl03'].includes(selectedProduct);
+}
+
+function productPointVisible(lat,lon){
+  // V41.2:
+  // Los productos meteorológicos principales se muestran en TODO el dominio regional disponible
+  // alrededor de Hispaniola (incluye mar y Puerto Rico).
+  // Severo mantiene la máscara original sobre RD.
+  if(regionalSevereProduct()){
+    return lat>=16.30 && lat<=20.70 && lon>=-74.90 && lon<=-66.80;
+  }
+  if(lat<17.45||lat>20.05||lon<-72.05||lon>-68.20)return false;
+  return insideDR(lat,lon);
+}
+
+const C=L.Layer.extend({
+ onAdd:function(m){this._m=m;this._c=L.DomUtil.create('canvas','rrfs leaflet-zoom-animated');m.getPanes().overlayPane.insertBefore(this._c,m.getPanes().overlayPane.firstChild);this._ctx=this._c.getContext('2d');m.on('move zoom zoomend resize viewreset',this.draw,this);this.draw()},
+ onRemove:function(m){L.DomUtil.remove(this._c);m.off('move zoom zoomend resize viewreset',this.draw,this)},
+ setPoints:function(p){this.p=p||[];this.draw()},
+ setAlertPoints:function(p){this.alertPoints=p||[];this.draw()},
+ setSeverePoints:function(p){this.severePoints=p||[];this.draw()},
+ draw:function(){if(!this._m||!this._c)return;const m=this._m,size=m.getSize(),topLeft=m.containerPointToLayerPoint([0,0]);L.DomUtil.setPosition(this._c,topLeft);this._c.width=size.x;this._c.height=size.y;this._c.style.width=size.x+'px';this._c.style.height=size.y+'px';const ctx=this._ctx;ctx.clearRect(0,0,size.x,size.y);if(!this.p)return;
+  const halfLat=.014,halfLon=.014,d=defs[selectedProduct];ctx.imageSmoothingEnabled=true;
+  // Esperar a que la máscara geográfica de RD esté disponible.
+  // Evita que se pinte el rectángulo completo durante la carga inicial.
+  if(!drGeoms.length) return;
+  for(const a of (selectedProduct==='severo'?[]:this.p)){const xval=valForColor(a[2]);if(xval<d.min)continue;const lat=a[0],lon=a[1],v=a[2];if(!productPointVisible(lat,lon))continue;const pNW=m.latLngToLayerPoint([lat+halfLat,lon-halfLon]).subtract(topLeft),pSE=m.latLngToLayerPoint([lat-halfLat,lon+halfLon]).subtract(topLeft);let x=Math.min(pNW.x,pSE.x)-.55,y=Math.min(pNW.y,pSE.y)-.55,w=Math.abs(pSE.x-pNW.x)+1.1,h=Math.abs(pSE.y-pNW.y)+1.1;if(x+w<-4||y+h<-4||x>size.x+4||y>size.y+4)continue;if(selectedProduct==='inest'){
+       // V30: INEST se presenta como zonas categóricas continuas de CAPE,
+       // similares a un mapa de áreas de inestabilidad. No se dibuja la
+       // cuadrícula de cada celda; las celdas vecinas de la misma categoría
+       // se unen visualmente formando áreas amplias.
+       const c=inestClass(v);
+       ctx.globalAlpha=.46;
+       ctx.fillStyle=c.color;
+       ctx.fillRect(x-.35,y-.35,w+.70,h+.70);
+     }else{
+       ctx.globalAlpha=alphaFor(v,lat,lon);
+       ctx.fillStyle=color(v);
+       ctx.fillRect(x,y,w,h)
+     }}
+   // V32: alerta combinada. Solo se pinta donde COINCIDEN:
+   // precipitación >= 1 mm en el acumulado seleccionado y CAPE >= 3500 J/kg
+   // en la misma hora final del pronóstico.
+   if(selectedProduct==='precip' && this.alertPoints && this.alertPoints.length){
+     for(const a of this.alertPoints){
+       const lat=a[0],lon=a[1];
+       if(lat<17.45||lat>20.05||lon<-72.05||lon>-68.20)continue;
+       if(!insideDR(lat,lon))continue;
+       const pNW=m.latLngToLayerPoint([lat+halfLat,lon-halfLon]).subtract(topLeft),
+             pSE=m.latLngToLayerPoint([lat-halfLat,lon+halfLon]).subtract(topLeft);
+       let x=Math.min(pNW.x,pSE.x)-.55,y=Math.min(pNW.y,pSE.y)-.55,
+           w=Math.abs(pSE.x-pNW.x)+1.1,h=Math.abs(pSE.y-pNW.y)+1.1;
+       if(x+w<-4||y+h<-4||x>size.x+4||y>size.y+4)continue;
+       ctx.globalAlpha=.66;
+       ctx.fillStyle='#8b4513';
+       ctx.fillRect(x-.35,y-.35,w+.70,h+.70);
+       ctx.globalAlpha=.95;
+       ctx.strokeStyle='#4a1608';
+       ctx.lineWidth=1.15;
+       ctx.strokeRect(x-.1,y-.1,w+.2,h+.2);
+     }
+   }
+   // V38: contornos amplios, suavizados y anidados estilo SPC.
+   // El umbral Moderado incluye Alto/Muy Alto; Alto incluye Muy Alto.
+   // Así las categorías superiores quedan diferenciadas dentro de áreas mayores.
+   if(selectedProduct==='severo' && this.severePoints && this.severePoints.length){
+     drawSevereSPC(ctx,m,topLeft,this.severePoints,2,'#ff941f','POTENCIAL MODERADO',16);
+     drawSevereSPC(ctx,m,topLeft,this.severePoints,3,'#e53935','POTENCIAL ALTO',5);
+     drawSevereSPC(ctx,m,topLeft,this.severePoints,4,'#b52fc9','POTENCIAL MUY ALTO',2);
+   }
+ }
+});
+const layer=new C().addTo(map);
+
+function cleanLevel(s){
+ if(!s)return '';
+ return String(s)
+   .replace(/\s+above ground\b/gi,'')
+   .replace(/\babove ground\b/gi,'')
+   .replace(/\s{2,}/g,' ')
+   .trim();
+}
+function fmtUTC(s){if(!s||s.length<10)return'No disponible';const d=new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(8,10)));return d.toLocaleString('es-DO',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+' UTC'}
+function validUTC(s,h){if(!s||s.length<10)return'No disponible';const d=new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(8,10)));d.setUTCHours(d.getUTCHours()+h);return d.toLocaleString('es-DO',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+' UTC'}
+function rebuildHours(){const box=document.getElementById('forecast');box.querySelectorAll('button').forEach(x=>x.remove());hourButtons.clear();const hs=productHours();for(const h of hs){const bt=document.createElement('button');bt.textContent='+'+h+' h';bt.onclick=()=>{selectedHour=h;syncButtons();load()};box.appendChild(bt);hourButtons.set(h,bt)}if(!hs.includes(selectedHour))selectedHour=hs[0]||1}
+function syncButtons(){productButtons.forEach((b,p)=>b.classList.toggle('active',p===selectedProduct));windowButtons.forEach((b,w)=>b.classList.toggle('active',w===selectedWindow));hourButtons.forEach((b,h)=>{b.classList.toggle('active',h===selectedHour);b.disabled=selectedProduct==='precip'&&h<selectedWindow});document.getElementById('accum').style.display=selectedProduct==='precip'?'block':'none';document.getElementById('status').style.bottom=selectedProduct==='precip'?'149px':'105px';document.getElementById('products').style.bottom=selectedProduct==='precip'?'105px':'61px'}
+async function load(){
+ syncButtons();updateLegend();
+ const st=document.getElementById('status'),ddef=defs[selectedProduct];
+ st.textContent='Cargando '+ddef.name+' +'+selectedHour+' h...';
+ try{
+   if(selectedProduct==='severo'){
+     const get=async(p,w=3)=>await(await fetch(SERVER+'/field?product='+p+'&h='+selectedHour+'&window='+w+'&nocache='+Date.now(),{cache:'no-store'})).json();
+     // V41.7.9: SEVERO ampliado. Mantiene los 6 ingredientes base y suma
+     // SCP, MXUPHL 2–5 km, MXUPHL 0–3 km, EFHL, EBWD y DCAPE cuando el servidor los ofrece.
+     // Los campos avanzados son opcionales para no inutilizar SEVERO si uno falta en una corrida.
+     const getOpt=async(p)=>{try{const x=await get(p);return (x&&x.ok)?x:null}catch(e){return null}};
+     const [pr,ca,ci,he,refl,gu,scp,mx25,mx03,ef,eb,dc]=await Promise.all([
+       get('precip',3),get('cape'),get('cin'),get('hlcy'),get('refc'),get('gust'),
+       getOpt('scp'),getOpt('mxuphl25'),getOpt('mxuphl03'),getOpt('efhl'),getOpt('ebwd'),getOpt('dcape')
+     ]);
+     const baseSets=[pr,ca,ci,he,refl,gu];
+     if(baseSets.some(x=>!x.ok)){st.textContent='No están disponibles todos los ingredientes base para SEVERO +'+selectedHour+' h';layer.setSeverePoints([]);return}
+     const mk=(pts)=>{const m=new Map();for(const p of pts||[])m.set(p[0].toFixed(4)+','+p[1].toFixed(4),p[2]);return m};
+     const mp=mk(pr.points),mi=mk(ci.points),mh=mk(he.points),mr=mk(refl.points),mg=mk(gu.points);
+     const ms=mk(scp&&scp.points),m25=mk(mx25&&mx25.points),m03=mk(mx03&&mx03.points),mef=mk(ef&&ef.points),meb=mk(eb&&eb.points),mdc=mk(dc&&dc.points);
+     const advancedAvailable=[scp,mx25,mx03,ef,eb,dc].filter(Boolean).length;
+     const out=[];
+     for(const p of (ca.points||[])){
+       const k=p[0].toFixed(4)+','+p[1].toFixed(4),cape=p[2],rain=mp.get(k)||0,cin=Math.abs(mi.get(k)||0),hl=mh.get(k)||0,rf=mr.get(k)||0,gust=mg.get(k)||0;
+       const scpv=ms.get(k)||0,mx25v=m25.get(k)||0,mx03v=m03.get(k)||0,efv=mef.get(k)||0,ebv=meb.get(k)||0,dcv=mdc.get(k)||0;
+
+       // Señal dinámica avanzada: permite conservar una célula potencialmente importante
+       // aunque el RRFS desplace ligeramente la lluvia/reflectividad respecto de la observación.
+       const advancedSignal=(scpv>=1 || mx25v>=75 || mx03v>=75 || efv>=100 || ebv>=15 || dcv>=750);
+       if(cape<300)continue;
+       if(cape<500 && !advancedSignal)continue;
+       if(rain<1 && rf<20 && !advancedSignal)continue;
+
+       let baseScore=0;
+       if(rain>=1)baseScore++; if(rain>=10)baseScore++;
+       if(cape>=1000)baseScore++; if(cape>=2500)baseScore++; if(cape>=3500)baseScore++;
+       if(cin<=100)baseScore++; if(cin<=50)baseScore++;
+       if(hl>=100)baseScore++; if(hl>=200)baseScore++;
+       if(rf>=35)baseScore++; if(rf>=45)baseScore++;
+       if(gust>=40)baseScore++; if(gust>=60)baseScore++;
+
+       let advancedScore=0;
+       if(scpv>=1)advancedScore++; if(scpv>=4)advancedScore++;
+       if(mx25v>=75)advancedScore++; if(mx25v>=150)advancedScore++;
+       if(mx03v>=75)advancedScore++; if(mx03v>=150)advancedScore++;
+       if(efv>=100)advancedScore++; if(efv>=200)advancedScore++;
+       if(ebv>=15)advancedScore++; if(ebv>=20)advancedScore++;
+       if(dcv>=750)advancedScore++; if(dcv>=1000)advancedScore++;
+       // Limita el refuerzo para que un solo grupo de parámetros no domine el diagnóstico.
+       advancedScore=Math.min(advancedScore,5);
+       const score=baseScore+advancedScore;
+       let cat=score>=11?4:score>=7?3:score>=4?2:1;
+       out.push([p[0],p[1],cat,rain,cape,cin,hl,rf,gust,scpv,mx25v,mx03v,efv,ebv,dcv,baseScore,advancedScore]);
+     }
+     currentMeta=ca;buildSevereHash(out);layer.setPoints([]);layer.setAlertPoints([]);layer.setSeverePoints(out);
+     const n=[0,0,0,0,0];for(const q of out)n[q[2]]++;
+     st.textContent='SEVERO ampliado · Pronóstico +'+selectedHour+' h · Moderado '+n[2].toLocaleString()+' · Alto '+n[3].toLocaleString()+' · Muy alto '+n[4].toLocaleString()+' · Avanzados '+advancedAvailable+'/6 · Válido: '+(ca.valid?fmtUTC(ca.valid):validUTC(ca.run,selectedHour));
+     // V34: se elimina el cuadro marrón superior derecho para el producto Severo.
+     if(municipios)municipios.bringToFront();return;
+   }
+
+   layer.setSeverePoints([]);buildSevereHash([]);
+   const d=await(await fetch(SERVER+'/field?product='+dataProduct()+'&h='+selectedHour+'&window='+selectedWindow+'&nocache='+Date.now(),{cache:'no-store'})).json();
+   if(!d.ok){st.textContent=d.error||'No disponible';return}
+   currentMeta=d;buildHash(d.points||[]);layer.setPoints(d.points||[]);
+   let alertCount=0;
+   if(selectedProduct==='precip'){
+     try{
+       const cape=await(await fetch(SERVER+'/field?product=cape&h='+selectedHour+'&window=3&nocache='+Date.now(),{cache:'no-store'})).json();
+       const capeMap=new Map();
+       if(cape.ok)for(const q of (cape.points||[]))if(q[2]>=3500)capeMap.set(q[0].toFixed(4)+','+q[1].toFixed(4),q[2]);
+       const alerts=[];
+       for(const p of (d.points||[])){if(p[2]<1)continue;const cv=capeMap.get(p[0].toFixed(4)+','+p[1].toFixed(4));if(cv!=null)alerts.push([p[0],p[1],p[2],cv])}
+       alertCount=alerts.length;layer.setAlertPoints(alerts);
+     }catch(e){layer.setAlertPoints([])}
+   }else layer.setAlertPoints([]);
+   let txt=ddef.name+' · Pronóstico +'+selectedHour+' h';
+   if(selectedProduct==='precip'){txt=(selectedWindow===1?'Lluvia 1 h':'Acumulado '+selectedWindow+' h')+' para pronóstico +'+selectedHour+' h · Periodo '+d.start_hour+'-'+d.end_hour+' h';txt+=alertCount>0?' · ALERTA lluvia + inestabilidad extrema':' · Sin coincidencia lluvia + CAPE extremo'}
+   if(selectedProduct==='inest')txt='Inestabilidad CAPE · Pronóstico +'+selectedHour+' h';
+   txt+=' · Corrida: '+fmtUTC(d.run)+' · Válido: '+(d.valid?fmtUTC(d.valid):validUTC(d.run,selectedHour));
+   if(d.level && !['refc','inest'].includes(selectedProduct)){const cl=cleanLevel(d.level);if(cl)txt+=' · '+cl}
+   st.textContent=txt;if(municipios)municipios.bringToFront()
+ }catch(e){st.textContent='Error: '+e}
+}
+async function init(){try{catalog=await(await fetch(SERVER+'/list?nocache='+Date.now(),{cache:'no-store'})).json();currentDataVersion=catalog.data_version||null;currentRun=catalog.run||null;const pb=document.getElementById('products'),ab=document.getElementById('accum');
+ for(const p of Object.keys(catalog.products)){if(!defs[p])continue;const bt=document.createElement('button');bt.textContent=defs[p].name;bt.onclick=()=>{selectedProduct=p;rebuildHours();syncButtons();load();if(panelAyuda.classList.contains('visible'))actualizarAyuda()};pb.appendChild(bt);productButtons.set(p,bt)}
+ if(catalog.products.cape){const bt=document.createElement('button');bt.textContent='Inest';bt.onclick=()=>{selectedProduct='inest';rebuildHours();syncButtons();load();if(panelAyuda.classList.contains('visible'))actualizarAyuda()};pb.appendChild(bt);productButtons.set('inest',bt)}
+ if(catalog.products.cape&&catalog.products.precip&&catalog.products.cin&&catalog.products.hlcy&&catalog.products.refc&&catalog.products.gust){const bt=document.createElement('button');bt.textContent='Severo';bt.onclick=()=>{selectedProduct='severo';rebuildHours();syncButtons();load();if(panelAyuda.classList.contains('visible'))actualizarAyuda()};pb.appendChild(bt);productButtons.set('severo',bt)}
+ for(const w of catalog.windows){const bt=document.createElement('button');bt.textContent=(w===1?'LLUVIA 1 H':'ACUM. '+w+' H');bt.title=(w===1?'Precipitación pronosticada durante una hora':'Lluvia acumulada durante las últimas '+w+' horas del periodo seleccionado');bt.onclick=()=>{selectedWindow=w;if(selectedHour<w){const hs=catalog.products.precip?catalog.products.precip.hours:[];const ok=hs.filter(h=>h>=w);if(ok.length)selectedHour=ok[0]}syncButtons();load()};ab.appendChild(bt);windowButtons.set(w,bt)}
+ if(!catalog.products[selectedProduct])selectedProduct=Object.keys(catalog.products)[0];rebuildHours();syncButtons();load()
+}catch(e){document.getElementById('status').textContent='Ejecute INICIAR_RRFS_VISOR_MULTIVARIABLE_V41.cmd'}}
+async function checkForNewRun(){
+ try{
+   const j=await(await fetch(SERVER+'/list?nocache='+Date.now(),{cache:'no-store'})).json();
+   if(!j||!j.ok)return;
+   const changed=(currentDataVersion!==null && j.data_version && j.data_version!==currentDataVersion);
+   const runChanged=(currentRun && j.run && j.run!==currentRun);
+   if(changed||runChanged){
+     const oldRun=currentRun;
+     catalog=j;currentDataVersion=j.data_version||currentDataVersion;currentRun=j.run||currentRun;
+     rebuildHours();syncButtons();
+     // El servidor ya invalidó su CACHE; esta carga toma directamente la corrida nueva.
+     await load();
+     if(oldRun&&currentRun&&oldRun!==currentRun){
+       const st=document.getElementById('status');
+       st.textContent+=' · Actualizado automáticamente desde '+fmtUTC(oldRun)+' a '+fmtUTC(currentRun);
+     }
+   }else{
+     currentDataVersion=j.data_version||currentDataVersion;currentRun=j.run||currentRun;
+   }
+ }catch(e){}
+}
+init().then(()=>{setInterval(checkForNewRun,20000)});
+</script></body></html>

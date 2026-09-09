@@ -1,0 +1,18 @@
+RRFS HISPANIOLA 24H ONLINE
+
+Destino:
+D:\web\visor-satma-GitHub\model\rrfs\
+
+Página online:
+https://rokadom.github.io/visor-satma.coe/model/rrfs/
+
+Uso:
+1. Copie la carpeta model completa dentro de D:\web\visor-satma-GitHub\
+2. Ejecute model\rrfs\ACTUALIZAR_Y_PUBLICAR_RRFS_24H.cmd
+3. El proceso actualiza F003..F024, genera JSON estáticos y hace git push.
+
+Notas:
+- El visor es independiente del Visor COE.
+- El horizonte es 24 h.
+- El descargador usa wgrib2 en D:\GFS\App GFS\decoder\wgrib2.exe.
+- Python esperado: D:\GFS\App GFS\runtime\python.exe.
