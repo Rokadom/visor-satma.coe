@@ -1,11 +1,11 @@
 {
   "enabled": true,
   "check_seconds": 120,
-  "updating": false,
-  "last_check_epoch": 1788957396,
+  "updating": true,
+  "last_check_epoch": 1788957531,
   "last_update_epoch": 1788957410,
-  "latest_remote": "1788957360003.png",
+  "latest_remote": "1788957480001.png",
   "last_processed_remote": "1788957360003.png",
   "generation": 1,
-  "message": "Barrido IDAC más reciente incorporado: 1788957360003.png"
+  "message": "Nuevo barrido detectado. Procesando..."
 }
