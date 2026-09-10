@@ -1,11 +1,11 @@
 {
   "enabled": true,
   "check_seconds": 30,
-  "updating": false,
-  "last_check_epoch": 1789073798,
-  "last_update_epoch": 1789073817,
-  "latest_remote": "1789073760002.png",
-  "last_processed_remote": "1789073760002.png",
-  "generation": 3,
-  "message": "Barrido incorporado. Preparando publicación en GitHub Pages..."
+  "updating": true,
+  "last_check_epoch": 1789074291,
+  "last_update_epoch": 0,
+  "latest_remote": "1789074240002.png",
+  "last_processed_remote": "1789074000020.png",
+  "generation": 0,
+  "message": "Nuevo barrido detectado. Procesando..."
 }
