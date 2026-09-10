@@ -1,11 +1,11 @@
 {
   "enabled": true,
   "check_seconds": 30,
-  "updating": false,
-  "last_check_epoch": 1789077607,
-  "last_update_epoch": 1789077516,
-  "latest_remote": "1789077480000.png",
-  "last_processed_remote": "1789077480000.png",
-  "generation": 28,
-  "message": "Sin barridos nuevos. Monitor automático activo."
+  "updating": true,
+  "last_check_epoch": 1789077747,
+  "last_update_epoch": 1789077654,
+  "latest_remote": "1789077720014.png",
+  "last_processed_remote": "1789077600006.png",
+  "generation": 29,
+  "message": "Nuevo barrido detectado. Procesando..."
 }
