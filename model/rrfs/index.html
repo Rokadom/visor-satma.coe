@@ -248,7 +248,7 @@ const defs={
 
  severo:{name:'Severo',unit:'Potencial',min:1,alpha:.58,stops:[[1,'#ffd83d'],[2,'#ff941f'],[3,'#e53935'],[4,'#8b2f6b']]}
 };
-let selectedProduct='precip',selectedWindow=1,selectedHour=1,currentMeta=null,municipios=null,pointHash=new Map(),severeHash=new Map(),catalog=null,currentDataVersion=null,currentRun=null,drGeoms=[],drIndex=[],drMaskCache=new Map();
+let selectedProduct='precip',selectedWindow=3,selectedHour=3,currentMeta=null,municipios=null,pointHash=new Map(),severeHash=new Map(),catalog=null,currentDataVersion=null,currentRun=null,drGeoms=[],drIndex=[],drMaskCache=new Map();
 let productButtons=new Map(),hourButtons=new Map(),windowButtons=new Map();const HASH=.04;
 const btnAyuda=document.getElementById('btnAyuda'),panelAyuda=document.getElementById('panelAyuda'),cerrarAyuda=document.getElementById('cerrarAyuda');
 btnAyuda.addEventListener('click',()=>{actualizarAyuda();panelAyuda.classList.toggle('visible')});
@@ -866,7 +866,14 @@ async function init(){try{catalog=await(await fetch(SERVER+'/list?nocache='+Date
  if(catalog.products.cape){const bt=document.createElement('button');bt.textContent='Inest';bt.onclick=()=>{selectedProduct='inest';rebuildHours();syncButtons();load();if(panelAyuda.classList.contains('visible'))actualizarAyuda()};pb.appendChild(bt);productButtons.set('inest',bt)}
  if(catalog.products.cape&&catalog.products.precip&&catalog.products.cin&&catalog.products.hlcy&&catalog.products.refc&&catalog.products.gust){const bt=document.createElement('button');bt.textContent='Severo';bt.onclick=()=>{selectedProduct='severo';rebuildHours();syncButtons();load();if(panelAyuda.classList.contains('visible'))actualizarAyuda()};pb.appendChild(bt);productButtons.set('severo',bt)}
  for(const w of catalog.windows){const bt=document.createElement('button');bt.textContent=(w===1?'LLUVIA 1 H':'ACUM. '+w+' H');bt.title=(w===1?'Precipitación pronosticada durante una hora':'Lluvia acumulada durante las últimas '+w+' horas del periodo seleccionado');bt.onclick=()=>{selectedWindow=w;if(selectedHour<w){const hs=catalog.products.precip?catalog.products.precip.hours:[];const ok=hs.filter(h=>h>=w);if(ok.length)selectedHour=ok[0]}syncButtons();load()};ab.appendChild(bt);windowButtons.set(w,bt)}
- if(!catalog.products[selectedProduct])selectedProduct=Object.keys(catalog.products)[0];rebuildHours();syncButtons();load()
+ if(!catalog.products[selectedProduct])selectedProduct=Object.keys(catalog.products)[0];
+ if(selectedProduct==='precip'){
+   selectedWindow=3; // ACUM. 3 H obligatorio al iniciar precipitación
+   const ph=(catalog.products.precip&&catalog.products.precip.hours)||[];
+   if(ph.includes(3))selectedHour=3;
+   else if(ph.length)selectedHour=ph[0];
+ }
+ rebuildHours();syncButtons();load()
 }catch(e){document.getElementById('status').textContent='Ejecute INICIAR_RRFS_VISOR_MULTIVARIABLE_V41.cmd'}}
 async function checkForNewRun(){
  try{
