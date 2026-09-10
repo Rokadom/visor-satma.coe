@@ -43,12 +43,12 @@ html,body,#map{height:100%;margin:0;background:#061622;font-family:Arial,sans-se
 
 button{margin:2px;padding:7px 9px;background:#263a49;color:white;border:1px solid #87949e;border-radius:5px;font-weight:bold;cursor:pointer}
 button.active{background:#168de2}button:disabled{opacity:.35;cursor:not-allowed}
-#status{position:absolute;z-index:1001;bottom:194px;left:50%;transform:translateX(-50%);background:rgba(5,15,25,.94);color:#fff;padding:7px 12px;border-radius:7px;font-size:12px;max-width:92%;text-align:center;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.45)}
+#status{position:absolute;z-index:1002;bottom:198px;left:50%;transform:translateX(-50%);background:rgba(5,15,25,.94);color:#fff;padding:7px 12px;border-radius:7px;font-size:12px;max-width:94%;text-align:center;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.55)}
 @media(max-width:1100px){
  #forecast{grid-template-columns:repeat(12,minmax(0,1fr));}
  #products{bottom:112px}
  #accum{bottom:152px}
- #status{bottom:234px}
+ #status{bottom:194px}
 }
  #products{bottom:206px}
  #accum{bottom:162px}
@@ -776,7 +776,7 @@ function cleanLevel(s){
 function fmtUTC(s){if(!s||s.length<10)return'No disponible';const d=new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(8,10)));return d.toLocaleString('es-DO',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+' UTC'}
 function validUTC(s,h){if(!s||s.length<10)return'No disponible';const d=new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8),+s.slice(8,10)));d.setUTCHours(d.getUTCHours()+h);return d.toLocaleString('es-DO',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})+' UTC'}
 function rebuildHours(){const box=document.getElementById('forecast');box.querySelectorAll('button').forEach(x=>x.remove());hourButtons.clear();const hs=productHours();for(const h of hs){const bt=document.createElement('button');bt.textContent='+'+h+' h';bt.onclick=()=>{selectedHour=h;syncButtons();load()};box.appendChild(bt);hourButtons.set(h,bt)}if(!hs.includes(selectedHour))selectedHour=hs[0]||1}
-function syncButtons(){productButtons.forEach((b,p)=>b.classList.toggle('active',p===selectedProduct));windowButtons.forEach((b,w)=>b.classList.toggle('active',w===selectedWindow));hourButtons.forEach((b,h)=>{b.classList.toggle('active',h===selectedHour);b.disabled=selectedProduct==='precip'&&h<selectedWindow});document.getElementById('accum').style.display=selectedProduct==='precip'?'block':'none';document.getElementById('status').style.bottom=selectedProduct==='precip'?'149px':'105px';document.getElementById('products').style.bottom=selectedProduct==='precip'?'105px':'61px'}
+function syncButtons(){productButtons.forEach((b,p)=>b.classList.toggle('active',p===selectedProduct));windowButtons.forEach((b,w)=>b.classList.toggle('active',w===selectedWindow));hourButtons.forEach((b,h)=>{b.classList.toggle('active',h===selectedHour);b.disabled=selectedProduct==='precip'&&h<selectedWindow});document.getElementById('accum').style.display=selectedProduct==='precip'?'block':'none';document.getElementById('status').style.bottom=selectedProduct==='precip'?'198px':'150px';document.getElementById('products').style.bottom=selectedProduct==='precip'?'105px':'61px'}
 async function load(){
  syncButtons();updateLegend();
  const st=document.getElementById('status'),ddef=defs[selectedProduct];
