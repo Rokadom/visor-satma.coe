@@ -1,6 +1,6 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8">
 <!-- V41.7.5: guía movida fuera del zoom + nota inferior eliminada -->
-<title>RRFS HISPANIOLA · 24H ONLINE</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RRFS HISPANIOLA · 48H ONLINE</title><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 html,body,#map{height:100%;margin:0;background:#061622;font-family:Arial,sans-serif}
@@ -72,7 +72,7 @@ button.active{background:#168de2}button:disabled{opacity:.35;cursor:not-allowed}
 .rrfsTip{background:rgba(3,15,25,.95);color:#fff;border:1px solid #9aa7b0;border-radius:6px;padding:7px 9px;box-shadow:none;font-size:12px}
 .severeTip{background:transparent!important;border:0!important;padding:0!important;box-shadow:none!important}.severeTip:before{display:none!important}
 </style></head><body>
-<div id="map"></div><div id="top">RRFS HISPANIOLA · MODELO DE ALTA RESOLUCIÓN · 24 HORAS</div>
+<div id="map"></div><div id="top">RRFS HISPANIOLA · MODELO DE ALTA RESOLUCIÓN · 48 HORAS</div>
 
 <button id="btnAyuda" type="button" title="Guía rápida del producto">ⓘ</button>
 <div id="panelAyuda" role="dialog" aria-label="Guía rápida del producto">
@@ -91,7 +91,7 @@ document.addEventListener('click',function(){
 </script><script>
 const SERVER='rrfs-static';
 
-// RRFS HISPANIOLA 24H ONLINE:
+// RRFS HISPANIOLA 48H ONLINE:
 // traduce las llamadas del visor original a JSON estáticos publicados en GitHub Pages.
 const _rrfsFetchNativo = window.fetch.bind(window);
 window.fetch = function(input, init){
