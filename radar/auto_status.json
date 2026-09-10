@@ -2,10 +2,10 @@
   "enabled": true,
   "check_seconds": 30,
   "updating": false,
-  "last_check_epoch": 1789076878,
-  "last_update_epoch": 1789076817,
-  "latest_remote": "1789076760007.png",
-  "last_processed_remote": "1789076760007.png",
-  "generation": 22,
-  "message": "Sin barridos nuevos. Monitor automático activo."
+  "last_check_epoch": 1789077023,
+  "last_update_epoch": 1789077049,
+  "latest_remote": "1789077000017.png",
+  "last_processed_remote": "1789077000017.png",
+  "generation": 24,
+  "message": "Barrido incorporado localmente. No se encontró PUBLICAR_RADAR_RD_GITHUB.cmd"
 }
