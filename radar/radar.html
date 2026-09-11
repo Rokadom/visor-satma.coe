@@ -582,10 +582,16 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      document.getElementById('autoUpdate13').textContent=
        'Última actualización: '+fmtEpoch13(s.last_update_epoch);
 
-     if(generation13===null) generation13=Number(s.generation||0);
-     else if(Number(s.generation||0)!==generation13){
-       generation13=Number(s.generation||0);
+     if(RADAR_RAW_BASE){
+       // En GitHub Pages no dependemos del contador generation del servidor local.
+       // Consultamos radar_rd.json en cada ciclo para incorporar el ultimo barrido publicado.
        await reloadRadar13();
+     }else{
+       if(generation13===null) generation13=Number(s.generation||0);
+       else if(Number(s.generation||0)!==generation13){
+         generation13=Number(s.generation||0);
+         await reloadRadar13();
+       }
      }
    }catch(e){
      document.getElementById('autoState13').textContent='Esperando servidor automático...';
@@ -595,8 +601,13 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  document.getElementById('autoNow13').onclick=async function(){
    this.disabled=true;
    try{
-     await fetch('/api/update-now?t='+Date.now(),{cache:'no-store'});
-     document.getElementById('autoState13').textContent='Comprobación manual solicitada...';
+     if(RADAR_RAW_BASE){
+       document.getElementById('autoState13').textContent='Buscando el último barrido publicado...';
+       await reloadRadar13();
+     }else{
+       await fetch('/api/update-now?t='+Date.now(),{cache:'no-store'});
+       document.getElementById('autoState13').textContent='Comprobación manual solicitada...';
+     }
    }catch(e){}
    setTimeout(()=>{this.disabled=false;poll13();},1800);
  };
@@ -610,7 +621,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  },150);
 
  poll13();
- setInterval(poll13,15000);
+ setInterval(poll13,RADAR_RAW_BASE?10000:15000);
 })();
 </script>
 
