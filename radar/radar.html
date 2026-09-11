@@ -33,23 +33,6 @@ input[type=range]{width:155px}
 .prov-product-tip{background:rgba(4,20,31,.96);color:#fff;border:1px solid #7892a3;
  box-shadow:0 2px 8px #0008;font-weight:700}
 
-
-/* ===== PRESENTACION DE ECOS ESTILO SUAVIZADO (PC) =====
-   Solo afecta la visualizacion del overlay Leaflet.
-   Los PNG originales y el analisis de celdas/seguimiento permanecen intactos. */
-.leaflet-image-layer.radar-echo-soft{
-  image-rendering:auto!important;
-  filter:blur(1.85px) saturate(1.30) contrast(1.02) brightness(1.02);
-  will-change:filter,transform;
-  backface-visibility:hidden;
-}
-.leaflet-image-layer.radar-echo-main{
-  image-rendering:auto!important;
-  filter:blur(.18px) saturate(1.22) contrast(1.10) brightness(1.03);
-  will-change:filter,transform;
-  backface-visibility:hidden;
-}
-
 </style>
 
 <style id="productosRadarCSS">
@@ -110,72 +93,9 @@ input[type=range]{width:155px}
 @media(max-width:900px){#convPanel{left:8px;right:8px;width:auto;max-height:44vh}#convBtn{bottom:108px}}
 </style>
 
-
-<style id="radarScalePC">
-#radarScale{
-  position:fixed;left:12px;top:50%;transform:translateY(-50%);
-  z-index:100080;background:rgba(4,20,31,.94);color:#fff;
-  border:1px solid #7892a3;border-radius:7px;padding:8px 9px;
-  font:10px Arial;box-shadow:0 2px 8px #0008;pointer-events:none;
-}
-#radarScale .rsTitle{
-  font-weight:900;text-align:center;margin-bottom:7px;font-size:11px;
-  letter-spacing:.2px;color:#d9edf7
-}
-#radarScale .rsHead{
-  display:grid;grid-template-columns:42px 24px 48px;gap:5px;
-  align-items:end;margin-bottom:3px;font-size:9px;font-weight:900;color:#b9ccd8;
-  text-align:center
-}
-#radarScale .rsRow{
-  display:grid;grid-template-columns:42px 24px 48px;gap:5px;
-  align-items:center;margin:0;white-space:nowrap
-}
-#radarScale .rsDbz{
-  text-align:right;font-weight:900;color:#fff;font-variant-numeric:tabular-nums
-}
-#radarScale .rsColor{
-  width:24px;height:15px;border-left:1px solid #ffffff88;border-right:1px solid #ffffff88;
-  box-sizing:border-box
-}
-#radarScale .rsRow:first-of-type .rsColor{border-top:1px solid #ffffff88}
-#radarScale .rsMmh{
-  text-align:left;font-weight:800;color:#fff;font-variant-numeric:tabular-nums
-}
-#radarScale .c60{background:#c000c8}
-#radarScale .c55{background:#e3268c}
-#radarScale .c50{background:#e53a25}
-#radarScale .c45{background:#f27d20}
-#radarScale .c40{background:#f2cf16}
-#radarScale .c35{background:#79d226}
-#radarScale .c30{background:#19b84a}
-#radarScale .c25{background:#18c7a1}
-#radarScale .c20{background:#25b9d0}
-#radarScale .c15{background:#62d6ff}
-#radarScale .rsNote{
-  margin-top:6px;font-size:8px;color:#9fb3bf;text-align:center;line-height:1.2
-}
-</style>
-
 </head>
 <body>
 <div id="map"></div>
-
-<div id="radarScale" aria-label="Escala extendida de reflectividad radar">
- <div class="rsTitle">REFLECTIVIDAD</div>
- <div class="rsHead"><span>dBZ</span><span></span><span>mm/h</span></div>
- <div class="rsRow"><span class="rsDbz">60</span><span class="rsColor c60"></span><span class="rsMmh">200</span></div>
- <div class="rsRow"><span class="rsDbz">55</span><span class="rsColor c55"></span><span class="rsMmh">100</span></div>
- <div class="rsRow"><span class="rsDbz">50</span><span class="rsColor c50"></span><span class="rsMmh">50</span></div>
- <div class="rsRow"><span class="rsDbz">45</span><span class="rsColor c45"></span><span class="rsMmh">25</span></div>
- <div class="rsRow"><span class="rsDbz">40</span><span class="rsColor c40"></span><span class="rsMmh">12</span></div>
- <div class="rsRow"><span class="rsDbz">35</span><span class="rsColor c35"></span><span class="rsMmh">6</span></div>
- <div class="rsRow"><span class="rsDbz">30</span><span class="rsColor c30"></span><span class="rsMmh">3</span></div>
- <div class="rsRow"><span class="rsDbz">25</span><span class="rsColor c25"></span><span class="rsMmh">1</span></div>
- <div class="rsRow"><span class="rsDbz">20</span><span class="rsColor c20"></span><span class="rsMmh">0.6</span></div>
- <div class="rsRow"><span class="rsDbz">15</span><span class="rsColor c15"></span><span class="rsMmh">0.2</span></div>
- <div class="rsNote">mm/h aproximados · relación Z–R</div>
-</div>
 <div id="top">
  <div id="title">RADAR RD · ACTUALIZACIÓN AUTOMÁTICA · TIEMPO REAL</div>
  <div id="status">Cargando capas...</div>
@@ -225,13 +145,20 @@ input[type=range]{width:155px}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+// ONLINE: en GitHub Pages, leer los datos y capas directamente desde la rama main.
+// LOCAL: conserva las rutas relativas normales.
+const RADAR_RAW_BASE=(location.hostname.toLowerCase()==='rokadom.github.io')
+ ? 'https://raw.githubusercontent.com/Rokadom/visor-satma.coe/main/radar/'
+ : '';
+function radarAsset(path){return RADAR_RAW_BASE+path;}
+
 const map=L.map('map',{preferCanvas:true}).setView([18.55,-70.45],7);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
  {maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);
 L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
  {maxZoom:18}).addTo(map);
 
-let data=null, idx=0, origLayer=null, echoLayer=null, echoSmoothLayer=null, showOrig=false, showEcho=true;
+let data=null, idx=0, origLayer=null, echoLayer=null, showOrig=false, showEcho=true;
 const $=id=>document.getElementById(id);
 
 // Georreferenciación final ya calibrada.
@@ -239,10 +166,7 @@ const $=id=>document.getElementById(id);
 // Georreferenciación ajustada al encuadre geográfico real del visor IDAC.
 // Calibrada con referencias visibles de Hispaniola, Puerto Rico y BVI.
 const RADAR_BOUNDS=[[12.743945,-81.767979],[23.863055,-61.158021]]; // calibración IDAC + ajuste fino horizontal adicional 1% (vertical y centro sin cambios)
-// Visualizacion tipo Windy: base suavizada + capa principal definida.
-// No cambia el PNG fuente ni los algoritmos de celdas convectivas/seguimiento.
-const ECHO_OPACITY=.88;
-const ECHO_SOFT_OPACITY=.38;
+const ECHO_OPACITY=.92;
 function currentBounds(){
   return RADAR_BOUNDS;
 }
@@ -252,17 +176,8 @@ function applyLayers(){
  const b=currentBounds();
  if(origLayer){map.removeLayer(origLayer);origLayer=null}
  if(echoLayer){map.removeLayer(echoLayer);echoLayer=null}
- if(echoSmoothLayer){map.removeLayer(echoSmoothLayer);echoSmoothLayer=null}
  if(showEcho){
-  const src='capas/'+f.layer+'?t='+Date.now();
-  // Subcapa visual: disimula bloques sin modificar los datos del barrido.
-  echoSmoothLayer=L.imageOverlay(src,b,{
-    opacity:ECHO_SOFT_OPACITY,interactive:false,className:'radar-echo-soft'
-  }).addTo(map);
-  // Capa principal: mantiene definicion y refuerza la paleta.
-  echoLayer=L.imageOverlay(src,b,{
-    opacity:ECHO_OPACITY,interactive:false,className:'radar-echo-main'
-  }).addTo(map);
+  echoLayer=L.imageOverlay(radarAsset('capas/'+f.layer)+'?t='+Date.now(),b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
  }
  const _fi0=$('fi'); if(_fi0) _fi0.textContent='';
  const _st0=$('status'); if(_st0) _st0.textContent='Radar propiedad del IDAC, modificado por Claudio Martinez';
@@ -285,45 +200,14 @@ function ordenarBarridosCronologicamente(j){
 
 async function init(){
  try{
-  data=await fetch('radar_rd.json?t='+Date.now(),{cache:'no-store'}).then(r=>{
+  data=await fetch(radarAsset('radar_rd.json')+'?t='+Date.now(),{cache:'no-store'}).then(r=>{
    if(!r.ok) throw new Error('HTTP '+r.status+' al cargar radar_rd.json');
    return r.json();
   });
   ordenarBarridosCronologicamente(data);
   idx=Math.max(0,(data.frames||[]).length-1);
   applyLayers();
-
-  // V15 · Desplazamiento limitado a RD y entorno inmediato:
-  // Se puede mover el mapa para recorrer toda República Dominicana,
-  // pero sin pasar aproximadamente de la mitad de Haití al oeste
-  // ni de la mitad de Puerto Rico al este.
   map.fitBounds([[17.35,-74.65],[20.15,-67.95]]);
-  setTimeout(function(){
-    map.invalidateSize(false);
-
-    // Mantener esta vista general como máximo alejamiento.
-    const overviewZoom=map.getZoom();
-    map.setMinZoom(overviewZoom);
-    map.setMaxZoom(18);
-
-    // Límites operativos de desplazamiento.
-    // Oeste: ~mitad de Haití. Este: ~mitad de Puerto Rico.
-    // Norte/sur dejan margen suficiente para recorrer todo RD.
-    const limitesRD=L.latLngBounds(
-      [17.00,-73.10],
-      [20.65,-66.20]
-    );
-    map.setMaxBounds(limitesRD);
-
-    // Permitir desplazamiento y zoom normales dentro del área.
-    if(map.dragging) map.dragging.enable();
-    if(map.keyboard) map.keyboard.enable();
-    if(map.boxZoom) map.boxZoom.enable();
-
-    // Si el mapa intenta salir por inercia, devolverlo al límite permitido.
-    map.options.maxBoundsViscosity=1.0;
-    map.panInsideBounds(limitesRD,{animate:false});
-  },80);
  }catch(e){
   const _st1=$('status'); if(_st1) _st1.textContent='Error cargando capas: '+e.message;
  }
@@ -346,11 +230,8 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 #speed115{margin-left:5px}
 #auto13{display:inline-flex;align-items:center;gap:6px;margin-left:7px;padding-left:8px;
  border-left:1px solid #6e8798;vertical-align:middle}
-#auto13 .title{font-weight:900;color:#8ff0a9;transition:color .25s ease,text-shadow .25s ease}
-#auto13 .title.auto-updating{color:#ffe16a;text-shadow:0 0 5px #ffe16a66}
-#auto13 .title.auto-ok{color:#8ff0a9;text-shadow:0 0 5px #8ff0a966}
-#auto13 .title.auto-error{color:#ff6b6b;text-shadow:0 0 5px #ff6b6b66}
-#auto13 .line{display:none!important;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+#auto13 .title{font-weight:900;color:#8ff0a9}
+#auto13 .line{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
  font-size:10px;color:#c8d7df}
 #auto13 .updating{color:#ffe16a;font-weight:bold}
 #auto13 .ok{color:#8ff0a9}
@@ -371,7 +252,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 <button id="downloadVideoBtn" title="Crear video MP4 del radar">Descargar</button><span id="videoStatus"></span>
 </span>
 <span id="auto13" title="Actualización automática del radar">
- <span id="autoTitle13" class="title auto-ok">AUTO RADAR</span>
+ <span class="title">AUTO RADAR</span>
  <span id="autoState13" class="line">Iniciando...</span>
  <span id="autoCheck13" class="line" style="display:none">Revisión: --</span>
  <span id="autoUpdate13" class="line" style="display:none">Última actualización: --</span>
@@ -498,7 +379,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  let delay123=800; // Motor TJUA: velocidad normal 1x
 
  function frameUrl123(f){
-   return 'capas/'+f.layer;
+   return radarAsset('capas/'+f.layer);
  }
  function preload123(){
    if(!data || !Array.isArray(data.frames) || !data.frames.length){
@@ -511,6 +392,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 
    data.frames.forEach((f,i)=>{
      const im=new Image();
+     if(RADAR_RAW_BASE) im.crossOrigin='anonymous';
      im.onload=im.onerror=function(){
        loaded123++;
        cache123[i]=im;
@@ -639,13 +521,6 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 <script>
 (function(){
  let generation13=null;
- function setAutoColor13(state){
-   const t=document.getElementById('autoTitle13');
-   if(!t)return;
-   t.classList.remove('auto-ok','auto-updating','auto-error');
-   t.classList.add(state==='updating'?'auto-updating':state==='error'?'auto-error':'auto-ok');
- }
-
  let sig13='';
  let busy13=false;
 
@@ -663,8 +538,9 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    const fs=(j&&Array.isArray(j.frames))?j.frames:[];
    await Promise.all(fs.map((f,i)=>new Promise(resolve=>{
      const im=new Image();
+     if(RADAR_RAW_BASE) im.crossOrigin='anonymous';
      im.onload=im.onerror=resolve;
-     im.src='capas/'+f.layer+'?auto13='+Date.now()+'&i='+i;
+     im.src=radarAsset('capas/'+f.layer)+'?auto13='+Date.now()+'&i='+i;
    })));
  }
 
@@ -672,7 +548,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    if(busy13)return;
    busy13=true;
    try{
-     const j=await fetch('radar_rd.json?auto13='+Date.now(),{cache:'no-store'}).then(r=>{
+     const j=await fetch(radarAsset('radar_rd.json')+'?auto13='+Date.now(),{cache:'no-store'}).then(r=>{
        if(!r.ok)throw new Error('HTTP '+r.status);
        return r.json();
      });
@@ -686,10 +562,10 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
        applyLayers();
        if(typeof window.refresh124==='function')window.refresh124();
        document.getElementById('autoState13').textContent='Nuevos barridos incorporados al visor.';
-       document.getElementById('autoState13').className='line ok'; setAutoColor13('ok');
+       document.getElementById('autoState13').className='line ok';
      }
    }catch(e){
-     document.getElementById('autoState13').textContent='Error recargando visor: '+e.message; setAutoColor13('error');
+     document.getElementById('autoState13').textContent='Error recargando visor: '+e.message;
    }finally{
      busy13=false;
    }
@@ -697,10 +573,10 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 
  async function poll13(){
    try{
-     const s=await fetch('auto_status.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json());
+     const s=await fetch(radarAsset('auto_status.json')+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.json());
      const st=document.getElementById('autoState13');
      st.textContent=s.message||'Monitor activo.';
-     st.className='line '+(s.updating?'updating':'ok'); setAutoColor13(s.updating?'updating':'ok');
+     st.className='line '+(s.updating?'updating':'ok');
      document.getElementById('autoCheck13').textContent=
        'Revisión automática: '+fmtEpoch13(s.last_check_epoch)+' · cada '+(s.check_seconds||60)+' s';
      document.getElementById('autoUpdate13').textContent=
@@ -712,7 +588,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
        await reloadRadar13();
      }
    }catch(e){
-     document.getElementById('autoState13').textContent='Esperando servidor automático...'; setAutoColor13('error');
+     document.getElementById('autoState13').textContent='Esperando servidor automático...';
    }
  }
 
@@ -720,7 +596,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    this.disabled=true;
    try{
      await fetch('/api/update-now?t='+Date.now(),{cache:'no-store'});
-     document.getElementById('autoState13').textContent='Comprobación manual solicitada...'; setAutoColor13('updating');
+     document.getElementById('autoState13').textContent='Comprobación manual solicitada...';
    }catch(e){}
    setTimeout(()=>{this.disabled=false;poll13();},1800);
  };
@@ -747,21 +623,15 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  const loading=document.getElementById('prodLoading');
  const timeBox=document.getElementById('prodRadarTime');
 
- if(!btn || !panel || !list || !loading || !timeBox){
-   console.error('Producto radar: faltan controles HTML requeridos.');
-   return;
- }
-
  let geo=null, maskCanvas=null, maskCtx=null, maskKey='', analysisSeq=0;
  let productoRadarActivo=true;
 
  let muniLayer=null;
  const muniFeatureStats=new Map();
-
- // Capa municipal reservada para el producto radar.
- // Estas funciones se mantienen neutras para no alterar el mapa principal.
- function ensureMuniLayer(){}
- function refreshMunicipalityLayer(){}
+  let muniLayer=null;
+  const muniFeatureStats=new Map();
+  function ensureMuniLayer(){}
+  function refreshMunicipalityLayer(){}
 
   let municipalityNames=[''];
  let municipalityStats=[];
@@ -981,7 +851,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      loading.style.display='block';
      loading.textContent='No se pudo leer la capa de ecos.';
    };
-   im.src='capas/'+f.layer+'?analisis='+Date.now();
+   im.src=radarAsset('capas/'+f.layer)+'?analisis='+Date.now();
  }
 
  
@@ -1090,6 +960,7 @@ btn.onclick=function(){
 
  async function loadLocalImage(url){
    const im=new Image();
+   if(RADAR_RAW_BASE && url.indexOf('raw.githubusercontent.com')>=0) im.crossOrigin='anonymous';
    await new Promise((resolve,reject)=>{
      im.onload=resolve;
      im.onerror=()=>reject(new Error('No se pudo cargar '+url));
@@ -1262,7 +1133,7 @@ btn.onclick=function(){
        setStatus('Cuadro '+(i+1)+'/'+frames.length);
 
        const echo=await loadLocalImage(
-         'capas/'+f.layer+'?mp4='+Date.now()+'&i='+i
+         radarAsset('capas/'+f.layer)+'?mp4='+Date.now()+'&i='+i
        );
 
        ctx.clearRect(0,0,OUT_W,OUT_H);
@@ -1360,7 +1231,7 @@ btn.onclick=function(){
  }
  async function loadProvince(){
    if(provinceGeo)return;
-   try{const r=await fetch('provincias_rd.geojson?t='+Date.now(),{cache:'no-store'});if(r.ok)provinceGeo=await r.json()}catch(e){}
+   try{const r=await fetch(radarAsset('provincias_rd.geojson')+'?t='+Date.now(),{cache:'no-store'});if(r.ok)provinceGeo=await r.json()}catch(e){}
  }
  function pointInRing(lon,lat,ring){
    let inside=false;
@@ -1419,11 +1290,11 @@ btn.onclick=function(){
  }
  async function readFrame(f){
    return await new Promise(resolve=>{
-     const im=new Image();im.onload=()=>{
+     const im=new Image();if(RADAR_RAW_BASE) im.crossOrigin='anonymous';im.onload=()=>{
        const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;
        const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);
        resolve(components(x.getImageData(0,0,c.width,c.height)));
-     };im.onerror=()=>resolve([]);im.src='capas/'+f.layer+'?cv='+Date.now();
+     };im.onerror=()=>resolve([]);im.src=radarAsset('capas/'+f.layer)+'?cv='+Date.now();
    });
  }
  function track(framesCells){
@@ -1650,7 +1521,5 @@ function render(tracks,current){
 })();
 </script>
 
-
-<!-- RADAR PC V16 · Producto radar corregido + desplazamiento limitado RD · 2026-09-09 -->
 </body>
 </html>
