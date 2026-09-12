@@ -1,16 +1,16 @@
 {
   "enabled": true,
   "check_seconds": 20,
-  "updating": true,
+  "updating": false,
   "publishing": true,
-  "publish_pending": false,
-  "last_check_epoch": 1789253185,
-  "last_update_epoch": 1789253083,
-  "last_publish_start_epoch": 1789253145,
-  "last_publish_end_epoch": 1789253145,
-  "latest_remote": "1789253160003.png",
-  "last_processed_remote": "1789253040003.png",
-  "last_published_remote": "1789252800004.png",
-  "generation": 5,
-  "message": "Nuevo barrido detectado. Procesando localmente..."
+  "publish_pending": true,
+  "last_check_epoch": 1789253372,
+  "last_update_epoch": 1789253331,
+  "last_publish_start_epoch": 1789253328,
+  "last_publish_end_epoch": 1789253328,
+  "latest_remote": "1789253280002.png",
+  "last_processed_remote": "1789253280002.png",
+  "last_published_remote": "1789253040003.png",
+  "generation": 7,
+  "message": "Radar local al dia. GitHub publicando..."
 }
