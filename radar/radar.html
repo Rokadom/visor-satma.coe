@@ -553,6 +553,16 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
        return r.json();
      });
      ordenarBarridosCronologicamente(j);
+
+     // PROTECCION ANTI-RETROCESO: conservar siempre el barrido mas reciente ya cargado.
+     const nuevoUltimo=(j.frames&&j.frames.length)?radarFrameEpoch(j.frames[j.frames.length-1]):0;
+     const actualUltimo=(data&&data.frames&&data.frames.length)?radarFrameEpoch(data.frames[data.frames.length-1]):0;
+     if(nuevoUltimo && actualUltimo && nuevoUltimo < actualUltimo){
+       const st=document.getElementById('autoState13');
+       if(st){st.textContent='GitHub ofrece un barrido anterior; se conserva el más reciente.';st.className='line updating';}
+       return;
+     }
+
      const ns=framesSig13(j);
      if(ns && ns!==sig13){
        await preloadNew13(j);
