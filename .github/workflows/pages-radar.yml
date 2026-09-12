@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - "radar/**"
-      - ".github/workflows/pages-radar.yml"
   workflow_dispatch:
 
 permissions:
@@ -32,11 +29,10 @@ jobs:
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Preparar sitio estatico
-        run: |
-          touch .nojekyll
+      - name: Desactivar Jekyll
+        run: touch .nojekyll
 
-      - name: Empaquetar sitio
+      - name: Empaquetar sitio estatico
         uses: actions/upload-pages-artifact@v4
         with:
           path: "."
