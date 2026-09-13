@@ -178,7 +178,15 @@ input[type=range]{width:155px}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const map=L.map('map',{preferCanvas:true}).setView([18.55,-70.45],7);
+const NAV_BOUNDS=L.latLngBounds(
+  [17.25,-73.05],  // oeste: aproximadamente mitad de Haití
+  [20.15,-66.25]   // este: aproximadamente mitad de Puerto Rico
+);
+const map=L.map('map',{
+  preferCanvas:true,
+  maxBounds:NAV_BOUNDS,
+  maxBoundsViscosity:1.0
+}).setView([18.55,-69.65],7);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
  {maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);
 L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
@@ -241,12 +249,30 @@ async function init(){
   ordenarBarridosCronologicamente(data);
   idx=Math.max(0,(data.frames||[]).length-1);
   applyLayers();
-  map.fitBounds([[17.35,-74.65],[20.15,-67.95]]);
+  map.fitBounds(NAV_BOUNDS,{animate:false,padding:[0,0]});
+  // Esta vista será el máximo alejamiento permitido.
+  const zMin=map.getZoom();
+  map.setMinZoom(zMin);
+  map.setMaxBounds(NAV_BOUNDS);
+  map.panInsideBounds(NAV_BOUNDS,{animate:false});
  }catch(e){
   const _st1=$('status'); if(_st1) _st1.textContent='Error cargando capas: '+e.message;
  }
 }
 init();
+
+// Al cambiar el tamaño o maximizar la ventana, conserva el encuadre máximo.
+// Con zoom hacia adentro sí se puede mover el mapa, pero nunca fuera de NAV_BOUNDS.
+window.addEventListener('resize',function(){
+  setTimeout(function(){
+    map.invalidateSize();
+    if(map.getZoom()<=map.getMinZoom()){
+      map.fitBounds(NAV_BOUNDS,{animate:false,padding:[0,0]});
+    }else{
+      map.panInsideBounds(NAV_BOUNDS,{animate:false});
+    }
+  },120);
+});
 </script>
 
 
