@@ -142,7 +142,7 @@ input[type=range]{width:155px}
 <div id="convPanel">
  <h3>5 CELDAS CONVECTIVAS MÁS FUERTES</h3>
  <div id="convTime">Barrido: --</div>
- <div><button id="convToggle" type="button">ACTIVADO</button><span id="convLayerInfo">Top 5 · granizo solo con criterio máximo</span></div>
+ <div><button id="convToggle" type="button">ACTIVADO</button><span id="convLayerInfo">Top 5 · prueba tropical conservadora · granizo ≥55 dBZ persistente</span></div>
  <div id="convSummary">Esperando análisis...</div>
  <div id="convList"></div>
  <div style="margin-top:9px;font-weight:900;color:#9fe5ff;border-top:1px solid #375365;padding-top:8px">BOLETÍN RADAR AUTOMÁTICO</div>
@@ -1276,8 +1276,16 @@ btn.onclick=function(){
  }
  function severe(r,g,b,a){
    if(a<40)return 0;
-   if((r>150&&r>g*1.30&&r>b*1.15)||(r>150&&b>90&&g<125))return 4;
-   if(r>145&&g>85&&b<95)return 3;
+
+   // 55-60 dBZ aprox.: violeta/magenta. Clase máxima.
+   if(r>135 && b>135 && g<105) return 5;
+
+   // ~50 dBZ: rojo intenso.
+   if(r>185 && g<85 && b<135) return 4;
+
+   // ~40-45 dBZ: naranja / naranja-rojo.
+   if(r>185 && g>=80 && g<190 && b<90) return 3;
+
    return 0;
  }
  async function loadProvince(){
@@ -1400,7 +1408,7 @@ btn.onclick=function(){
        const arrow=L.divIcon({className:'',html:'<div style="font-size:22px;color:#ffe000;text-shadow:0 0 3px #000;transform:rotate('+(bearing-90).toFixed(0)+'deg);transform-origin:center;line-height:22px">➤</div>',iconSize:[22,22],iconAnchor:[11,11]});
        L.marker([p.lat,p.lon],{icon:arrow,interactive:false}).addTo(trackLayer);
      }
-     L.circleMarker([p.lat,p.lon],{radius:p.peak===4?9:7,color:p.peak===4?'#ff3b22':'#ffe000',weight:2,fillOpacity:.25})
+     L.circleMarker([p.lat,p.lon],{radius:p.peak>=5?9:7,color:p.peak>=5?'#ff3b22':'#ffe000',weight:2,fillOpacity:.25})
        .bindTooltip('C'+t.id+' '+trend+' · Dirección '+direction,{permanent:false,direction:'top',className:'conv-cell-label',sticky:true})
        .addTo(trackLayer);
    }
@@ -1410,31 +1418,50 @@ btn.onclick=function(){
    const candidates=[];
    for(const t of tracks){
      const p=t.points[t.points.length-1];
-     if(!p || p.frame!==current || p.peak<4) continue;
 
-     // Persistencia: la celda debe existir en al menos 4 barridos.
-     if(t.points.length<4) continue;
+     // PRUEBA TROPICAL CONSERVADORA:
+     // El radar por sí solo no confirma granizo.
+     // Solo se conserva una señal compatible cuando el núcleo alcanza
+     // aproximadamente 55-60 dBZ y persiste varios barridos.
+     if(!p || p.frame!==current || p.peak<5) continue;
 
-     // Debe mantener señal máxima en al menos 3 de sus últimos 4 barridos.
-     const recent=t.points.slice(-4);
-     const maxHits=recent.filter(q=>q.peak>=4).length;
-     if(maxHits<3) continue;
+     // Al menos 6 barridos de trayectoria.
+     if(t.points.length<6) continue;
 
-     // Núcleo compacto/importante: área actual no trivial respecto a su historia.
+     // 5 de los últimos 6 barridos deben mantener 55-60 dBZ aprox.
+     const recent=t.points.slice(-6);
+     const maxHits=recent.filter(q=>q.peak>=5).length;
+     if(maxHits<5) continue;
+
+     // Núcleo significativo y estable respecto a su propia historia.
      const hist=t.points.slice(0,-1);
      const meanArea=hist.length ? hist.reduce((a,q)=>a+q.area,0)/hist.length : p.area;
-     if(p.area<8 || p.area<meanArea*0.85) continue;
+     if(p.area<8 || p.area<meanArea*0.90) continue;
 
-     // Excluir núcleos que estén debilitándose claramente.
+     // Excluir debilitamiento claro.
      const prev=t.points[t.points.length-2];
-     if(prev && p.area<prev.area*0.82) continue;
+     if(prev && p.area<prev.area*0.90) continue;
+
+     // Evitar núcleos muy intermitentes.
+     const last3=t.points.slice(-3);
+     const minLast3=Math.min(...last3.map(q=>q.area));
+     const maxLast3=Math.max(...last3.map(q=>q.area));
+     if(maxLast3>0 && minLast3<maxLast3*0.60) continue;
 
      candidates.push(t);
    }
+
    return candidates.sort((a,b)=>{
      const pa=a.points[a.points.length-1], pb=b.points[b.points.length-1];
      return (pb.area-pa.area)||(b.points.length-a.points.length);
    });
+ }
+
+ function peakDbzLabel(peak){
+   if(peak>=5)return '55–60 dBZ aprox.';
+   if(peak>=4)return '50 dBZ aprox.';
+   if(peak>=3)return '40–45 dBZ aprox.';
+   return 'reflectividad inferior';
  }
 
  function drawHailPotential(tracks,current){
@@ -1443,12 +1470,17 @@ btn.onclick=function(){
      const p=t.points[t.points.length-1];
      L.circleMarker([p.lat,p.lon],{
        radius:13,color:'#ffffff',weight:2,fillColor:'#d100d8',fillOpacity:.55
-     }).bindTooltip('<b>POTENCIAL DE GRANIZO</b>',{
-       permanent:false,
-       direction:'top',
-       sticky:true,
-       className:'conv-cell-label'
-     }).addTo(trackLayer);
+     }).bindTooltip(
+       '<b>GRANIZO POSIBLE · SEÑAL RADAR</b><br>'+
+       peakDbzLabel(p.peak)+' · persistente<br>'+
+       '<span style="font-weight:400">Requiere confirmación ambiental (GR02T/WPC).</span>',
+       {
+         permanent:false,
+         direction:'top',
+         sticky:true,
+         className:'conv-cell-label'
+       }
+     ).addTo(trackLayer);
    }
    return hail;
  }
@@ -1472,11 +1504,12 @@ function render(tracks,current){
    sum.textContent=rows.length+' celdas principales seguidas · '+ups+' intensificándose · '+downs+' debilitándose.';
    const provs=[...affected.keys()].filter(x=>x!=='Área no identificada');
    const hail=hailCandidates(tracks,current);
+   try{console.info('[Granizo tropical] candidatos conservadores:',hail.length);}catch(e){}
    const hailProvs=[...new Set(hail.map(t=>{
      const p=t.points[t.points.length-1];
      return provinceAt(p.lat,p.lon)||'';
    }).filter(Boolean))];
-   const hailText=hail.length ? (' POTENCIAL DE GRANIZO: '+(hailProvs.length?hailProvs.join(', '):'celda convectiva identificada')+'.') : '';
+   const hailText=hail.length ? (' GRANIZO POSIBLE (SEÑAL RADAR): '+(hailProvs.length?hailProvs.join(', '):'celda convectiva identificada')+'. Requiere confirmación ambiental.') : '';
    bulletin.textContent='BOLETÍN RADAR · '+ftime(data.frames[idx])+'\n'+
      (rows.length?('Se muestran las '+rows.length+' celdas convectivas más fuertes con seguimiento suficiente. '+
      (ups?ups+' muestran intensificación. ':'')+(downs?downs+' muestran debilitamiento. ':'')+
