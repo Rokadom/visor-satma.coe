@@ -1667,7 +1667,7 @@ function render(tracks,current){
 
  const GLM_URL='nowcast/rayos_glm.json';
  const POLL_MS=20000;
- const CORE_MAX_AGE_MIN=5.0;
+ const CORE_MAX_AGE_MIN=10.0;
  const CORE_LINK_KM=25;
  const CORE_MIN_FLASHES=4;
  let active=true;
@@ -1755,7 +1755,7 @@ function render(tracks,current){
      }).openTooltip();
    });
 
-   if(coresBox)coresBox.textContent=cores.length+' núcleo'+(cores.length===1?'':'s')+' eléctrico'+(cores.length===1?'':'s')+' activo'+(cores.length===1?'':'s')+' · ≥'+CORE_MIN_FLASHES+' detecciones / 25 km / 5 min';
+   if(coresBox)coresBox.textContent=cores.length+' núcleo'+(cores.length===1?'':'s')+' eléctrico'+(cores.length===1?'':'s')+' activo'+(cores.length===1?'':'s')+' · ≥'+CORE_MIN_FLASHES+' detecciones / 25 km / 10 min';
  }
  function draw(j){
    layer.clearLayers(); coreLayer.clearLayers();
