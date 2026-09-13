@@ -1767,8 +1767,14 @@ function render(tracks,current){
      if(!Number.isFinite(lat)||!Number.isFinite(lon)||age>10.5)continue;
      if(f.quality_flag!=null && Number(f.quality_flag)!==0)continue;
      const st=styleForAge(age);
-     const m=L.circleMarker([lat,lon],{radius:st.radius,color:st.color,weight:1.4,opacity:st.opacity,fillColor:st.fillColor,fillOpacity:st.fillOpacity,interactive:true}).addTo(layer);
-     if(age<=2 && m.getElement)m.on('add',()=>{const el=m.getElement();if(el)el.classList.add('glm-pulse')});
+     const raySize = age<=2 ? 11 : (age<=5 ? 10 : 9);
+     const rayIcon=L.divIcon({
+       className:'',
+       html:'<div style="width:'+raySize+'px;height:'+raySize+'px;line-height:'+raySize+'px;font-size:'+raySize+'px;font-weight:900;color:'+st.color+';text-shadow:0 0 2px #000;text-align:center;pointer-events:auto">⚡</div>',
+       iconSize:[raySize,raySize],
+       iconAnchor:[Math.round(raySize/2),Math.round(raySize/2)]
+     });
+     const m=L.marker([lat,lon],{icon:rayIcon,interactive:true,keyboard:false}).addTo(layer);
      const en=(f.energy==null||!Number.isFinite(Number(f.energy)))?'':('<br>Energía: '+Number(f.energy).toExponential(2));
      m.bindTooltip('<b>Actividad eléctrica GLM</b><br>'+fmtTime(f.time_utc)+'<br>Edad: '+age.toFixed(1)+' min'+en,{direction:'top',sticky:true,opacity:.96});
      if(age<=CORE_MAX_AGE_MIN)recent.push({lat,lon,age});
