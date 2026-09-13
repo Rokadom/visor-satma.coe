@@ -107,6 +107,43 @@ input[type=range]{width:155px}
 @media(max-width:700px){#radarIntensityScale{left:7px;top:84px;transform:scale(.88);transform-origin:top left}}
 </style>
 
+
+<style id="glmNowcastCSS">
+#glmBtn{
+ position:fixed;right:12px;bottom:96px;z-index:100106;
+ background:#c77700;color:#fff;border:1px solid #ffd77a;border-radius:5px;
+ padding:7px 11px;font-weight:900;box-shadow:0 2px 8px #0008;cursor:pointer
+}
+#glmBtn.on{background:#f2b800;color:#111;border-color:#ffe48a}
+#glmPanel{
+ position:fixed;right:12px;top:78px;z-index:100110;width:300px;
+ max-height:calc(100vh - 175px);overflow:auto;
+ background:rgba(4,20,31,.97);color:#fff;border:1px solid #688497;
+ border-radius:8px;padding:10px 11px;font:12px Arial;box-shadow:0 3px 12px #0009;
+ display:none
+}
+#glmPanel.show{display:block}
+#glmPanel h3{margin:0 0 5px;font-size:15px;color:#ffe16a}
+#glmStatus{font-size:11px;color:#c8d7df;margin-bottom:8px}
+#glmCount{font-size:20px;font-weight:900;color:#fff;margin:4px 0 8px}
+.glmLegendRow{display:flex;align-items:center;gap:7px;margin:4px 0}
+.glmDot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1px solid #fff8}
+#glmNote{font-size:10px;color:#b9ccd8;border-top:1px solid #375365;padding-top:7px;margin-top:8px;line-height:1.35}
+.glm-pulse{animation:glmPulse 1.2s ease-out infinite}
+.glm-core-label{
+ background:#b83200!important;color:#fff!important;border:1px solid #ffe082!important;
+ border-radius:9px!important;padding:2px 5px!important;font-weight:900!important;
+ box-shadow:0 1px 6px #000!important;white-space:nowrap!important;
+ font-size:10px!important;line-height:14px!important
+}
+.leaflet-tooltip.glm-core-label:before{display:none!important}
+@keyframes glmPulse{0%{stroke-opacity:1;fill-opacity:.95}70%{stroke-opacity:.45;fill-opacity:.45}100%{stroke-opacity:1;fill-opacity:.95}}
+@media(max-width:900px){
+ #glmBtn{right:8px;bottom:150px}
+ #glmPanel{left:8px;right:8px;width:auto;top:70px;max-height:45vh}
+}
+</style>
+
 </head>
 <body>
 <div id="map"></div>
@@ -176,6 +213,19 @@ input[type=range]{width:155px}
  </div>
 </div>
 
+
+<button id="glmBtn" type="button" title="Actividad eléctrica NOAA GOES-19 GLM">⚡ Tronadas</button>
+<div id="glmPanel">
+ <h3>ACTIVIDAD ELÉCTRICA · GOES-19 GLM</h3>
+ <div id="glmStatus">Esperando datos...</div>
+ <div id="glmCount">0 detecciones</div>
+ <div id="glmCores" style="font-size:11px;font-weight:900;color:#ffe16a;margin:0 0 7px">0 núcleos eléctricos activos</div>
+ <div class="glmLegendRow"><span class="glmDot" style="background:#fff200"></span><span>0–2 min · muy reciente</span></div>
+ <div class="glmLegendRow"><span class="glmDot" style="background:#ffb000"></span><span>2–5 min · reciente</span></div>
+ <div class="glmLegendRow"><span class="glmDot" style="background:#ff5a36"></span><span>5–10 min · actividad previa</span></div>
+ <div id="glmNote">Fuente: NOAA GOES-19 GLM-L2-LCFA. GLM detecta actividad óptica de rayos; no identifica cada punto específicamente como impacto nube-tierra.</div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const NAV_BOUNDS=L.latLngBounds(
@@ -193,8 +243,6 @@ L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/Wo
  {maxZoom:18}).addTo(map);
 
 let data=null, idx=0, origLayer=null, echoLayer=null, showOrig=false, showEcho=true;
-let echoTransitionSeq=0;
-const ECHO_FADE_MS=420; // transición visual suave entre barridos reales
 const $=id=>document.getElementById(id);
 function satmaUTC(ms,withSuffix=true){
  const d=new Date(Number(ms));
@@ -219,44 +267,9 @@ function applyLayers(){
  const f=data.frames[idx];
  const b=currentBounds();
  if(origLayer){map.removeLayer(origLayer);origLayer=null}
-
- // Transición suave: mezcla el barrido anterior con el nuevo sin crear datos radar.
- // Las dos imágenes son barridos IDAC reales; sólo cambia su opacidad durante 420 ms.
- const seq=++echoTransitionSeq;
- const anterior=echoLayer;
+ if(echoLayer){map.removeLayer(echoLayer);echoLayer=null}
  if(showEcho){
-  const nueva=L.imageOverlay('capas/'+f.layer,b,{opacity:anterior?0:ECHO_OPACITY,interactive:false}).addTo(map);
-  echoLayer=nueva;
-  let iniciada=false;
-
-  function quitarAnterior(){
-   if(anterior && anterior!==echoLayer && map.hasLayer(anterior)) map.removeLayer(anterior);
-  }
-  function iniciarFundido(){
-   if(iniciada || seq!==echoTransitionSeq)return;
-   iniciada=true;
-   if(!anterior){
-    nueva.setOpacity(ECHO_OPACITY);
-    return;
-   }
-   const inicio=Date.now();
-   function paso(){
-    if(seq!==echoTransitionSeq){ quitarAnterior(); return; }
-    const p=Math.min(1,(Date.now()-inicio)/ECHO_FADE_MS);
-    nueva.setOpacity(ECHO_OPACITY*p);
-    if(map.hasLayer(anterior)) anterior.setOpacity(ECHO_OPACITY*(1-p));
-    if(p<1) requestAnimationFrame(paso);
-    else quitarAnterior();
-   }
-   requestAnimationFrame(paso);
-  }
-
-  nueva.once('load',iniciarFundido);
-  // Respaldo para navegadores antiguos/caché: no deja una transición colgada.
-  setTimeout(iniciarFundido,900);
- }else{
-  if(anterior && map.hasLayer(anterior))map.removeLayer(anterior);
-  echoLayer=null;
+  echoLayer=L.imageOverlay('capas/'+f.layer+'?t='+Date.now(),b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
  }
  const _fi0=$('fi'); if(_fi0) _fi0.textContent='';
  const _st0=$('status'); if(_st0) _st0.textContent='Radar propiedad del IDAC, modificado por Claudio Martinez';
@@ -464,16 +477,15 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 <div id="preload123">Precargando ecos: 0/0</div>
 <script>
 (function(){
- // MOTOR DE ANIMACION RD CON PRECARGA + TRANSICION SUAVE ENTRE BARRIDOS REALES.
+ // MOTOR DE ANIMACION RD SIMPLIFICADO CON EL PATRON TJUA.
  // No modifica calibracion, productos, granizo, celdas, municipios ni exportacion MP4.
- // El fundido se realiza en applyLayers(); no se generan barridos meteorologicos intermedios.
  let ready123=false;
  let loaded123=0;
  let total123=0;
  let cache123=[];
  let timer123=null;
  let playing123=false;
- let delay123=900; // Normal: deja visible el fundido suave entre barridos
+ let delay123=800; // Motor TJUA: velocidad normal 1x
 
  function frameUrl123(f){
    return 'capas/'+f.layer;
@@ -535,7 +547,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
          box.classList.add('ok'); if(typeof window.refresh124==='function') window.refresh124();
        }
      };
-     im.src=frameUrl123(f);
+     im.src=frameUrl123(f)+'?preload='+Date.now()+'&i='+i;
    });
  }
 
@@ -598,8 +610,8 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      if(playing123){ if(timer123)clearInterval(timer123); timer123=setInterval(function(){next();},delay123); }
    }
    if(slow)slow.onclick=function(){setSpeed(1600,'spSlow115');};
-   if(norm)norm.onclick=function(){setSpeed(900,'spNorm115');};
-   if(fast)fast.onclick=function(){setSpeed(600,'spFast115');};
+   if(norm)norm.onclick=function(){setSpeed(800,'spNorm115');};
+   if(fast)fast.onclick=function(){setSpeed(400,'spFast115');};
 
    // Los botones originales de la esquina inferior derecha usan el mismo índice maestro.
    const prevRight=document.getElementById('prev');
@@ -634,7 +646,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    await Promise.all(fs.map((f,i)=>new Promise(resolve=>{
      const im=new Image();
      im.onload=im.onerror=resolve;
-     im.src='capas/'+f.layer;
+     im.src='capas/'+f.layer+'?auto13='+Date.now()+'&i='+i;
    })));
  }
 
@@ -1640,6 +1652,150 @@ function render(tracks,current){
       console.log('Hover municipal HISPANIOLA cargado:',(g.features||[]).length);
     })
     .catch(e=>console.warn('No se pudo cargar hover municipal HISPANIOLA:',e));
+})();
+</script>
+
+
+<script id="glmNowcastJS">
+(function(){
+ const btn=document.getElementById('glmBtn');
+ const panel=document.getElementById('glmPanel');
+ const status=document.getElementById('glmStatus');
+ const count=document.getElementById('glmCount');
+ const coresBox=document.getElementById('glmCores');
+ if(!btn||!panel||!status||!count||typeof map==='undefined'||typeof L==='undefined')return;
+
+ const GLM_URL='/nowcast/rayos_glm.json';
+ const POLL_MS=20000;
+ const CORE_MAX_AGE_MIN=5.0;
+ const CORE_LINK_KM=25;
+ const CORE_MIN_FLASHES=4;
+ let active=true;
+ let timer=null;
+ const layer=L.layerGroup().addTo(map);
+ const coreLayer=L.layerGroup().addTo(map);
+
+ function ageMinutes(s){
+   const t=Date.parse(String(s||''));
+   return Number.isFinite(t)?Math.max(0,(Date.now()-t)/60000):999;
+ }
+ function styleForAge(a){
+   if(a<=2)return {color:'#fff200',fillColor:'#fff200',radius:6,opacity:1,fillOpacity:.92};
+   if(a<=5)return {color:'#ffb000',fillColor:'#ffb000',radius:5,opacity:.95,fillOpacity:.80};
+   return {color:'#ff5a36',fillColor:'#ff5a36',radius:4,opacity:.78,fillOpacity:.58};
+ }
+ function fmtTime(s){
+   const t=Date.parse(String(s||''));
+   if(!Number.isFinite(t))return '--';
+   const d=new Date(t),z=n=>String(n).padStart(2,'0');
+   return z(d.getUTCHours())+':'+z(d.getUTCMinutes())+':'+z(d.getUTCSeconds())+' UTC';
+ }
+ function km(a,b){
+   const R=6371,rad=Math.PI/180;
+   const p1=a.lat*rad,p2=b.lat*rad,dp=(b.lat-a.lat)*rad,dl=(b.lon-a.lon)*rad;
+   const h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+   return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
+ }
+ function findCores(points){
+   // Componentes espaciales de descargas recientes. Es una ayuda de visualización,
+   // no una identificación automática de tormenta severa.
+   const n=points.length,seen=new Array(n).fill(false),out=[];
+   for(let i=0;i<n;i++){
+     if(seen[i])continue;
+     const q=[i],group=[]; seen[i]=true;
+     while(q.length){
+       const a=q.pop(); group.push(points[a]);
+       for(let j=0;j<n;j++){
+         if(!seen[j] && km(points[a],points[j])<=CORE_LINK_KM){seen[j]=true;q.push(j)}
+       }
+     }
+     if(group.length>=CORE_MIN_FLASHES){
+       let sw=0,slat=0,slon=0,newest=999;
+       group.forEach(p=>{const w=Math.max(.25,CORE_MAX_AGE_MIN-p.age+.25);sw+=w;slat+=p.lat*w;slon+=p.lon*w;newest=Math.min(newest,p.age)});
+       out.push({lat:slat/sw,lon:slon/sw,n:group.length,newest});
+     }
+   }
+   return out.sort((a,b)=>b.n-a.n);
+ }
+ function drawCores(points){
+   coreLayer.clearLayers();
+   const cores=findCores(points);
+   const mapSize=map.getSize();
+
+   cores.forEach((c,i)=>{
+     const ll=L.latLng(c.lat,c.lon);
+     L.circle(ll,{
+       radius:14000,color:'#ff3b00',weight:2.5,opacity:.95,
+       fillColor:'#ffb000',fillOpacity:.10,interactive:false
+     }).addTo(coreLayer);
+
+     // Mantener la etiqueta siempre dentro del mapa:
+     // izquierda -> abre hacia la derecha; derecha -> abre hacia la izquierda.
+     const p=map.latLngToContainerPoint(ll);
+     let direction='right', offset=L.point(10,0);
+     if(p.x>mapSize.x*0.68){
+       direction='left';
+       offset=L.point(-10,0);
+     }else if(p.x>mapSize.x*0.34){
+       direction='top';
+       offset=L.point(0,-12);
+     }
+
+     const anchor=L.circleMarker(ll,{
+       radius:1,opacity:0,fillOpacity:0,interactive:false
+     }).addTo(coreLayer);
+
+     anchor.bindTooltip('⚡ Núcleo activo · '+c.n,{
+       permanent:true,
+       direction:direction,
+       offset:offset,
+       className:'glm-core-label',
+       opacity:1,
+       interactive:false
+     }).openTooltip();
+   });
+
+   if(coresBox)coresBox.textContent=cores.length+' núcleo'+(cores.length===1?'':'s')+' eléctrico'+(cores.length===1?'':'s')+' activo'+(cores.length===1?'':'s')+' · ≥'+CORE_MIN_FLASHES+' detecciones / 25 km / 5 min';
+ }
+ function draw(j){
+   layer.clearLayers(); coreLayer.clearLayers();
+   const rows=Array.isArray(j&&j.flashes)?j.flashes:[];
+   let shown=0;
+   const recent=[];
+   for(const f of rows){
+     const lat=Number(f.lat),lon=Number(f.lon),age=ageMinutes(f.time_utc);
+     if(!Number.isFinite(lat)||!Number.isFinite(lon)||age>10.5)continue;
+     if(f.quality_flag!=null && Number(f.quality_flag)!==0)continue;
+     const st=styleForAge(age);
+     const m=L.circleMarker([lat,lon],{radius:st.radius,color:st.color,weight:1.4,opacity:st.opacity,fillColor:st.fillColor,fillOpacity:st.fillOpacity,interactive:true}).addTo(layer);
+     if(age<=2 && m.getElement)m.on('add',()=>{const el=m.getElement();if(el)el.classList.add('glm-pulse')});
+     const en=(f.energy==null||!Number.isFinite(Number(f.energy)))?'':('<br>Energía: '+Number(f.energy).toExponential(2));
+     m.bindTooltip('<b>Actividad eléctrica GLM</b><br>'+fmtTime(f.time_utc)+'<br>Edad: '+age.toFixed(1)+' min'+en,{direction:'top',sticky:true,opacity:.96});
+     if(age<=CORE_MAX_AGE_MIN)recent.push({lat,lon,age});
+     shown++;
+   }
+   drawCores(recent);
+   count.textContent=shown+' deteccion'+(shown===1?'':'es')+' · últimos 10 min';
+   status.textContent='Actualizado '+new Date().toLocaleTimeString('es-DO',{hour12:false})+' · calidad GLM válida';
+   btn.textContent='⚡ Tronadas '+(shown?('('+shown+')'):'');
+ }
+ async function refresh(){
+   if(!active)return;
+   try{
+     const r=await fetch(GLM_URL+'?t='+Date.now(),{cache:'no-store'});
+     if(!r.ok)throw new Error('HTTP '+r.status);
+     draw(await r.json());
+   }catch(e){status.textContent='Nowcast sin respuesta; reintentando...';console.warn('GLM:',e)}
+   finally{clearTimeout(timer);if(active)timer=setTimeout(refresh,POLL_MS)}
+ }
+ function setActive(v){
+   active=!!v; btn.classList.toggle('on',active);
+   if(active){if(!map.hasLayer(layer))layer.addTo(map);if(!map.hasLayer(coreLayer))coreLayer.addTo(map);refresh()}
+   else{clearTimeout(timer);timer=null;layer.clearLayers();coreLayer.clearLayers();if(map.hasLayer(layer))map.removeLayer(layer);if(map.hasLayer(coreLayer))map.removeLayer(coreLayer);count.textContent='Capa desactivada';if(coresBox)coresBox.textContent='0 núcleos eléctricos activos';status.textContent='Actividad eléctrica desactivada';btn.textContent='⚡ Tronadas'}
+ }
+ btn.addEventListener('click',function(ev){if(ev.shiftKey){setActive(!active);return}panel.classList.toggle('show');btn.classList.toggle('on',panel.classList.contains('show')||active);if(!active)setActive(true)});
+ btn.addEventListener('contextmenu',function(ev){ev.preventDefault();setActive(!active)});
+ setActive(true);
 })();
 </script>
 
