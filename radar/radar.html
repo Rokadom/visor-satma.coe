@@ -93,6 +93,20 @@ input[type=range]{width:155px}
 @media(max-width:900px){#convPanel{left:8px;right:8px;width:auto;max-height:44vh}#convBtn{bottom:108px}}
 </style>
 
+
+<style id="radarIntensityScaleCSS">
+#radarIntensityScale{position:fixed;z-index:100080;left:12px;top:88px;width:116px;
+ background:rgba(3,17,28,.94);color:#fff;border:1px solid #6e8798;border-radius:7px;
+ padding:7px 7px 6px;box-shadow:0 2px 8px #0008;font:10px Arial;pointer-events:none}
+#radarIntensityScale .risTitle{font-weight:900;font-size:11px;text-align:center;margin-bottom:5px}
+#radarIntensityScale .risHead,#radarIntensityScale .risRow{display:grid;grid-template-columns:30px 24px 42px;gap:3px;align-items:center}
+#radarIntensityScale .risHead{font-weight:900;color:#dbeaf2;text-align:center;margin-bottom:2px}
+#radarIntensityScale .risRow{height:14px;line-height:14px;text-align:center}
+#radarIntensityScale .risColor{height:12px;border:1px solid rgba(255,255,255,.45);box-sizing:border-box}
+#radarIntensityScale .risFoot{font-size:8px;color:#b9ccd8;text-align:center;border-top:1px solid #435d6d;margin-top:5px;padding-top:4px;line-height:1.2}
+@media(max-width:700px){#radarIntensityScale{left:7px;top:84px;transform:scale(.88);transform-origin:top left}}
+</style>
+
 </head>
 <body>
 <div id="map"></div>
@@ -100,6 +114,25 @@ input[type=range]{width:155px}
  <div id="title">RADAR RD · ACTUALIZACIÓN AUTOMÁTICA · TIEMPO REAL</div>
  <div id="status">Cargando capas...</div>
 </div>
+<div id="radarIntensityScale" aria-label="Escala de intensidad radar">
+ <div class="risTitle">INTENSIDAD RADAR</div>
+ <div class="risHead"><span>dBZ</span><span></span><span>mm/h</span></div>
+ <div class="risRow"><span>60</span><span class="risColor" style="background:#ff00ff"></span><span>200</span></div>
+ <div class="risRow"><span>55</span><span class="risColor" style="background:#c000ff"></span><span>100</span></div>
+ <div class="risRow"><span>50</span><span class="risColor" style="background:#ff003c"></span><span>50</span></div>
+ <div class="risRow"><span>45</span><span class="risColor" style="background:#ff5a00"></span><span>25</span></div>
+ <div class="risRow"><span>40</span><span class="risColor" style="background:#ff9d00"></span><span>12</span></div>
+ <div class="risRow"><span>35</span><span class="risColor" style="background:#ffe600"></span><span>6</span></div>
+ <div class="risRow"><span>30</span><span class="risColor" style="background:#00d000"></span><span>3</span></div>
+ <div class="risRow"><span>25</span><span class="risColor" style="background:#00a85a"></span><span>1</span></div>
+ <div class="risRow"><span>20</span><span class="risColor" style="background:#00c8c8"></span><span>0.6</span></div>
+ <div class="risRow"><span>15</span><span class="risColor" style="background:#1f8fff"></span><span>0.3</span></div>
+ <div class="risRow"><span>10</span><span class="risColor" style="background:#4169e1"></span><span>0.1</span></div>
+ <div class="risRow"><span>5</span><span class="risColor" style="background:#6f8fbf"></span><span>0.05</span></div>
+ <div class="risRow"><span>0</span><span class="risColor" style="background:#8fa7b8"></span><span>0</span></div>
+ <div class="risFoot">Reflectividad (dBZ) · lluvia estimada (mm/h)</div>
+</div>
+
 
 
 
@@ -145,13 +178,6 @@ input[type=range]{width:155px}
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ONLINE: en GitHub Pages, leer los datos y capas directamente desde la rama main.
-// LOCAL: conserva las rutas relativas normales.
-const RADAR_RAW_BASE=(location.hostname.toLowerCase()==='rokadom.github.io')
- ? 'https://raw.githubusercontent.com/Rokadom/visor-satma.coe/main/radar/'
- : '';
-function radarAsset(path){return RADAR_RAW_BASE+path;}
-
 const map=L.map('map',{preferCanvas:true}).setView([18.55,-70.45],7);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
  {maxZoom:18,attribution:'Tiles © Esri'}).addTo(map);
@@ -160,6 +186,14 @@ L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/Wo
 
 let data=null, idx=0, origLayer=null, echoLayer=null, showOrig=false, showEcho=true;
 const $=id=>document.getElementById(id);
+function satmaUTC(ms,withSuffix=true){
+ const d=new Date(Number(ms));
+ if(!Number.isFinite(d.getTime())) return '--:--:--'+(withSuffix?' UTC':'');
+ const z=n=>String(n).padStart(2,'0');
+ const t=z(d.getUTCHours())+':'+z(d.getUTCMinutes())+':'+z(d.getUTCSeconds());
+ return t+(withSuffix?' UTC':'');
+}
+
 
 // Georreferenciación final ya calibrada.
 // El panel de calibración fue retirado para operación normal.
@@ -177,7 +211,7 @@ function applyLayers(){
  if(origLayer){map.removeLayer(origLayer);origLayer=null}
  if(echoLayer){map.removeLayer(echoLayer);echoLayer=null}
  if(showEcho){
-  echoLayer=L.imageOverlay(radarAsset('capas/'+f.layer)+'?t='+Date.now(),b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
+  echoLayer=L.imageOverlay('capas/'+f.layer+'?t='+Date.now(),b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
  }
  const _fi0=$('fi'); if(_fi0) _fi0.textContent='';
  const _st0=$('status'); if(_st0) _st0.textContent='Radar propiedad del IDAC, modificado por Claudio Martinez';
@@ -200,7 +234,7 @@ function ordenarBarridosCronologicamente(j){
 
 async function init(){
  try{
-  data=await fetch(radarAsset('radar_rd.json')+'?t='+Date.now(),{cache:'no-store'}).then(r=>{
+  data=await fetch('radar_rd.json?t='+Date.now(),{cache:'no-store'}).then(r=>{
    if(!r.ok) throw new Error('HTTP '+r.status+' al cargar radar_rd.json');
    return r.json();
   });
@@ -228,7 +262,7 @@ border:1px solid #8aa5b6;border-radius:4px;cursor:pointer}
 #time115{display:inline-block;min-width:175px;text-align:center;font-weight:900;font-size:22px;line-height:1.1;
 padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;letter-spacing:.8px}
 #speed115{margin-left:5px}
-#auto13{display:inline-flex;align-items:center;gap:6px;margin-left:7px;padding-left:8px;
+#auto13{display:none!important;align-items:center;gap:6px;margin-left:7px;padding-left:8px;
  border-left:1px solid #6e8798;vertical-align:middle}
 #auto13 .title{font-weight:900;color:#8ff0a9}
 #auto13 .line{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -282,8 +316,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  function clock115(f){
    const e=epoch115(f);
    if(!e || !Number.isFinite(e)) return '--:--:--';
-   const d=new Date(e);
-   return d.toLocaleTimeString('es-DO',{timeZone:'UTC',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+' UTC';
+   return satmaUTC(e,true);
  }
  function refresh124(){
    const n=total115(), f=frame115();
@@ -379,7 +412,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  let delay123=800; // Motor TJUA: velocidad normal 1x
 
  function frameUrl123(f){
-   return radarAsset('capas/'+f.layer);
+   return 'capas/'+f.layer;
  }
  function preload123(){
    if(!data || !Array.isArray(data.frames) || !data.frames.length){
@@ -392,7 +425,6 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 
    data.frames.forEach((f,i)=>{
      const im=new Image();
-     if(RADAR_RAW_BASE) im.crossOrigin='anonymous';
      im.onload=im.onerror=function(){
        loaded123++;
        cache123[i]=im;
@@ -526,8 +558,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 
  function fmtEpoch13(e){
    if(!e)return '--';
-   const d=new Date(Number(e)*1000);
-   return d.toLocaleTimeString('es-DO',{timeZone:'UTC',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+' UTC';
+   return satmaUTC(Number(e)*1000,true);
  }
 
  function framesSig13(j){
@@ -538,9 +569,8 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    const fs=(j&&Array.isArray(j.frames))?j.frames:[];
    await Promise.all(fs.map((f,i)=>new Promise(resolve=>{
      const im=new Image();
-     if(RADAR_RAW_BASE) im.crossOrigin='anonymous';
      im.onload=im.onerror=resolve;
-     im.src=radarAsset('capas/'+f.layer)+'?auto13='+Date.now()+'&i='+i;
+     im.src='capas/'+f.layer+'?auto13='+Date.now()+'&i='+i;
    })));
  }
 
@@ -548,21 +578,11 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    if(busy13)return;
    busy13=true;
    try{
-     const j=await fetch(radarAsset('radar_rd.json')+'?auto13='+Date.now(),{cache:'no-store'}).then(r=>{
+     const j=await fetch('radar_rd.json?auto13='+Date.now(),{cache:'no-store'}).then(r=>{
        if(!r.ok)throw new Error('HTTP '+r.status);
        return r.json();
      });
      ordenarBarridosCronologicamente(j);
-
-     // PROTECCION ANTI-RETROCESO: conservar siempre el barrido mas reciente ya cargado.
-     const nuevoUltimo=(j.frames&&j.frames.length)?radarFrameEpoch(j.frames[j.frames.length-1]):0;
-     const actualUltimo=(data&&data.frames&&data.frames.length)?radarFrameEpoch(data.frames[data.frames.length-1]):0;
-     if(nuevoUltimo && actualUltimo && nuevoUltimo < actualUltimo){
-       const st=document.getElementById('autoState13');
-       if(st){st.textContent='GitHub ofrece un barrido anterior; se conserva el más reciente.';st.className='line updating';}
-       return;
-     }
-
      const ns=framesSig13(j);
      if(ns && ns!==sig13){
        await preloadNew13(j);
@@ -583,7 +603,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 
  async function poll13(){
    try{
-     const s=await fetch(radarAsset('auto_status.json')+'?t='+Date.now(),{cache:'no-store'}).then(r=>r.json());
+     const s=await fetch('auto_status.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json());
      const st=document.getElementById('autoState13');
      st.textContent=s.message||'Monitor activo.';
      st.className='line '+(s.updating?'updating':'ok');
@@ -592,16 +612,10 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      document.getElementById('autoUpdate13').textContent=
        'Última actualización: '+fmtEpoch13(s.last_update_epoch);
 
-     if(RADAR_RAW_BASE){
-       // En GitHub Pages no dependemos del contador generation del servidor local.
-       // Consultamos radar_rd.json en cada ciclo para incorporar el ultimo barrido publicado.
+     if(generation13===null) generation13=Number(s.generation||0);
+     else if(Number(s.generation||0)!==generation13){
+       generation13=Number(s.generation||0);
        await reloadRadar13();
-     }else{
-       if(generation13===null) generation13=Number(s.generation||0);
-       else if(Number(s.generation||0)!==generation13){
-         generation13=Number(s.generation||0);
-         await reloadRadar13();
-       }
      }
    }catch(e){
      document.getElementById('autoState13').textContent='Esperando servidor automático...';
@@ -611,13 +625,8 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  document.getElementById('autoNow13').onclick=async function(){
    this.disabled=true;
    try{
-     if(RADAR_RAW_BASE){
-       document.getElementById('autoState13').textContent='Buscando el último barrido publicado...';
-       await reloadRadar13();
-     }else{
-       await fetch('/api/update-now?t='+Date.now(),{cache:'no-store'});
-       document.getElementById('autoState13').textContent='Comprobación manual solicitada...';
-     }
+     await fetch('/api/update-now?t='+Date.now(),{cache:'no-store'});
+     document.getElementById('autoState13').textContent='Comprobación manual solicitada...';
    }catch(e){}
    setTimeout(()=>{this.disabled=false;poll13();},1800);
  };
@@ -631,7 +640,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  },150);
 
  poll13();
- setInterval(poll13,RADAR_RAW_BASE?10000:15000);
+ setInterval(poll13,15000);
 })();
 </script>
 
@@ -665,9 +674,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      let m=s.match(/(\d{13})/), e=m?Number(m[1]):null;
      if(!e){m=s.match(/(\d{10})/); if(m)e=Number(m[1])*1000;}
      if(!e)return '--';
-     return new Date(e).toLocaleTimeString('es-DO',{
-       timeZone:'UTC',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
-     })+' UTC';
+     return satmaUTC(e,true);
    }catch(e){return '--'}
  }
 
@@ -872,7 +879,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      loading.style.display='block';
      loading.textContent='No se pudo leer la capa de ecos.';
    };
-   im.src=radarAsset('capas/'+f.layer)+'?analisis='+Date.now();
+   im.src='capas/'+f.layer+'?analisis='+Date.now();
  }
 
  
@@ -981,7 +988,6 @@ btn.onclick=function(){
 
  async function loadLocalImage(url){
    const im=new Image();
-   if(RADAR_RAW_BASE && url.indexOf('raw.githubusercontent.com')>=0) im.crossOrigin='anonymous';
    await new Promise((resolve,reject)=>{
      im.onload=resolve;
      im.onerror=()=>reject(new Error('No se pudo cargar '+url));
@@ -1014,9 +1020,7 @@ btn.onclick=function(){
      if(m) e=Number(m[1])*1000;
    }
    if(!e || !Number.isFinite(e)) return '--:--:--';
-   return new Date(e).toLocaleTimeString('es-DO',{
-     hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false
-   });
+   return satmaUTC(e,false);
  }
 
  function drawInfo(ctx,f,i,n){
@@ -1154,7 +1158,7 @@ btn.onclick=function(){
        setStatus('Cuadro '+(i+1)+'/'+frames.length);
 
        const echo=await loadLocalImage(
-         radarAsset('capas/'+f.layer)+'?mp4='+Date.now()+'&i='+i
+         'capas/'+f.layer+'?mp4='+Date.now()+'&i='+i
        );
 
        ctx.clearRect(0,0,OUT_W,OUT_H);
@@ -1235,7 +1239,7 @@ btn.onclick=function(){
  function ftime(f){
    const z=String((f&&f.token)||''); let m=z.match(/(\d{13})/),e=m?+m[1]:0;
    if(!e){m=z.match(/(\d{10})/);if(m)e=+m[1]*1000}
-   return e?new Date(e).toLocaleTimeString('es-DO',{timeZone:'UTC',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false})+' UTC':'--';
+   return e?satmaUTC(e,true):'--';
  }
  function mercY(lat){const cl=Math.max(-85.05112878,Math.min(85.05112878,lat)),q=Math.sin(cl*Math.PI/180);return .5-Math.log((1+q)/(1-q))/(4*Math.PI)}
  function lonLat(x,y,w,h){
@@ -1252,7 +1256,7 @@ btn.onclick=function(){
  }
  async function loadProvince(){
    if(provinceGeo)return;
-   try{const r=await fetch(radarAsset('provincias_rd.geojson')+'?t='+Date.now(),{cache:'no-store'});if(r.ok)provinceGeo=await r.json()}catch(e){}
+   try{const r=await fetch('provincias_rd.geojson?t='+Date.now(),{cache:'no-store'});if(r.ok)provinceGeo=await r.json()}catch(e){}
  }
  function pointInRing(lon,lat,ring){
    let inside=false;
@@ -1311,11 +1315,11 @@ btn.onclick=function(){
  }
  async function readFrame(f){
    return await new Promise(resolve=>{
-     const im=new Image();if(RADAR_RAW_BASE) im.crossOrigin='anonymous';im.onload=()=>{
+     const im=new Image();im.onload=()=>{
        const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;
        const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(im,0,0);
        resolve(components(x.getImageData(0,0,c.width,c.height)));
-     };im.onerror=()=>resolve([]);im.src=radarAsset('capas/'+f.layer)+'?cv='+Date.now();
+     };im.onerror=()=>resolve([]);im.src='capas/'+f.layer+'?cv='+Date.now();
    });
  }
  function track(framesCells){
