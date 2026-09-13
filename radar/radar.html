@@ -1767,7 +1767,7 @@ function render(tracks,current){
      if(!Number.isFinite(lat)||!Number.isFinite(lon)||age>10.5)continue;
      if(f.quality_flag!=null && Number(f.quality_flag)!==0)continue;
      const st=styleForAge(age);
-     const raySize = age<=2 ? 11 : (age<=5 ? 10 : 9);
+     const raySize = age<=2 ? 14 : (age<=5 ? 13 : 12);
      const rayIcon=L.divIcon({
        className:'',
        html:'<div style="width:'+raySize+'px;height:'+raySize+'px;line-height:'+raySize+'px;font-size:'+raySize+'px;font-weight:900;color:'+st.color+';text-shadow:0 0 2px #000;text-align:center;pointer-events:auto">⚡</div>',
