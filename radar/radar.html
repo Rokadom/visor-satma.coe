@@ -193,6 +193,8 @@ L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/Wo
  {maxZoom:18}).addTo(map);
 
 let data=null, idx=0, origLayer=null, echoLayer=null, showOrig=false, showEcho=true;
+let echoTransitionSeq=0;
+const ECHO_FADE_MS=420; // transición visual suave entre barridos reales
 const $=id=>document.getElementById(id);
 function satmaUTC(ms,withSuffix=true){
  const d=new Date(Number(ms));
@@ -217,9 +219,44 @@ function applyLayers(){
  const f=data.frames[idx];
  const b=currentBounds();
  if(origLayer){map.removeLayer(origLayer);origLayer=null}
- if(echoLayer){map.removeLayer(echoLayer);echoLayer=null}
+
+ // Transición suave: mezcla el barrido anterior con el nuevo sin crear datos radar.
+ // Las dos imágenes son barridos IDAC reales; sólo cambia su opacidad durante 420 ms.
+ const seq=++echoTransitionSeq;
+ const anterior=echoLayer;
  if(showEcho){
-  echoLayer=L.imageOverlay('capas/'+f.layer+'?t='+Date.now(),b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
+  const nueva=L.imageOverlay('capas/'+f.layer,b,{opacity:anterior?0:ECHO_OPACITY,interactive:false}).addTo(map);
+  echoLayer=nueva;
+  let iniciada=false;
+
+  function quitarAnterior(){
+   if(anterior && anterior!==echoLayer && map.hasLayer(anterior)) map.removeLayer(anterior);
+  }
+  function iniciarFundido(){
+   if(iniciada || seq!==echoTransitionSeq)return;
+   iniciada=true;
+   if(!anterior){
+    nueva.setOpacity(ECHO_OPACITY);
+    return;
+   }
+   const inicio=Date.now();
+   function paso(){
+    if(seq!==echoTransitionSeq){ quitarAnterior(); return; }
+    const p=Math.min(1,(Date.now()-inicio)/ECHO_FADE_MS);
+    nueva.setOpacity(ECHO_OPACITY*p);
+    if(map.hasLayer(anterior)) anterior.setOpacity(ECHO_OPACITY*(1-p));
+    if(p<1) requestAnimationFrame(paso);
+    else quitarAnterior();
+   }
+   requestAnimationFrame(paso);
+  }
+
+  nueva.once('load',iniciarFundido);
+  // Respaldo para navegadores antiguos/caché: no deja una transición colgada.
+  setTimeout(iniciarFundido,900);
+ }else{
+  if(anterior && map.hasLayer(anterior))map.removeLayer(anterior);
+  echoLayer=null;
  }
  const _fi0=$('fi'); if(_fi0) _fi0.textContent='';
  const _st0=$('status'); if(_st0) _st0.textContent='Radar propiedad del IDAC, modificado por Claudio Martinez';
@@ -427,15 +464,16 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 <div id="preload123">Precargando ecos: 0/0</div>
 <script>
 (function(){
- // MOTOR DE ANIMACION RD SIMPLIFICADO CON EL PATRON TJUA.
+ // MOTOR DE ANIMACION RD CON PRECARGA + TRANSICION SUAVE ENTRE BARRIDOS REALES.
  // No modifica calibracion, productos, granizo, celdas, municipios ni exportacion MP4.
+ // El fundido se realiza en applyLayers(); no se generan barridos meteorologicos intermedios.
  let ready123=false;
  let loaded123=0;
  let total123=0;
  let cache123=[];
  let timer123=null;
  let playing123=false;
- let delay123=800; // Motor TJUA: velocidad normal 1x
+ let delay123=900; // Normal: deja visible el fundido suave entre barridos
 
  function frameUrl123(f){
    return 'capas/'+f.layer;
@@ -497,7 +535,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
          box.classList.add('ok'); if(typeof window.refresh124==='function') window.refresh124();
        }
      };
-     im.src=frameUrl123(f)+'?preload='+Date.now()+'&i='+i;
+     im.src=frameUrl123(f);
    });
  }
 
@@ -560,8 +598,8 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      if(playing123){ if(timer123)clearInterval(timer123); timer123=setInterval(function(){next();},delay123); }
    }
    if(slow)slow.onclick=function(){setSpeed(1600,'spSlow115');};
-   if(norm)norm.onclick=function(){setSpeed(800,'spNorm115');};
-   if(fast)fast.onclick=function(){setSpeed(400,'spFast115');};
+   if(norm)norm.onclick=function(){setSpeed(900,'spNorm115');};
+   if(fast)fast.onclick=function(){setSpeed(600,'spFast115');};
 
    // Los botones originales de la esquina inferior derecha usan el mismo índice maestro.
    const prevRight=document.getElementById('prev');
@@ -596,7 +634,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    await Promise.all(fs.map((f,i)=>new Promise(resolve=>{
      const im=new Image();
      im.onload=im.onerror=resolve;
-     im.src='capas/'+f.layer+'?auto13='+Date.now()+'&i='+i;
+     im.src='capas/'+f.layer;
    })));
  }
 
