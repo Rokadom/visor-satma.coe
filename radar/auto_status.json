@@ -1,16 +1,16 @@
 {
   "enabled": true,
   "check_seconds": 20,
-  "updating": true,
+  "updating": false,
   "publishing": true,
   "publish_pending": false,
-  "last_check_epoch": 1789475192,
-  "last_update_epoch": 1789475089,
-  "last_publish_start_epoch": 1789475199,
-  "last_publish_end_epoch": 1789475199,
-  "latest_remote": "1789475160001.png",
-  "last_processed_remote": "1789475040004.png",
-  "last_published_remote": "1789474920003.png",
-  "generation": 1155,
-  "message": "Publicando GitHub: 1789475040004.png"
+  "last_check_epoch": 1789475351,
+  "last_update_epoch": 1789475330,
+  "last_publish_start_epoch": 1789475370,
+  "last_publish_end_epoch": 1789475370,
+  "latest_remote": "1789475280003.png",
+  "last_processed_remote": "1789475280003.png",
+  "last_published_remote": "1789475040004.png",
+  "generation": 1157,
+  "message": "Publicando GitHub: 1789475280003.png"
 }
