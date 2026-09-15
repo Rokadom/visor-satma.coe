@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- v16_159: etiquetas fijas sólo valor sin mm; nombres únicamente al pasar mouse.
+     v16_158: polígonos meteorológicos aproximados por sector para estaciones DN + Tempest Jardines del Sur; ISANTO30 permanece eliminada. -->
+    <!-- v16_154: prueba Tempest 214036 Sabana de la Mar + 132600 Jardines del Sur; lluvia integrada y temperatura disponible en datos. -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visor COE - Monitor de Lluvias · v16_153</title>
@@ -2034,9 +2037,9 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     mapa.createPane('satma-estaciones');
     mapa.getPane('satma-estaciones').style.zIndex = 460;
 
-    // Zona invisible de 2 km para consultar el modelo alrededor de estaciones del DN.
+    // Zonas aproximadas de influencia de lluvia de las estaciones del DN (hasta ~2 km).
     mapa.createPane('satma-modelo-estaciones-hover');
-    mapa.getPane('satma-modelo-estaciones-hover').style.zIndex = 475;
+    mapa.getPane('satma-modelo-estaciones-hover').style.zIndex = 455; // debajo de estaciones (460), conserva radio 2000 m y lógica de umbral
     mapa.getPane('satma-modelo-estaciones-hover').style.pointerEvents = 'auto';
 
     const SATMA_OCEANO_URLS = [
@@ -2128,7 +2131,9 @@ let datosEstaciones = [];
         'ISANTO329': 'Los Pados',
         'ISANTO229': 'Las Cementera',
         'ISANTO406': 'Arroyo Hondo I',
-        'ISANTO471': 'Arroyo Hondo II'
+        'ISANTO471': 'Arroyo Hondo II',
+        'TEMPEST-132600': 'Jardines del Sur',
+        'TEMPEST-214036': 'Sabana de la Mar'
     };
     const ALIAS_ALTERNATIVOS_ESTACIONES_SATMA = {
         'ISANTO17': ['Jardines Embajador'],
@@ -2145,7 +2150,7 @@ let datosEstaciones = [];
         return 'Municipio';
     }
 
-    const ESTACIONES = ['ISANTO505', 'ISANTO530', 'ISANTO283', 'ISANTO392', 'ISANTO226', 'ISANTO439', 'ISANTO17', 'INATIONA6', 'ISANTO329', 'ISANTO229', 'ISANTO406', 'ISANTO471', 'ISANTO30', 'ISANTO245', 'ISANTO497', 'ISANPE177', 'IVILLA335', 'ISANRA71', 'IPUNTA72', 'IPUNTA174', 'IHIGEY2', 'IMICHE117', 'ISABAN22', 'ISAMANAS2', 'ILUPER2', 'IPUERT376', 'ISANTI216', 'IMUNIC501', 'INAGUA3', 'ISAMAN9', 'ISNCHE1', 'ISANTI281', 'ISANTI193', 'ITAMBO107', 'ISALCE6', 'ILAVEG4', 'IJARAB42', 'ICONST97', 'ICONST167', 'ICONST43', 'ICONST5', 'INEIBA2', 'IELCER7', 'IPEDER21', 'ISANTA1190', 'ILOMAD1', 'ISANJO136', 'IMAO34', 'VALVERD2', 'IMOCA27', 'IMUNIC794', 'INIZAO2', 'IBAN265', 'IPUERT480', 'ISAMANAL3', 'ISANTA1960', 'IPIEDR27', 'ISANTI237', 'ISANTI43', 'ISANFR85', 'ISALVA31', 'ILAROMAN14', 'ILAROM17', 'ILAROMAN9', 'ILAROM45', 'ISANPE118', 'IHATOM2'];
+    const ESTACIONES = ['ISANTO505', 'ISANTO530', 'ISANTO283', 'ISANTO392', 'ISANTO226', 'ISANTO439', 'ISANTO17', 'INATIONA6', 'ISANTO329', 'ISANTO229', 'ISANTO406', 'ISANTO471', 'ISANTO245', 'ISANTO497', 'ISANPE177', 'IVILLA335', 'ISANRA71', 'IPUNTA72', 'IPUNTA174', 'IHIGEY2', 'IMICHE117', 'ISABAN22', 'ISAMANAS2', 'ILUPER2', 'IPUERT376', 'ISANTI216', 'IMUNIC501', 'INAGUA3', 'ISAMAN9', 'ISNCHE1', 'ISANTI281', 'ISANTI193', 'ITAMBO107', 'ISALCE6', 'ILAVEG4', 'IJARAB42', 'ICONST97', 'ICONST167', 'ICONST43', 'ICONST5', 'INEIBA2', 'IELCER7', 'IPEDER21', 'ISANTA1190', 'ILOMAD1', 'ISANJO136', 'IMAO34', 'VALVERD2', 'IMOCA27', 'IMUNIC794', 'INIZAO2', 'IBAN265', 'IPUERT480', 'ISAMANAL3', 'ISANTA1960', 'IPIEDR27', 'ISANTI237', 'ISANTI43', 'ISANFR85', 'ISALVA31', 'ILAROMAN14', 'ILAROM17', 'ILAROMAN9', 'ILAROM45', 'ISANPE118', 'IHATOM2'];
 
     // Segunda red pública: NOAA/NCEI Global Hourly (Santo Domingo)
     const NOAA_ESTACIONES = [
@@ -2797,6 +2802,17 @@ let datosEstaciones = [];
                     }
                 );
             }
+
+            // v16_159: el nombre de la estación aparece solamente al pasar el mouse.
+            // Al salir, vuelve a quedar únicamente el valor numérico de lluvia.
+            marcador.on('mouseover', function(){
+                const tt=this.getTooltip();
+                if(tt) tt.setContent(contenidoHoverEstacionSATMA(est, valorEtiqueta));
+            });
+            marcador.on('mouseout', function(){
+                const tt=this.getTooltip();
+                if(tt && mostrarObs) tt.setContent(contenidoEtiquetaEstacionSATMA(est, valorEtiqueta));
+            });
 
             // El valor del modelo se consulta al pasar el mouse; nunca queda fijo.
             if (typeof configurarHoverModeloEstacion === 'function') configurarHoverModeloEstacion(marcador);
@@ -4036,7 +4052,17 @@ let datosEstaciones = [];
         'ISANTO329', // Los Pados
         'ISANTO229', // Las Cementera
         'ISANTO406', // Arroyo Hondo I
-        'ISANTO471'  // Arroyo Hondo II
+        'ISANTO471', // Arroyo Hondo II
+        'TEMPEST-132600', // Jardines del Sur · red Tempest
+        'TEMPEST-127067', // El Vergel
+        'TEMPEST-190697', // Los Mina sur
+        'TEMPEST-110803', // Los Jardines del norte
+        'TEMPEST-212993', // Gazcue
+        'TEMPEST-193469', // Zona Colonial
+        'TEMPEST-212981', // Guaricano
+        'TEMPEST-232670', // Cancino Adentro
+        'TEMPEST-213707', // El Tamarindo
+        'TEMPEST-217357'  // Guerra
     ]);
 
     // Devuelve true para las estaciones recientes definidas como DN y, como respaldo,
@@ -4103,24 +4129,19 @@ let datosEstaciones = [];
     }
 
     function contenidoEtiquetaEstacionSATMA(est, valorObs){
-        const id=String(est?.id || '').trim().toUpperCase();
-        const nombrePropio=NOMBRES_ESTACIONES_SATMA[id] || '';
         const valor=Number(valorObs);
         if(valor<=0) return '';
-
-        // v16_130: las etiquetas de lluvia usan el mismo color de la escala activa.
-        // Los nombres de estaciones pasan de negro a blanco para mejorar el contraste
-        // sobre el mapa satelital. Se mantiene la etiqueta sin fondo.
+        // v16_159: mapa limpio. Etiqueta fija = SOLO valor numérico, sin "mm" ni nombre.
         const colorLluvia=obtenerColor(valor, (modoActual !== '15m'));
         const sombra='-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 3px #000';
+        return `<span style="color:${colorLluvia};font-weight:900;text-shadow:${sombra}">${formatearLluvia(valor)}</span>`;
+    }
 
-        if(nombrePropio){
-            return `<span style="color:#ffffff;font-weight:800;text-shadow:${sombra}">${nombrePropio}:</span> `+
-                   `<span style="color:${colorLluvia};font-weight:900;text-shadow:${sombra}">${formatearLluvia(valor)} mm</span>`;
-        }
-
-        // Estaciones sin nombre personalizado: mostrar únicamente el acumulado.
-        return `<span style="color:${colorLluvia};font-weight:900;text-shadow:${sombra}">${formatearLluvia(valor)} mm</span>`;
+    function contenidoHoverEstacionSATMA(est, valorObs){
+        const valor=Number(valorObs)||0;
+        const nombre=(typeof nombreEstacionSATMA==='function') ? nombreEstacionSATMA(est) : (est?.nombre || 'Estación');
+        const valorTxt=valor>0 ? `<br><b>Lluvia:</b> ${formatearLluvia(valor)} mm` : '';
+        return `<b>${nombre}</b>${valorTxt}`;
     }
 
     // Capa de zonas invisibles de consulta: 2 km alrededor de cada estación reciente del DN.
@@ -4137,15 +4158,36 @@ let datosEstaciones = [];
             const lat=Number(est.lat), lon=Number(est.lon);
             if(!Number.isFinite(lat)||!Number.isFinite(lon)) return;
             const nombre=NOMBRES_ESTACIONES_SATMA[String(est?.id||'').toUpperCase()] || nombreMunicipioDePunto(lat,lon);
-            const zona=L.circle([lat,lon],{
-                radius:2000,
+            // v16_157: zona aproximada de influencia de lluvia por SECTOR.
+            // Conserva aproximadamente los 2 km de alcance, pero deja de ser un círculo perfecto.
+            // El polígono es meteorológico (área de influencia), no un límite administrativo oficial.
+            const lluviaRadio=valorEstacionPorModo(est);
+            const superaUmbral=lluviaRadio>5.0;
+            const colorRadio=superaUmbral ? obtenerColor(lluviaRadio,true) : 'transparent';
+
+            // Forma irregular determinista por estación: 10 vértices entre ~1.45 y 2.0 km.
+            // Así cada sector conserva una zona estable entre actualizaciones.
+            const idZona=String(est?.id||'SATMA');
+            let semilla=0; for(let i=0;i<idZona.length;i++) semilla=(semilla*31+idZona.charCodeAt(i))>>>0;
+            const puntosSector=[];
+            const nVertices=10;
+            for(let i=0;i<nVertices;i++){
+                const ang=(i/nVertices)*Math.PI*2 + ((semilla%17)-8)*0.0025;
+                const onda=0.78 + 0.16*Math.sin((i+1)*2.17 + (semilla%23)) + 0.06*Math.cos((i+2)*1.31 + (semilla%11));
+                const rKm=Math.max(1.45,Math.min(2.0,2.0*onda));
+                const dLat=(rKm/111.32)*Math.cos(ang);
+                const cosLat=Math.max(0.2,Math.cos(lat*Math.PI/180));
+                const dLon=(rKm/(111.32*cosLat))*Math.sin(ang);
+                puntosSector.push([lat+dLat,lon+dLon]);
+            }
+            const zona=L.polygon(puntosSector,{
                 pane:'satma-modelo-estaciones-hover',
-                color:'transparent',
-                weight:0,
-                opacity:0,
-                fillColor:'#ffffff',
-                fillOpacity:0.001,
-                interactive:true
+                color:colorRadio,
+                weight:superaUmbral ? 1.2 : 0,
+                opacity:superaUmbral ? 0.82 : 0,
+                fillColor:colorRadio,
+                fillOpacity:superaUmbral ? 0.30 : 0,
+                interactive:false
             });
             const mostrar=(e)=>{
                 if(!(gfsVisible && gfsDatosListos)) return;
@@ -4166,10 +4208,7 @@ let datosEstaciones = [];
                 );
                 if(!zona.isTooltipOpen()) zona.openTooltip(ll);
             };
-            zona.bindTooltip('',{sticky:true,direction:'auto',opacity:.96});
-            zona.on('mouseover',mostrar);
-            zona.on('mousemove',mostrar);
-            zona.on('click',mostrar);
+            // El polígono de lluvia no captura el mouse; los marcadores quedan totalmente consultables.
             zonasHoverModeloDN.addLayer(zona);
         });
     }
@@ -4748,6 +4787,100 @@ let datosEstaciones = [];
         }
     }
 
+    // Red Tempest de prueba: sólo lluvia y temperatura.
+    // El nombre visible es definido por SATMA/COE, no por el nombre público de Tempest.
+    const TEMPEST_API_KEY = '6bff2f89-84ab-463c-886e-fc0f443da4cf';
+    const TEMPEST_ESTACIONES = [
+        { id: 214036, nombre: 'Sabana de la Mar' },
+        { id: 132600, nombre: 'Jardines del Sur' },
+        { id: 212391, nombre: 'Nisibon' },
+        { id: 180613, nombre: 'El Seibo' },
+        { id: 138407, nombre: 'Anamuya' },
+        { id: 194257, nombre: 'Peña Alta' },
+        { id: 220533, nombre: 'Monte Plata' },
+        { id: 217357, nombre: 'Guerra' },
+        { id: 127067, nombre: 'El Vergel' },
+        { id: 190697, nombre: 'Los Mina sur' },
+        { id: 110803, nombre: 'Los Jardines del norte' },
+        { id: 212993, nombre: 'Gazcue' },
+        { id: 193469, nombre: 'Zona Colonial' },
+        { id: 212981, nombre: 'Guaricano' },
+        { id: 232670, nombre: 'Cancino Adentro' },
+        { id: 213707, nombre: 'El Tamarindo' }
+    ];
+
+    async function cargarEstacionTempest(cfg) {
+        try {
+            const base = 'https://swd.weatherflow.com/swd/rest';
+            const fin = Math.floor(Date.now()/1000);
+            const inicio = fin - 49*3600;
+
+            // Coordenadas oficiales de la estación Tempest.
+            const metaUrl = `${base}/stations/${cfg.id}?api_key=${encodeURIComponent(TEMPEST_API_KEY)}`;
+            const meta = await fetchJSONConReintento(metaUrl, 1);
+            const m = meta?.station || meta?.stations?.[0] || meta;
+            const lat = Number(m?.latitude ?? m?.lat);
+            const lon = Number(m?.longitude ?? m?.lon);
+
+            // Serie de 1 minuto para construir exactamente los mismos periodos del visor.
+            const params = new URLSearchParams({
+                api_key: TEMPEST_API_KEY,
+                time_start: String(inicio), time_end: String(fin), bucket: '1',
+                obs_fields: 'timestamp,air_temp,precip_accumulation,local_day_precip_accumulation',
+                units_temp: 'c', units_precip: 'mm', units_wind: 'mps',
+                units_pressure: 'mb', units_distance: 'km'
+            });
+            const d = await fetchJSONConReintento(`${base}/observations/stn/${cfg.id}?${params}`, 1);
+            const campos = Array.isArray(d?.obs_fields) ? d.obs_fields : ['timestamp','air_temp','precip_accumulation','local_day_precip_accumulation'];
+            const idx = Object.fromEntries(campos.map((x,i)=>[x,i]));
+            const filas = (Array.isArray(d?.obs) ? d.obs : []).map(r => ({
+                t: Number(r[idx.timestamp] ?? r[0]) * 1000,
+                temp: Number(r[idx.air_temp] ?? r[1]),
+                inc: Math.max(0, numeroLluvia(r[idx.precip_accumulation] ?? r[2]))
+            })).filter(x => Number.isFinite(x.t)).sort((a,b)=>a.t-b.t);
+
+            // Respaldo: si el endpoint histórico no entrega serie, usar observación actual.
+            let temperatura = filas.length ? filas[filas.length-1].temp : NaN;
+            let obsTimeUtc = filas.length ? new Date(filas[filas.length-1].t).toISOString() : null;
+            let resumen = null;
+            if (!filas.length || !Number.isFinite(temperatura)) {
+                const act = await fetchJSONConReintento(`${base}/observations/station/${cfg.id}?api_key=${encodeURIComponent(TEMPEST_API_KEY)}&units_temp=c&units_precip=mm&units_wind=mps&units_pressure=mb&units_distance=km`,1);
+                temperatura = Number(act?.air_temperature ?? act?.air_temp ?? act?.obs?.[0]?.air_temperature);
+                obsTimeUtc = act?.timestamp ? new Date(Number(act.timestamp)*1000).toISOString() : obsTimeUtc;
+                resumen = act?.summary || null;
+            }
+
+            const ahora = Date.now();
+            const sumaDesde = ms => filas.filter(x=>x.t>ms && x.t<=ahora).reduce((a,x)=>a+x.inc,0);
+            const inicioOperativo08 = (()=>{
+                const z=new Date(ahora); let t=Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),12,0,0,0);
+                if(ahora<t)t-=86400000; return t;
+            })();
+            const inicio12h = (()=>{
+                const z=new Date(ahora), h=z.getUTCHours();
+                return h>=12 ? Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),12) : Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),0);
+            })();
+            const p1 = filas.length ? sumaDesde(ahora-3600000) : numeroLluvia(resumen?.precip_total_1h);
+
+            return {
+                id: `TEMPEST-${cfg.id}`, tempestId: cfg.id, nombre: cfg.nombre, fuente: 'Tempest',
+                lat, lon, temperatura,
+                precip15min: filas.length ? sumaDesde(ahora-15*60000) : 0,
+                precip30min: filas.length ? sumaDesde(ahora-30*60000) : 0,
+                precip1h: p1,
+                precip3h: filas.length ? sumaDesde(ahora-3*3600000) : 0,
+                precip6h: filas.length ? sumaDesde(ahora-6*3600000) : 0,
+                precip12h: filas.length ? sumaDesde(inicio12h) : 0,
+                total: filas.length ? sumaDesde(inicioOperativo08) : 0,
+                precip48h: filas.length ? sumaDesde(ahora-48*3600000) : 0,
+                obsTimeUtc
+            };
+        } catch(e) {
+            console.warn('Error cargando Tempest', cfg.id, e);
+            return null;
+        }
+    }
+
     let cargaEstacionesEnCurso = false;
 
     async function cargar() {
@@ -4784,6 +4917,12 @@ let datosEstaciones = [];
         const resultadosNOAA = await Promise.all(NOAA_ESTACIONES.map(cargarEstacionNOAA));
         resultadosNOAA.filter(Boolean).forEach(est => nuevaData.push(est));
 
+        // Añadir red Tempest de prueba (Sabana de la Mar y Jardines del Sur).
+        const resultadosTempest = await Promise.all(TEMPEST_ESTACIONES.map(cargarEstacionTempest));
+        resultadosTempest.filter(Boolean).forEach(est => {
+            if (Number.isFinite(est.lat) && Number.isFinite(est.lon)) nuevaData.push(est);
+        });
+
         datosEstaciones = nuevaData;
         dibujar();
         if (provinciasVisibles) actualizarColoresProvincias();
@@ -4795,7 +4934,7 @@ let datosEstaciones = [];
         ).length;
 
         document.getElementById('status-actualizacion').innerText =
-            `Ult. Act: ${new Date().toLocaleTimeString()} | Auto: 1 min | Vista: lluvia 1 h reciente | ${datosEstaciones.length}/${ESTACIONES.length + NOAA_ESTACIONES.length} estaciones con datos | ${conLluvia} con lluvia | WU + NOAA`;
+            `Ult. Act: ${new Date().toLocaleTimeString()} | Auto: 1 min | Vista: lluvia 1 h reciente | ${datosEstaciones.length}/${ESTACIONES.length + NOAA_ESTACIONES.length + TEMPEST_ESTACIONES.length} estaciones con datos | ${conLluvia} con lluvia | WU + NOAA + Tempest`;
         cargaEstacionesEnCurso = false;
     }
 
@@ -4836,7 +4975,6 @@ let datosEstaciones = [];
             'ISANTO392': 'Santo Domingo',
             'ISANTO226': 'Las Malvinas',
             'ISANTO439': 'Ens. Julieta',
-            'ISANTO30': 'Santo Domingo',
             'ISANTO245': 'Santo Domingo',
             'ISANTO497': 'La Ureña',
             'ISANTO17': 'Bella Vista',
