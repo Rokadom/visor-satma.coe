@@ -3,10 +3,10 @@
   "source": "NOAA GOES-19 GLM-L2-LCFA",
   "poll_seconds": 20,
   "window_minutes": 10,
-  "last_check_utc": "2026-09-15T01:40:24.411078Z",
-  "last_file": "OR_GLM-L2-LCFA_G19_s20262580139400_e20262580140000_c20262580140018.nc",
-  "last_file_scan_start_utc": "2026-09-15T01:39:40Z",
-  "last_success_utc": "2026-09-15T01:40:27.223885Z",
-  "count": 405,
-  "message": "Error GLM; se reintentara automaticamente: [WinError 183] No se puede crear un archivo que ya existe: 'C:\\\\web\\\\radar\\\\nowcast\\\\rayos_glm.json.tmp' -> 'C:\\\\web\\\\radar\\\\nowcast\\\\rayos_glm.json'"
+  "last_check_utc": "2026-09-15T01:44:43.457545Z",
+  "last_file": "OR_GLM-L2-LCFA_G19_s20262580144000_e20262580144200_c20262580144215.nc",
+  "last_file_scan_start_utc": "2026-09-15T01:44:00Z",
+  "last_success_utc": "2026-09-15T01:44:48.083357Z",
+  "count": 353,
+  "message": "GLM activo. 353 detecciones en los ultimos 10 min."
 }
