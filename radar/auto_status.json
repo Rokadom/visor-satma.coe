@@ -1,16 +1,16 @@
 {
   "enabled": true,
   "check_seconds": 20,
-  "updating": true,
+  "updating": false,
   "publishing": true,
-  "publish_pending": false,
-  "last_check_epoch": 1789435233,
-  "last_update_epoch": 1789435132,
-  "last_publish_start_epoch": 1789435259,
-  "last_publish_end_epoch": 1789435259,
-  "latest_remote": "1789435200004.png",
-  "last_processed_remote": "1789435080007.png",
-  "last_published_remote": "1789434960008.png",
-  "generation": 821,
-  "message": "Publicando GitHub: 1789435080007.png"
+  "publish_pending": true,
+  "last_check_epoch": 1789435420,
+  "last_update_epoch": 1789435379,
+  "last_publish_start_epoch": 1789434894,
+  "last_publish_end_epoch": 1789434894,
+  "latest_remote": "1789435320000.png",
+  "last_processed_remote": "1789435320000.png",
+  "last_published_remote": "1789401360002.png",
+  "generation": 824,
+  "message": "Radar local al dia. GitHub publicando..."
 }
