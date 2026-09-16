@@ -30,3 +30,4 @@ Sube SOLO el contenido de esta carpeta/ZIP al repositorio GitHub conectado con C
 4. Si es correcta, crea una cookie `HttpOnly; Secure; SameSite=Strict` firmada.
 5. El middleware permite entonces entregar `index.html` y consultar `/api/weather`.
 6. La sesión vence a las 8 horas o al pulsar **Cerrar sesión**.
+Actualización de publicación: 16-09-2026
