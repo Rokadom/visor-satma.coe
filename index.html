@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<!-- v16_159: etiquetas fijas sólo valor sin mm; nombres únicamente al pasar mouse.
+<!-- v16_160: etiquetas fijas sólo valor sin mm; nombres únicamente al pasar mouse.
+     v16_168: lluvia normalizada a décimas (mínimo positivo visible 0.1 mm).
      v16_158: polígonos meteorológicos aproximados por sector para estaciones DN + Tempest Jardines del Sur; ISANTO30 permanece eliminada. -->
     <!-- v16_154: prueba Tempest 214036 Sabana de la Mar + 132600 Jardines del Sur; lluvia integrada y temperatura disponible en datos. -->
     <meta charset="UTF-8">
@@ -2132,6 +2133,7 @@ let datosEstaciones = [];
         'ISANTO229': 'Las Cementera',
         'ISANTO406': 'Arroyo Hondo I',
         'ISANTO471': 'Arroyo Hondo II',
+        'ISANTO497': 'Ureña',
         'TEMPEST-132600': 'Jardines del Sur',
         'TEMPEST-214036': 'Sabana de la Mar'
     };
@@ -2482,7 +2484,9 @@ let datosEstaciones = [];
 
     function formatearLluvia(v) {
         const n = numeroLluvia(v);
-        if (n > 0 && n < 0.1) return n.toFixed(2);
+        // v16_161: toda la red usa décimas de mm.
+        // Cualquier lluvia positiva menor de 0.1 mm se representa como 0.1.
+        if (n > 0 && n < 0.1) return '0.1';
         return n.toFixed(1);
     }
 
@@ -2517,7 +2521,14 @@ let datosEstaciones = [];
 
             // El municipio sólo toma el color de intensidad cuando la lluvia
             // SUPERA 5.0 mm. Valores de 0.0 a 5.0 mm conservan el fondo neutro.
-            const tieneLluvia = maxLluvia > 5.0;
+            // v16_168: Santo Domingo Este NO se colorea como un municipio completo por una sola estación.
+            // Allí la lluvia se representa exclusivamente mediante los polígonos individuales
+            // de influencia (~2 km) de cada estación, igual que la red sectorizada del DN.
+            const propsMunicipio = feature.properties || {};
+            const nombreMunicipioColor = String(propsMunicipio.nombre || propsMunicipio.NOMBRE || propsMunicipio.NAME || '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+            const esSantoDomingoEste = nombreMunicipioColor.includes('santo domingo este');
+            const tieneLluvia = !esSantoDomingoEste && maxLluvia > 5.0;
 
             const gfsActivo = (typeof gfsVisible !== 'undefined' && gfsVisible);
             layer.setStyle({
@@ -2803,7 +2814,7 @@ let datosEstaciones = [];
                 );
             }
 
-            // v16_159: el nombre de la estación aparece solamente al pasar el mouse.
+            // v16_160: el nombre de la estación aparece solamente al pasar el mouse.
             // Al salir, vuelve a quedar únicamente el valor numérico de lluvia.
             marcador.on('mouseover', function(){
                 const tt=this.getTooltip();
@@ -4053,6 +4064,11 @@ let datosEstaciones = [];
         'ISANTO229', // Las Cementera
         'ISANTO406', // Arroyo Hondo I
         'ISANTO471', // Arroyo Hondo II
+        // v16_166: estaciones WU de Santo Domingo Este, asignadas explícitamente.
+        // No dependen de la detección del polígono municipal.
+        'ISANTO392', // Santo Domingo Este
+        'ISANTO245', // Santo Domingo Este
+        'ISANTO497', // La Ureña · Santo Domingo Este
         'TEMPEST-132600', // Jardines del Sur · red Tempest
         'TEMPEST-127067', // El Vergel
         'TEMPEST-190697', // Los Mina sur
@@ -4131,7 +4147,7 @@ let datosEstaciones = [];
     function contenidoEtiquetaEstacionSATMA(est, valorObs){
         const valor=Number(valorObs);
         if(valor<=0) return '';
-        // v16_159: mapa limpio. Etiqueta fija = SOLO valor numérico, sin "mm" ni nombre.
+        // v16_160: mapa limpio. Etiqueta fija = SOLO valor numérico, sin "mm" ni nombre.
         const colorLluvia=obtenerColor(valor, (modoActual !== '15m'));
         const sombra='-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 3px #000';
         return `<span style="color:${colorLluvia};font-weight:900;text-shadow:${sombra}">${formatearLluvia(valor)}</span>`;
@@ -4810,75 +4826,76 @@ let datosEstaciones = [];
     ];
 
     async function cargarEstacionTempest(cfg) {
+        // v16_160: Tempest robusto para visor abierto como archivo local.
+        // La consulta de metadatos ya no puede cancelar la estación completa.
+        const base = 'https://swd.weatherflow.com/swd/rest';
+        const api = encodeURIComponent(TEMPEST_API_KEY);
+        let act = null, meta = null, d = null;
         try {
-            const base = 'https://swd.weatherflow.com/swd/rest';
-            const fin = Math.floor(Date.now()/1000);
-            const inicio = fin - 49*3600;
+            act = await fetchJSONConReintento(`${base}/observations/station/${cfg.id}?api_key=${api}&units_temp=c&units_precip=mm&units_wind=mps&units_pressure=mb&units_distance=km`, 2);
+        } catch(e) { console.warn('Tempest actual', cfg.id, e); }
+        try {
+            meta = await fetchJSONConReintento(`${base}/stations/${cfg.id}?api_key=${api}`, 1);
+        } catch(e) { console.warn('Tempest metadatos', cfg.id, e); }
 
-            // Coordenadas oficiales de la estación Tempest.
-            const metaUrl = `${base}/stations/${cfg.id}?api_key=${encodeURIComponent(TEMPEST_API_KEY)}`;
-            const meta = await fetchJSONConReintento(metaUrl, 1);
-            const m = meta?.station || meta?.stations?.[0] || meta;
-            const lat = Number(m?.latitude ?? m?.lat);
-            const lon = Number(m?.longitude ?? m?.lon);
+        const m = meta?.station || meta?.stations?.[0] || meta || {};
+        const a0 = Array.isArray(act?.obs) ? (act.obs[0] || {}) : (act?.obs || {});
+        let lat = Number(act?.latitude ?? act?.lat ?? a0?.latitude ?? a0?.lat ?? m?.latitude ?? m?.lat);
+        let lon = Number(act?.longitude ?? act?.lon ?? a0?.longitude ?? a0?.lon ?? m?.longitude ?? m?.lon);
 
-            // Serie de 1 minuto para construir exactamente los mismos periodos del visor.
+        const fin = Math.floor(Date.now()/1000), inicio = fin - 49*3600;
+        try {
             const params = new URLSearchParams({
-                api_key: TEMPEST_API_KEY,
-                time_start: String(inicio), time_end: String(fin), bucket: '1',
-                obs_fields: 'timestamp,air_temp,precip_accumulation,local_day_precip_accumulation',
-                units_temp: 'c', units_precip: 'mm', units_wind: 'mps',
-                units_pressure: 'mb', units_distance: 'km'
+                api_key: TEMPEST_API_KEY, time_start:String(inicio), time_end:String(fin), bucket:'1',
+                obs_fields:'timestamp,air_temp,precip_accumulation,local_day_precip_accumulation',
+                units_temp:'c', units_precip:'mm', units_wind:'mps', units_pressure:'mb', units_distance:'km'
             });
-            const d = await fetchJSONConReintento(`${base}/observations/stn/${cfg.id}?${params}`, 1);
-            const campos = Array.isArray(d?.obs_fields) ? d.obs_fields : ['timestamp','air_temp','precip_accumulation','local_day_precip_accumulation'];
-            const idx = Object.fromEntries(campos.map((x,i)=>[x,i]));
-            const filas = (Array.isArray(d?.obs) ? d.obs : []).map(r => ({
-                t: Number(r[idx.timestamp] ?? r[0]) * 1000,
-                temp: Number(r[idx.air_temp] ?? r[1]),
-                inc: Math.max(0, numeroLluvia(r[idx.precip_accumulation] ?? r[2]))
-            })).filter(x => Number.isFinite(x.t)).sort((a,b)=>a.t-b.t);
+            d = await fetchJSONConReintento(`${base}/observations/stn/${cfg.id}?${params}`, 1);
+        } catch(e) { console.warn('Tempest histórico', cfg.id, e); }
 
-            // Respaldo: si el endpoint histórico no entrega serie, usar observación actual.
-            let temperatura = filas.length ? filas[filas.length-1].temp : NaN;
-            let obsTimeUtc = filas.length ? new Date(filas[filas.length-1].t).toISOString() : null;
-            let resumen = null;
-            if (!filas.length || !Number.isFinite(temperatura)) {
-                const act = await fetchJSONConReintento(`${base}/observations/station/${cfg.id}?api_key=${encodeURIComponent(TEMPEST_API_KEY)}&units_temp=c&units_precip=mm&units_wind=mps&units_pressure=mb&units_distance=km`,1);
-                temperatura = Number(act?.air_temperature ?? act?.air_temp ?? act?.obs?.[0]?.air_temperature);
-                obsTimeUtc = act?.timestamp ? new Date(Number(act.timestamp)*1000).toISOString() : obsTimeUtc;
-                resumen = act?.summary || null;
-            }
+        const campos = Array.isArray(d?.obs_fields) ? d.obs_fields : ['timestamp','air_temp','precip_accumulation','local_day_precip_accumulation'];
+        const idx = Object.fromEntries(campos.map((x,i)=>[x,i]));
+        const filas = (Array.isArray(d?.obs) ? d.obs : []).map(r => Array.isArray(r) ? ({
+            t:Number(r[idx.timestamp] ?? r[0])*1000,
+            temp:Number(r[idx.air_temp] ?? r[1]),
+            inc:Math.max(0, numeroLluvia(r[idx.precip_accumulation] ?? r[2]))
+        }) : ({
+            t:Number(r?.timestamp)*1000,
+            temp:Number(r?.air_temp ?? r?.air_temperature),
+            inc:Math.max(0, numeroLluvia(r?.precip_accumulation ?? r?.precip))
+        })).filter(x=>Number.isFinite(x.t)).sort((a,b)=>a.t-b.t);
 
-            const ahora = Date.now();
-            const sumaDesde = ms => filas.filter(x=>x.t>ms && x.t<=ahora).reduce((a,x)=>a+x.inc,0);
-            const inicioOperativo08 = (()=>{
-                const z=new Date(ahora); let t=Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),12,0,0,0);
-                if(ahora<t)t-=86400000; return t;
-            })();
-            const inicio12h = (()=>{
-                const z=new Date(ahora), h=z.getUTCHours();
-                return h>=12 ? Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),12) : Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),0);
-            })();
-            const p1 = filas.length ? sumaDesde(ahora-3600000) : numeroLluvia(resumen?.precip_total_1h);
+        let temperatura = filas.length ? filas[filas.length-1].temp : Number(a0?.air_temperature ?? a0?.air_temp ?? act?.air_temperature ?? act?.air_temp);
+        let obsTimeUtc = filas.length ? new Date(filas[filas.length-1].t).toISOString() : null;
+        const ts = Number(a0?.timestamp ?? act?.timestamp);
+        if(!obsTimeUtc && Number.isFinite(ts)) obsTimeUtc = new Date(ts*1000).toISOString();
+        const resumen = act?.summary || a0?.summary || {};
 
-            return {
-                id: `TEMPEST-${cfg.id}`, tempestId: cfg.id, nombre: cfg.nombre, fuente: 'Tempest',
-                lat, lon, temperatura,
-                precip15min: filas.length ? sumaDesde(ahora-15*60000) : 0,
-                precip30min: filas.length ? sumaDesde(ahora-30*60000) : 0,
-                precip1h: p1,
-                precip3h: filas.length ? sumaDesde(ahora-3*3600000) : 0,
-                precip6h: filas.length ? sumaDesde(ahora-6*3600000) : 0,
-                precip12h: filas.length ? sumaDesde(inicio12h) : 0,
-                total: filas.length ? sumaDesde(inicioOperativo08) : 0,
-                precip48h: filas.length ? sumaDesde(ahora-48*3600000) : 0,
-                obsTimeUtc
-            };
-        } catch(e) {
-            console.warn('Error cargando Tempest', cfg.id, e);
+        // Si no hay coordenadas, no se puede dibujar el punto; se informa en consola.
+        if(!Number.isFinite(lat) || !Number.isFinite(lon)) {
+            console.warn('Tempest sin coordenadas', cfg.id, cfg.nombre, act, meta);
             return null;
         }
+
+        const ahora=Date.now();
+        const sumaDesde=ms=>filas.filter(x=>x.t>ms && x.t<=ahora).reduce((a,x)=>a+x.inc,0);
+        const inicioOperativo08=(()=>{const z=new Date(ahora);let t=Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),12);if(ahora<t)t-=86400000;return t;})();
+        const inicio12h=(()=>{const z=new Date(ahora),h=z.getUTCHours();return h>=12?Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),12):Date.UTC(z.getUTCFullYear(),z.getUTCMonth(),z.getUTCDate(),0);})();
+        const p1 = filas.length ? sumaDesde(ahora-3600000) : numeroLluvia(resumen?.precip_total_1h ?? a0?.precip_accum_last_1hr ?? act?.precip_accum_last_1hr);
+        const hoy = numeroLluvia(a0?.precip_accum_local_day ?? a0?.local_day_precip_accumulation ?? act?.precip_accum_local_day);
+
+        return {
+            id:`TEMPEST-${cfg.id}`, tempestId:cfg.id, nombre:cfg.nombre, fuente:'Tempest', lat, lon, temperatura,
+            precip15min: filas.length?sumaDesde(ahora-15*60000):0,
+            precip30min: filas.length?sumaDesde(ahora-30*60000):0,
+            precip1h:p1,
+            precip3h:filas.length?sumaDesde(ahora-3*3600000):p1,
+            precip6h:filas.length?sumaDesde(ahora-6*3600000):p1,
+            precip12h:filas.length?sumaDesde(inicio12h):p1,
+            total:filas.length?sumaDesde(inicioOperativo08):hoy,
+            precip48h:filas.length?sumaDesde(ahora-48*3600000):hoy,
+            obsTimeUtc
+        };
     }
 
     let cargaEstacionesEnCurso = false;
@@ -4922,6 +4939,15 @@ let datosEstaciones = [];
         resultadosTempest.filter(Boolean).forEach(est => {
             if (Number.isFinite(est.lat) && Number.isFinite(est.lon)) nuevaData.push(est);
         });
+
+        // v16_162: corrección cartográfica visual de Mar Azul (ISANTO530).
+        // La PWS reporta una posición desplazada hacia el mar; para el visor COE
+        // el marcador se coloca sobre el sector Mar Azul en tierra. Los datos meteorológicos no cambian.
+        const marAzul = nuevaData.find(est => String(est?.id || '').toUpperCase() === 'ISANTO530');
+        if (marAzul) {
+            marAzul.lat = 18.45100;
+            marAzul.lon = -69.95800;
+        }
 
         datosEstaciones = nuevaData;
         dibujar();
@@ -4976,7 +5002,7 @@ let datosEstaciones = [];
             'ISANTO226': 'Las Malvinas',
             'ISANTO439': 'Ens. Julieta',
             'ISANTO245': 'Santo Domingo',
-            'ISANTO497': 'La Ureña',
+            'ISANTO497': 'Ureña',
             'ISANTO17': 'Bella Vista',
             'INATIONA6': 'Urb. Fernandez',
             'ISANTO329': 'Los Pados',
