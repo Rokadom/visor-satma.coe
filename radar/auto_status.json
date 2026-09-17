@@ -1,16 +1,16 @@
 {
   "enabled": true,
   "check_seconds": 20,
-  "updating": false,
-  "publishing": false,
-  "publish_pending": true,
-  "last_check_epoch": 1789650749,
+  "updating": true,
+  "publishing": true,
+  "publish_pending": false,
+  "last_check_epoch": 1789650879,
   "last_update_epoch": 1789650778,
-  "last_publish_start_epoch": 1789650679,
+  "last_publish_start_epoch": 1789650829,
   "last_publish_end_epoch": 1789650742,
-  "latest_remote": "1789650720002.png",
+  "latest_remote": "1789650840002.png",
   "last_processed_remote": "1789650720002.png",
   "last_published_remote": "1789650600002.png",
   "generation": 21,
-  "message": "Radar local al dia. GitHub espera 51 s; se publicara solo el barrido mas reciente."
+  "message": "Nuevo barrido detectado. Procesando localmente..."
 }
