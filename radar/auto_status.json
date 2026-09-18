@@ -1,16 +1,16 @@
 {
   "enabled": true,
   "check_seconds": 20,
-  "updating": true,
+  "updating": false,
   "publishing": false,
   "publish_pending": false,
-  "last_check_epoch": 1789772544,
-  "last_update_epoch": 1789772460,
-  "last_publish_start_epoch": 1789772460,
-  "last_publish_end_epoch": 1789772461,
+  "last_check_epoch": 1789772591,
+  "last_update_epoch": 1789772571,
+  "last_publish_start_epoch": 1789772571,
+  "last_publish_end_epoch": 1789772572,
   "latest_remote": "1789772520003.png",
-  "last_processed_remote": "1789772400012.png",
-  "last_published_remote": "1789772400012.png",
-  "generation": 56,
-  "message": "Nuevo barrido detectado. Procesando localmente..."
+  "last_processed_remote": "1789772520003.png",
+  "last_published_remote": "1789772520003.png",
+  "generation": 57,
+  "message": "Sin barridos nuevos. Monitor automatico activo."
 }
