@@ -688,11 +688,10 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      document.getElementById('autoUpdate13').textContent=
        'Última actualización: '+fmtEpoch13(s.last_update_epoch);
 
-     if(generation13===null) generation13=Number(s.generation||0);
-     else if(Number(s.generation||0)!==generation13){
-       generation13=Number(s.generation||0);
-       await reloadRadar13();
-     }
+     // ONLINE: comprobar radar_rd.json en cada ciclo.
+     // Así el visor no depende solamente del contador generation.
+     generation13=Number(s.generation||0);
+     await reloadRadar13();
    }catch(e){
      document.getElementById('autoState13').textContent='Esperando servidor automático...';
    }
