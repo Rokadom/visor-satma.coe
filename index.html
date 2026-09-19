@@ -2113,7 +2113,9 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     let RADAR_RD_CAPAS_BASE = RADAR_RD_ZEROTIER_BASE + 'capas/';
 
     // v16_174 · Tronadas GLM directas desde la PC Radar RD por ZeroTier.
-    const RADAR_RD_GLM_URL = RADAR_RD_ZEROTIER_BASE + 'nowcast/rayos_glm.json';
+    const RADAR_RD_GLM_ZEROTIER_URL = RADAR_RD_ZEROTIER_BASE + 'nowcast/rayos_glm.json';
+    const RADAR_RD_GLM_GITHUB_URL = RADAR_RD_GITHUB_BASE + 'nowcast/rayos_glm.json';
+    let RADAR_RD_GLM_URL = (location.protocol === 'https:') ? RADAR_RD_GLM_GITHUB_URL : RADAR_RD_GLM_ZEROTIER_URL;
     const RADAR_RD_GLM_POLL_MS = 20000;
     const RADAR_RD_GLM_CORE_MAX_AGE_MIN = 10.0;
     const RADAR_RD_GLM_CORE_LINK_KM = 25;
@@ -3565,10 +3567,11 @@ let datosEstaciones = [];
         if(hora){
             if(e){
                 const d = new Date(e);
-                hora.textContent = 'Hora: ' + d.toLocaleTimeString('es-DO',{
-                    timeZone:'UTC', hour:'2-digit', minute:'2-digit',
-                    second:'2-digit', hour12:false
-                }) + ' UTC';
+                // Formato meteorológico UTC: la medianoche siempre se muestra como 00, nunca 24.
+                const hh = String(d.getUTCHours()).padStart(2,'0');
+                const mm = String(d.getUTCMinutes()).padStart(2,'0');
+                const ss = String(d.getUTCSeconds()).padStart(2,'0');
+                hora.textContent = 'Hora: ' + hh + ':' + mm + ':' + ss + ' UTC';
             }else{
                 hora.textContent = 'Hora: --:-- UTC';
             }
@@ -3649,9 +3652,14 @@ let datosEstaciones = [];
     }
 
     async function cargarRadarRD(){
-        const fuentes = [
-            {json: RADAR_RD_ZEROTIER_BASE + 'radar_rd.json', capas: RADAR_RD_ZEROTIER_BASE + 'capas/', nombre:'ZeroTier'},
-            {json: RADAR_RD_GITHUB_BASE + 'radar_rd.json', capas: RADAR_RD_GITHUB_BASE + 'capas/', nombre:'GitHub'}
+        // En GitHub Pages (HTTPS) usar primero GitHub para evitar bloqueo HTTPS -> HTTP.
+        // En uso local/ZeroTier conservar acceso directo y dejar GitHub como respaldo.
+        const fuentes = (location.protocol === 'https:') ? [
+            {json: RADAR_RD_GITHUB_BASE + 'radar_rd.json', capas: RADAR_RD_GITHUB_BASE + 'capas/', glm: RADAR_RD_GLM_GITHUB_URL, nombre:'GitHub'},
+            {json: RADAR_RD_ZEROTIER_BASE + 'radar_rd.json', capas: RADAR_RD_ZEROTIER_BASE + 'capas/', glm: RADAR_RD_GLM_ZEROTIER_URL, nombre:'ZeroTier'}
+        ] : [
+            {json: RADAR_RD_ZEROTIER_BASE + 'radar_rd.json', capas: RADAR_RD_ZEROTIER_BASE + 'capas/', glm: RADAR_RD_GLM_ZEROTIER_URL, nombre:'ZeroTier'},
+            {json: RADAR_RD_GITHUB_BASE + 'radar_rd.json', capas: RADAR_RD_GITHUB_BASE + 'capas/', glm: RADAR_RD_GLM_GITHUB_URL, nombre:'GitHub'}
         ];
         let ultimoError = null;
         for(const fuente of fuentes){
@@ -3661,6 +3669,7 @@ let datosEstaciones = [];
                 radarRDData = await r.json();
                 RADAR_RD_JSON_URL = fuente.json;
                 RADAR_RD_CAPAS_BASE = fuente.capas;
+                RADAR_RD_GLM_URL = fuente.glm;
                 const fs = obtenerFramesRadarRD();
                 if(!radarRDAnimando && fs.length) radarRDIndice = fs.length - 1;
                 if(radarSeleccionadoSATMA === 'RD') mostrarRadarRD(radarRDIndice);
@@ -3669,7 +3678,7 @@ let datosEstaciones = [];
                 ultimoError = e;
             }
         }
-        console.warn('Radar RD no disponible por ZeroTier ni GitHub:', ultimoError);
+        console.warn('Radar RD no disponible por las fuentes configuradas:', ultimoError);
     }
 
 
@@ -3773,7 +3782,7 @@ let datosEstaciones = [];
             if(!mapa.hasLayer(radarRDGLMLayer)) radarRDGLMLayer.addTo(mapa);
             if(!mapa.hasLayer(radarRDGLMCoreLayer)) radarRDGLMCoreLayer.addTo(mapa);
         }catch(e){
-            console.warn('Tronadas GLM Radar RD no disponibles por ZeroTier:',e);
+            console.warn('Tronadas GLM Radar RD no disponibles en la fuente activa:',e);
         }finally{
             clearTimeout(radarRDGLMTimer);
             if(radarSeleccionadoSATMA==='RD'){
