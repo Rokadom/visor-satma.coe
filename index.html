@@ -3595,17 +3595,24 @@ let datosEstaciones = [];
         const ruta = rutaCapaRadarRD(frame);
         if(!ruta) return;
 
-        quitarRadarRD();
-        const srcBase = /^https?:\/\//i.test(ruta)
+        const src = /^https?:\/\//i.test(ruta)
             ? ruta
             : RADAR_RD_CAPAS_BASE + String(ruta).replace(/^capas\//,'');
-        const src = srcBase + (srcBase.includes('?') ? '&' : '?') + 't=' + Date.now();
 
-        capaRadarRD = L.imageOverlay(src, RADAR_RD_BOUNDS, {
-            pane:'satma-radar-rd',
-            opacity:0.92,
-            interactive:false
-        }).addTo(mapa);
+        // Movimiento suave: mantener una sola capa y cambiar únicamente la imagen.
+        // Evita retirar/recrear el overlay en cada cuadro, que producía el pequeño brinco.
+        if(!capaRadarRD){
+            capaRadarRD = L.imageOverlay(src, RADAR_RD_BOUNDS, {
+                pane:'satma-radar-rd',
+                opacity:0.92,
+                interactive:false
+            }).addTo(mapa);
+        }else{
+            capaRadarRD.setBounds(RADAR_RD_BOUNDS);
+            capaRadarRD.setOpacity(0.92);
+            capaRadarRD.setUrl(src);
+            if(!mapa.hasLayer(capaRadarRD)) capaRadarRD.addTo(mapa);
+        }
 
         actualizarInfoRadarRD(frame, frames.length);
     }
