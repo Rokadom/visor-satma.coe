@@ -1,35 +1,8 @@
 {
-  "checked_epoch": 1789844093,
+  "checked_epoch": 1789844220,
   "frames": [
     {
       "index": 1,
-      "source_index": 0,
-      "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789842960009.png",
-      "token": "1789842960009.png",
-      "layer": "eco_auto_1789842960009.png",
-      "preview": "",
-      "kept_pixels": 12792,
-      "kept_pct": 0.7419,
-      "bbox_px": [
-        788,
-        57,
-        1547,
-        775
-      ],
-      "similarity_to_previous_kept": 0.223648,
-      "bounds": [
-        [
-          12.743945,
-          -81.767979
-        ],
-        [
-          23.863055,
-          -61.158021
-        ]
-      ]
-    },
-    {
-      "index": 2,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789843080005.png",
       "token": "1789843080005.png",
@@ -56,7 +29,7 @@
       ]
     },
     {
-      "index": 3,
+      "index": 2,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789843200001.png",
       "token": "1789843200001.png",
@@ -83,7 +56,7 @@
       ]
     },
     {
-      "index": 4,
+      "index": 3,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789843320003.png",
       "token": "1789843320003.png",
@@ -110,7 +83,7 @@
       ]
     },
     {
-      "index": 5,
+      "index": 4,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789843440008.png",
       "token": "1789843440008.png",
@@ -137,7 +110,7 @@
       ]
     },
     {
-      "index": 6,
+      "index": 5,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789843560002.png",
       "token": "1789843560002.png",
@@ -164,7 +137,7 @@
       ]
     },
     {
-      "index": 7,
+      "index": 6,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789843680003.png",
       "token": "1789843680003.png",
@@ -191,7 +164,7 @@
       ]
     },
     {
-      "index": 8,
+      "index": 7,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789843800012.png",
       "token": "1789843800012.png",
@@ -218,7 +191,7 @@
       ]
     },
     {
-      "index": 9,
+      "index": 8,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789843920004.png",
       "token": "1789843920004.png",
@@ -245,7 +218,7 @@
       ]
     },
     {
-      "index": 10,
+      "index": 9,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789844040002.png",
       "token": "1789844040002.png",
@@ -260,6 +233,33 @@
         786
       ],
       "similarity_to_previous_kept": 1.0,
+      "bounds": [
+        [
+          12.743945,
+          -81.767979
+        ],
+        [
+          23.863055,
+          -61.158021
+        ]
+      ]
+    },
+    {
+      "index": 10,
+      "source_index": 0,
+      "url": "https://www.idac.gob.do/visor-radar/image.php?file=1789844160006.png",
+      "token": "1789844160006.png",
+      "layer": "eco_auto_1789844160006.png",
+      "preview": "",
+      "kept_pixels": 15549,
+      "kept_pct": 0.9018,
+      "bbox_px": [
+        784,
+        66,
+        1545,
+        784
+      ],
+      "similarity_to_previous_kept": 0.244743,
       "bounds": [
         [
           12.743945,
@@ -1174,8 +1174,8 @@
   "near_duplicate_threshold": 0.99,
   "width": 1920,
   "height": 898,
-  "latest_checked_token": "1789844040002.png",
-  "latest_idac_token": "1789844040002.png",
+  "latest_checked_token": "1789844160006.png",
+  "latest_idac_token": "1789844160006.png",
   "radar_bounds": [
     [
       12.743945,
