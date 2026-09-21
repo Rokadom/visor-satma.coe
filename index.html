@@ -11,7 +11,7 @@
     <!-- v16_146: acceso de Temperaturas/Viento/Viento superior/Presión corregido a la ruta RRFS real V41_7_13. -->
     <!-- v16_147: elimina parámetros ?producto y ?t de la ruta file:/// para compatibilidad con Chrome/Windows 7. -->
     <!-- v16_148: Temperaturas/Viento/Viento superior/Presión usan herramientas.html local del COE, sin RRFS. -->
-    <!-- v16_153: Selector superior Radar A / Radar RD. Radar A conserva RainViewer y su opacidad; Radar RD usa el radar publicado en GitHub. -->
+    <!-- v16_175: Radar RD corregido para fuente local/online y precarga independiente. Radar A conserva RainViewer y su opacidad. -->
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
      Base v16_92: contornos municipales reconstruidos desde el KML original con alta precisión (~10 m),
@@ -2097,12 +2097,13 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     const RADAR_RD_INTERVALO_MS = 900;
     const RADAR_RD_BOUNDS = [[12.743945,-81.767979],[23.863055,-61.158021]];
     const RADAR_RD_ES_LOCAL = (location.protocol === 'file:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost');
-const RADAR_RD_JSON_URL = RADAR_RD_ES_LOCAL
-    ? 'http://127.0.0.1:8814/radar_rd.json'
-    : new URL('radar/radar_rd.json', location.href).href;
+    const RADAR_RD_RAIZ_ONLINE = new URL('./radar/', document.baseURI).href;
+    const RADAR_RD_JSON_URL = RADAR_RD_ES_LOCAL
+        ? 'http://127.0.0.1:8814/radar_rd.json'
+        : RADAR_RD_RAIZ_ONLINE + 'radar_rd.json';
     const RADAR_RD_CAPAS_BASE = RADAR_RD_ES_LOCAL
-    ? 'http://127.0.0.1:8814/capas/'
-    : new URL('radar/capas/', location.href).href;
+        ? 'http://127.0.0.1:8814/capas/'
+        : RADAR_RD_RAIZ_ONLINE + 'capas/';
     let radarHost = null;
     let radarPathActual = null;
     let radarTimeActual = null;
@@ -3630,16 +3631,29 @@ let datosEstaciones = [];
     }
 
     async function cargarRadarRD(){
-        try{
-            const r = await fetch(RADAR_RD_JSON_URL + '?t=' + Date.now(), {cache:'no-store'});
-            if(!r.ok) throw new Error('HTTP ' + r.status);
-            radarRDData = await r.json();
-            const fs = obtenerFramesRadarRD();
-            if(!radarRDAnimando && fs.length) radarRDIndice = fs.length - 1;
-            if(radarSeleccionadoSATMA === 'RD') mostrarRadarRD(radarRDIndice);
-        }catch(e){
-            console.warn('Radar RD no disponible:', e);
+        const urls = [RADAR_RD_JSON_URL];
+        if(!RADAR_RD_ES_LOCAL) urls.push(RADAR_RD_RAIZ_ONLINE + 'radar-rd.json');
+
+        let ultimoError = null;
+        for(const url of urls){
+            try{
+                const r = await fetch(url + '?t=' + Date.now(), {cache:'no-store'});
+                if(!r.ok) throw new Error('HTTP ' + r.status + ' · ' + url);
+                const anterior = radarRDData;
+                radarRDData = await r.json();
+                const fs = obtenerFramesRadarRD();
+                if(!fs.length){
+                    radarRDData = anterior;
+                    throw new Error('JSON sin cuadros de radar · ' + url);
+                }
+                if(!radarRDAnimando) radarRDIndice = fs.length - 1;
+                if(radarSeleccionadoSATMA === 'RD') mostrarRadarRD(radarRDIndice);
+                return;
+            }catch(e){
+                ultimoError = e;
+            }
         }
+        console.warn('Radar RD no disponible:', ultimoError);
     }
 
     function activarRadarSATMA(tipo){
@@ -3714,9 +3728,14 @@ let datosEstaciones = [];
 
         if (!radarFrames.length) {
             cargarRadarRainViewer();
-    cargarRadarRD();
+            return;
+        }
 
-    // v16_153: iniciar con el mapa limpio, sin radares activos.
+        mostrarFrameRadar(radarFrameIndice >= 0 ? radarFrameIndice : radarFrames.length - 1, true);
+    }
+
+    // v16_175: precargar Radar RD y arrancar con el mapa limpio, sin radares activos.
+    cargarRadarRD();
     radarSeleccionadoSATMA = 'NINGUNO';
     radarVisible = false;
     if(capaRadar && mapa.hasLayer(capaRadar)) mapa.removeLayer(capaRadar);
@@ -3729,11 +3748,6 @@ let datosEstaciones = [];
     if(controlesRDInicial) controlesRDInicial.style.display = 'none';
 
     setTimeout(sacarOpacidadDelPanelRadar, 0);
-            return;
-        }
-
-        mostrarFrameRadar(radarFrameIndice >= 0 ? radarFrameIndice : radarFrames.length - 1, true);
-    }
 
 
     function cambiarOpacidadRadar(valor) {
