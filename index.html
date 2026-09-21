@@ -11,7 +11,7 @@
     <!-- v16_146: acceso de Temperaturas/Viento/Viento superior/Presión corregido a la ruta RRFS real V41_7_13. -->
     <!-- v16_147: elimina parámetros ?producto y ?t de la ruta file:/// para compatibilidad con Chrome/Windows 7. -->
     <!-- v16_148: Temperaturas/Viento/Viento superior/Presión usan herramientas.html local del COE, sin RRFS. -->
-    <!-- v16_153: Selector superior Radar A / Radar RD. Radar A conserva RainViewer y su opacidad; Radar RD usa el radar publicado en GitHub. -->
+    <!-- v16_173: Radar RD conectado directamente al servidor local de esta PC (127.0.0.1:8814). Radar A conserva RainViewer y su opacidad. -->
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
      Base v16_92: contornos municipales reconstruidos desde el KML original con alta precisión (~10 m),
@@ -1587,17 +1587,6 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
 }
 </style>
 
-
-<style id="satmaGLMRadarRDStyle">
-.satma-glm-core-label{
-  background:#b83200!important;color:#fff!important;border:1px solid #ffe082!important;
-  border-radius:9px!important;padding:2px 5px!important;font-weight:900!important;
-  box-shadow:0 1px 6px #000!important;white-space:nowrap!important;
-  font-size:10px!important;line-height:14px!important
-}
-.leaflet-tooltip.satma-glm-core-label:before{display:none!important}
-</style>
-
 </head>
 <body>
 
@@ -2098,7 +2087,7 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     let radarVisible = true;
     let capaRadar = null;
 
-    // v16_173 · Radar RD: acceso directo por ZeroTier con respaldo GitHub
+    // v16_173 · Radar RD local de esta PC · servidor puerto 8814
     let radarSeleccionadoSATMA = 'NINGUNO';
     let capaRadarRD = null;
     let radarRDData = null;
@@ -2107,23 +2096,8 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     let radarRDTimer = null;
     const RADAR_RD_INTERVALO_MS = 900;
     const RADAR_RD_BOUNDS = [[12.743945,-81.767979],[23.863055,-61.158021]];
-    const RADAR_RD_ZEROTIER_BASE = 'http://10.93.248.120:8814/';
-    const RADAR_RD_GITHUB_BASE = 'https://rokadom.github.io/visor-satma.coe/radar/';
-    let RADAR_RD_JSON_URL = RADAR_RD_ZEROTIER_BASE + 'radar_rd.json';
-    let RADAR_RD_CAPAS_BASE = RADAR_RD_ZEROTIER_BASE + 'capas/';
-
-    // v16_174 · Tronadas GLM directas desde la PC Radar RD por ZeroTier.
-    const RADAR_RD_GLM_ZEROTIER_URL = RADAR_RD_ZEROTIER_BASE + 'nowcast/rayos_glm.json';
-    const RADAR_RD_GLM_GITHUB_URL = RADAR_RD_GITHUB_BASE + 'nowcast/rayos_glm.json';
-    let RADAR_RD_GLM_URL = (location.protocol === 'https:') ? RADAR_RD_GLM_GITHUB_URL : RADAR_RD_GLM_ZEROTIER_URL;
-    const RADAR_RD_GLM_POLL_MS = 20000;
-    const RADAR_RD_GLM_CORE_MAX_AGE_MIN = 10.0;
-    const RADAR_RD_GLM_CORE_LINK_KM = 25;
-    const RADAR_RD_GLM_CORE_MIN_FLASHES = 4;
-    let radarRDGLMLayer = L.layerGroup();
-    let radarRDGLMCoreLayer = L.layerGroup();
-    let radarRDGLMTimer = null;
-
+    const RADAR_RD_JSON_URL = 'http://127.0.0.1:8814/radar_rd.json';
+    const RADAR_RD_CAPAS_BASE = 'http://127.0.0.1:8814/capas/';
     let radarHost = null;
     let radarPathActual = null;
     let radarTimeActual = null;
@@ -3567,11 +3541,10 @@ let datosEstaciones = [];
         if(hora){
             if(e){
                 const d = new Date(e);
-                // Formato meteorológico UTC: la medianoche siempre se muestra como 00, nunca 24.
-                const hh = String(d.getUTCHours()).padStart(2,'0');
-                const mm = String(d.getUTCMinutes()).padStart(2,'0');
-                const ss = String(d.getUTCSeconds()).padStart(2,'0');
-                hora.textContent = 'Hora: ' + hh + ':' + mm + ':' + ss + ' UTC';
+                hora.textContent = 'Hora: ' + d.toLocaleTimeString('es-DO',{
+                    timeZone:'UTC', hour:'2-digit', minute:'2-digit',
+                    second:'2-digit', hour12:false
+                }) + ' UTC';
             }else{
                 hora.textContent = 'Hora: --:-- UTC';
             }
@@ -3595,24 +3568,17 @@ let datosEstaciones = [];
         const ruta = rutaCapaRadarRD(frame);
         if(!ruta) return;
 
-        const src = /^https?:\/\//i.test(ruta)
+        quitarRadarRD();
+        const srcBase = /^https?:\/\//i.test(ruta)
             ? ruta
             : RADAR_RD_CAPAS_BASE + String(ruta).replace(/^capas\//,'');
+        const src = srcBase + (srcBase.includes('?') ? '&' : '?') + 't=' + Date.now();
 
-        // Movimiento suave: mantener una sola capa y cambiar únicamente la imagen.
-        // Evita retirar/recrear el overlay en cada cuadro, que producía el pequeño brinco.
-        if(!capaRadarRD){
-            capaRadarRD = L.imageOverlay(src, RADAR_RD_BOUNDS, {
-                pane:'satma-radar-rd',
-                opacity:0.92,
-                interactive:false
-            }).addTo(mapa);
-        }else{
-            capaRadarRD.setBounds(RADAR_RD_BOUNDS);
-            capaRadarRD.setOpacity(0.92);
-            capaRadarRD.setUrl(src);
-            if(!mapa.hasLayer(capaRadarRD)) capaRadarRD.addTo(mapa);
-        }
+        capaRadarRD = L.imageOverlay(src, RADAR_RD_BOUNDS, {
+            pane:'satma-radar-rd',
+            opacity:0.92,
+            interactive:false
+        }).addTo(mapa);
 
         actualizarInfoRadarRD(frame, frames.length);
     }
@@ -3659,160 +3625,16 @@ let datosEstaciones = [];
     }
 
     async function cargarRadarRD(){
-        // En GitHub Pages (HTTPS) usar primero GitHub para evitar bloqueo HTTPS -> HTTP.
-        // En uso local/ZeroTier conservar acceso directo y dejar GitHub como respaldo.
-        const fuentes = (location.protocol === 'https:') ? [
-            {json: RADAR_RD_GITHUB_BASE + 'radar_rd.json', capas: RADAR_RD_GITHUB_BASE + 'capas/', glm: RADAR_RD_GLM_GITHUB_URL, nombre:'GitHub'},
-            {json: RADAR_RD_ZEROTIER_BASE + 'radar_rd.json', capas: RADAR_RD_ZEROTIER_BASE + 'capas/', glm: RADAR_RD_GLM_ZEROTIER_URL, nombre:'ZeroTier'}
-        ] : [
-            {json: RADAR_RD_ZEROTIER_BASE + 'radar_rd.json', capas: RADAR_RD_ZEROTIER_BASE + 'capas/', glm: RADAR_RD_GLM_ZEROTIER_URL, nombre:'ZeroTier'},
-            {json: RADAR_RD_GITHUB_BASE + 'radar_rd.json', capas: RADAR_RD_GITHUB_BASE + 'capas/', glm: RADAR_RD_GLM_GITHUB_URL, nombre:'GitHub'}
-        ];
-        let ultimoError = null;
-        for(const fuente of fuentes){
-            try{
-                const r = await fetch(fuente.json + '?t=' + Date.now(), {cache:'no-store'});
-                if(!r.ok) throw new Error('HTTP ' + r.status);
-                radarRDData = await r.json();
-                RADAR_RD_JSON_URL = fuente.json;
-                RADAR_RD_CAPAS_BASE = fuente.capas;
-                RADAR_RD_GLM_URL = fuente.glm;
-                const fs = obtenerFramesRadarRD();
-                if(!radarRDAnimando && fs.length) radarRDIndice = fs.length - 1;
-                if(radarSeleccionadoSATMA === 'RD') mostrarRadarRD(radarRDIndice);
-                return;
-            }catch(e){
-                ultimoError = e;
-            }
-        }
-        console.warn('Radar RD no disponible por las fuentes configuradas:', ultimoError);
-    }
-
-
-    function radarRDGLMAgeMinutes(valor){
-        const t = Date.parse(String(valor || ''));
-        return Number.isFinite(t) ? Math.max(0,(Date.now()-t)/60000) : 999;
-    }
-
-    function radarRDGLMStyle(age){
-        if(age <= 2) return {color:'#fff200', size:14};
-        if(age <= 5) return {color:'#ffb000', size:13};
-        return {color:'#ff5a36', size:12};
-    }
-
-    function radarRDGLMKm(a,b){
-        const R=6371, rad=Math.PI/180;
-        const p1=a.lat*rad,p2=b.lat*rad,dp=(b.lat-a.lat)*rad,dl=(b.lon-a.lon)*rad;
-        const h=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
-        return 2*R*Math.asin(Math.min(1,Math.sqrt(h)));
-    }
-
-    function radarRDGLMFindCores(points){
-        const n=points.length, seen=new Array(n).fill(false), out=[];
-        for(let i=0;i<n;i++){
-            if(seen[i]) continue;
-            const q=[i], group=[]; seen[i]=true;
-            while(q.length){
-                const a=q.pop(); group.push(points[a]);
-                for(let j=0;j<n;j++){
-                    if(!seen[j] && radarRDGLMKm(points[a],points[j])<=RADAR_RD_GLM_CORE_LINK_KM){
-                        seen[j]=true; q.push(j);
-                    }
-                }
-            }
-            if(group.length>=RADAR_RD_GLM_CORE_MIN_FLASHES){
-                let sw=0,slat=0,slon=0;
-                group.forEach(p=>{
-                    const w=Math.max(.25,RADAR_RD_GLM_CORE_MAX_AGE_MIN-p.age+.25);
-                    sw+=w; slat+=p.lat*w; slon+=p.lon*w;
-                });
-                out.push({lat:slat/sw,lon:slon/sw,n:group.length});
-            }
-        }
-        return out.sort((a,b)=>b.n-a.n);
-    }
-
-    function dibujarTronadasRadarRD(j){
-        radarRDGLMLayer.clearLayers();
-        radarRDGLMCoreLayer.clearLayers();
-
-        const rows = Array.isArray(j && j.flashes) ? j.flashes : [];
-        const recent = [];
-
-        for(const f of rows){
-            const lat=Number(f.lat), lon=Number(f.lon), age=radarRDGLMAgeMinutes(f.time_utc);
-            if(!Number.isFinite(lat)||!Number.isFinite(lon)||age>10.5) continue;
-            if(f.quality_flag!=null && Number(f.quality_flag)!==0) continue;
-
-            const st=radarRDGLMStyle(age);
-            const icon=L.divIcon({
-                className:'',
-                html:'<div style="width:'+st.size+'px;height:'+st.size+'px;line-height:'+st.size+
-                     'px;font-size:'+st.size+'px;font-weight:900;color:'+st.color+
-                     ';text-shadow:0 0 2px #000;text-align:center;pointer-events:none">⚡</div>',
-                iconSize:[st.size,st.size],
-                iconAnchor:[Math.round(st.size/2),Math.round(st.size/2)]
-            });
-            L.marker([lat,lon],{icon:icon,interactive:false,keyboard:false}).addTo(radarRDGLMLayer);
-            if(age<=RADAR_RD_GLM_CORE_MAX_AGE_MIN) recent.push({lat,lon,age});
-        }
-
-        const cores=radarRDGLMFindCores(recent);
-        const mapSize=mapa.getSize();
-        cores.forEach(c=>{
-            const ll=L.latLng(c.lat,c.lon);
-            L.circle(ll,{
-                radius:14000,color:'#ff3b00',weight:2.5,opacity:.95,
-                fillColor:'#ffb000',fillOpacity:.10,interactive:false
-            }).addTo(radarRDGLMCoreLayer);
-
-            const p=mapa.latLngToContainerPoint(ll);
-            let direction='right', offset=L.point(10,0);
-            if(p.x>mapSize.x*0.68){direction='left';offset=L.point(-10,0);}
-            else if(p.x>mapSize.x*0.34){direction='top';offset=L.point(0,-12);}
-
-            const anchor=L.circleMarker(ll,{radius:1,opacity:0,fillOpacity:0,interactive:false})
-                .addTo(radarRDGLMCoreLayer);
-            anchor.bindTooltip('⚡ Núcleo activo · '+c.n,{
-                permanent:true,direction:direction,offset:offset,
-                className:'satma-glm-core-label',opacity:1,interactive:false
-            }).openTooltip();
-        });
-    }
-
-    async function actualizarTronadasRadarRD(){
-        if(radarSeleccionadoSATMA!=='RD') return;
         try{
-            const r=await fetch(RADAR_RD_GLM_URL+'?t='+Date.now(),{cache:'no-store'});
-            if(!r.ok) throw new Error('HTTP '+r.status);
-            dibujarTronadasRadarRD(await r.json());
-            if(!mapa.hasLayer(radarRDGLMLayer)) radarRDGLMLayer.addTo(mapa);
-            if(!mapa.hasLayer(radarRDGLMCoreLayer)) radarRDGLMCoreLayer.addTo(mapa);
+            const r = await fetch(RADAR_RD_JSON_URL + '?t=' + Date.now(), {cache:'no-store'});
+            if(!r.ok) throw new Error('HTTP ' + r.status);
+            radarRDData = await r.json();
+            const fs = obtenerFramesRadarRD();
+            if(!radarRDAnimando && fs.length) radarRDIndice = fs.length - 1;
+            if(radarSeleccionadoSATMA === 'RD') mostrarRadarRD(radarRDIndice);
         }catch(e){
-            console.warn('Tronadas GLM Radar RD no disponibles en la fuente activa:',e);
-        }finally{
-            clearTimeout(radarRDGLMTimer);
-            if(radarSeleccionadoSATMA==='RD'){
-                radarRDGLMTimer=setTimeout(actualizarTronadasRadarRD,RADAR_RD_GLM_POLL_MS);
-            }
+            console.warn('Radar RD no disponible:', e);
         }
-    }
-
-    function activarTronadasRadarRD(){
-        clearTimeout(radarRDGLMTimer);
-        radarRDGLMTimer=null;
-        if(!mapa.hasLayer(radarRDGLMLayer)) radarRDGLMLayer.addTo(mapa);
-        if(!mapa.hasLayer(radarRDGLMCoreLayer)) radarRDGLMCoreLayer.addTo(mapa);
-        actualizarTronadasRadarRD();
-    }
-
-    function desactivarTronadasRadarRD(){
-        clearTimeout(radarRDGLMTimer);
-        radarRDGLMTimer=null;
-        radarRDGLMLayer.clearLayers();
-        radarRDGLMCoreLayer.clearLayers();
-        if(mapa.hasLayer(radarRDGLMLayer)) mapa.removeLayer(radarRDGLMLayer);
-        if(mapa.hasLayer(radarRDGLMCoreLayer)) mapa.removeLayer(radarRDGLMCoreLayer);
     }
 
     function activarRadarSATMA(tipo){
@@ -3822,7 +3644,6 @@ let datosEstaciones = [];
         if(radarSeleccionadoSATMA === tipoNormalizado){
             detenerAnimacionRadar();
             detenerMovimientoRadarRD();
-            desactivarTronadasRadarRD();
 
             radarSeleccionadoSATMA = 'NINGUNO';
             radarVisible = false;
@@ -3845,7 +3666,6 @@ let datosEstaciones = [];
 
         if(radarSeleccionadoSATMA === 'A'){
             detenerMovimientoRadarRD();
-            desactivarTronadasRadarRD();
             if(controlesRD) controlesRD.style.display = 'none';
             quitarRadarRD();
 
@@ -3872,7 +3692,6 @@ let datosEstaciones = [];
             }else{
                 mostrarRadarRD(radarRDIndice >= 0 ? radarRDIndice : undefined);
             }
-            activarTronadasRadarRD();
         }
     }
 

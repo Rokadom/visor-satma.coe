@@ -213,6 +213,15 @@ L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/Wo
 let data=null, idx=0, origLayer=null, echoLayer=null, showOrig=false, showEcho=true;
 const $=id=>document.getElementById(id);
 
+function satmaUTC(ms,withSuffix=true){
+ const d=new Date(Number(ms));
+ if(!Number.isFinite(d.getTime())) return '--:--:--'+(withSuffix?' UTC':'');
+ const z=n=>String(n).padStart(2,'0');
+ const t=z(d.getUTCHours())+':'+z(d.getUTCMinutes())+':'+z(d.getUTCSeconds());
+ return t+(withSuffix?' UTC':'');
+}
+
+
 // Georreferenciación final ya calibrada.
 // El panel de calibración fue retirado para operación normal.
 // Georreferenciación ajustada al encuadre geográfico real del visor IDAC.
@@ -227,9 +236,17 @@ function applyLayers(){
  const f=data.frames[idx];
  const b=currentBounds();
  if(origLayer){map.removeLayer(origLayer);origLayer=null}
- if(echoLayer){map.removeLayer(echoLayer);echoLayer=null}
  if(showEcho){
-  echoLayer=L.imageOverlay('capas/'+f.layer+'?t='+Date.now(),b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
+  const url='capas/'+f.layer;
+  if(!echoLayer){
+   echoLayer=L.imageOverlay(url,b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
+  }else{
+   echoLayer.setBounds(b);
+   echoLayer.setOpacity(ECHO_OPACITY);
+   echoLayer.setUrl(url);
+  }
+ }else if(echoLayer){
+  map.removeLayer(echoLayer); echoLayer=null;
  }
  const _fi0=$('fi'); if(_fi0) _fi0.textContent='';
  const _st0=$('status'); if(_st0) _st0.textContent='Radar propiedad del IDAC, modificado por Claudio Martinez';
@@ -428,7 +445,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  let cache123=[];
  let timer123=null;
  let playing123=false;
- let delay123=800; // Motor TJUA: velocidad normal 1x
+ let delay123=900; // Movimiento suave: cuadros precargados y reloj único
 
  function frameUrl123(f){
    return 'capas/'+f.layer;
@@ -553,7 +570,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      if(playing123){ if(timer123)clearInterval(timer123); timer123=setInterval(function(){next();},delay123); }
    }
    if(slow)slow.onclick=function(){setSpeed(1600,'spSlow115');};
-   if(norm)norm.onclick=function(){setSpeed(800,'spNorm115');};
+   if(norm)norm.onclick=function(){setSpeed(900,'spNorm115');};
    if(fast)fast.onclick=function(){setSpeed(400,'spFast115');};
 
    // Los botones originales de la esquina inferior derecha usan el mismo índice maestro.
