@@ -11,7 +11,7 @@
     <!-- v16_146: acceso de Temperaturas/Viento/Viento superior/Presión corregido a la ruta RRFS real V41_7_13. -->
     <!-- v16_147: elimina parámetros ?producto y ?t de la ruta file:/// para compatibilidad con Chrome/Windows 7. -->
     <!-- v16_148: Temperaturas/Viento/Viento superior/Presión usan herramientas.html local del COE, sin RRFS. -->
-    <!-- v16_173: Radar RD conectado directamente al servidor local de esta PC (127.0.0.1:8814). Radar A conserva RainViewer y su opacidad. -->
+    <!-- v16_153: Selector superior Radar A / Radar RD. Radar A conserva RainViewer y su opacidad; Radar RD usa el radar publicado en GitHub. -->
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
      Base v16_92: contornos municipales reconstruidos desde el KML original con alta precisión (~10 m),
@@ -2087,7 +2087,7 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     let radarVisible = true;
     let capaRadar = null;
 
-    // v16_173 · Radar RD local de esta PC · servidor puerto 8814
+    // v16_153 · Radar RD publicado en GitHub
     let radarSeleccionadoSATMA = 'NINGUNO';
     let capaRadarRD = null;
     let radarRDData = null;
@@ -2096,8 +2096,13 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     let radarRDTimer = null;
     const RADAR_RD_INTERVALO_MS = 900;
     const RADAR_RD_BOUNDS = [[12.743945,-81.767979],[23.863055,-61.158021]];
-    const RADAR_RD_JSON_URL = 'http://127.0.0.1:8814/radar_rd.json';
-    const RADAR_RD_CAPAS_BASE = 'http://127.0.0.1:8814/capas/';
+    const RADAR_RD_ES_LOCAL = (location.protocol === 'file:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost');
+const RADAR_RD_JSON_URL = RADAR_RD_ES_LOCAL
+    ? 'http://127.0.0.1:8814/radar_rd.json'
+    : new URL('radar/radar_rd.json', location.href).href;
+    const RADAR_RD_CAPAS_BASE = RADAR_RD_ES_LOCAL
+    ? 'http://127.0.0.1:8814/capas/'
+    : new URL('radar/capas/', location.href).href;
     let radarHost = null;
     let radarPathActual = null;
     let radarTimeActual = null;
