@@ -11,6 +11,7 @@
     <!-- v16_146: acceso de Temperaturas/Viento/Viento superior/Presión corregido a la ruta RRFS real V41_7_13. -->
     <!-- v16_147: elimina parámetros ?producto y ?t de la ruta file:/// para compatibilidad con Chrome/Windows 7. -->
     <!-- v16_148: Temperaturas/Viento/Viento superior/Presión usan herramientas.html local del COE, sin RRFS. -->
+    <!-- v16_176: Radar RD online incorpora tronadas NOAA GOES-19 GLM; refresco 20 s. -->
     <!-- v16_175: Radar RD corregido para fuente local/online y precarga independiente. Radar A conserva RainViewer y su opacidad. -->
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
@@ -2013,6 +2014,9 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     mapa.createPane('satma-radar-rd');
     mapa.getPane('satma-radar-rd').style.zIndex = 231;
     mapa.getPane('satma-radar-rd').style.pointerEvents = 'none';
+    mapa.createPane('satma-radar-rd-glm');
+    mapa.getPane('satma-radar-rd-glm').style.zIndex = 475;
+    mapa.getPane('satma-radar-rd-glm').style.pointerEvents = 'none';
 
 
     // Orden SATMA de capas meteorológicas y de referencia:
@@ -2104,6 +2108,11 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
     const RADAR_RD_CAPAS_BASE = RADAR_RD_ES_LOCAL
         ? 'http://127.0.0.1:8814/capas/'
         : RADAR_RD_RAIZ_ONLINE + 'capas/';
+    const RADAR_RD_GLM_URL = RADAR_RD_ES_LOCAL
+        ? 'http://127.0.0.1:8814/nowcast/rayos_glm.json'
+        : RADAR_RD_RAIZ_ONLINE + 'nowcast/rayos_glm.json';
+    let capaTronadasRadarRD = L.layerGroup();
+    let radarRDGLMData = null;
     let radarHost = null;
     let radarPathActual = null;
     let radarTimeActual = null;
@@ -3504,6 +3513,41 @@ let datosEstaciones = [];
         }
     }
 
+    function quitarTronadasRadarRD(){
+        if(capaTronadasRadarRD && mapa.hasLayer(capaTronadasRadarRD)) mapa.removeLayer(capaTronadasRadarRD);
+        if(capaTronadasRadarRD) capaTronadasRadarRD.clearLayers();
+    }
+
+    function dibujarTronadasRadarRD(){
+        if(radarSeleccionadoSATMA !== 'RD' || !radarRDGLMData) return;
+        const flashes = Array.isArray(radarRDGLMData.flashes) ? radarRDGLMData.flashes : [];
+        capaTronadasRadarRD.clearLayers();
+        flashes.forEach(f => {
+            const lat = Number(f.lat), lon = Number(f.lon);
+            if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+            const icono = L.divIcon({
+                className:'',
+                html:'<span style="display:block;color:#ffd600;font-size:15px;font-weight:900;line-height:15px;text-shadow:-1px -1px 0 #8a3b00,1px -1px 0 #8a3b00,-1px 1px 0 #8a3b00,1px 1px 0 #8a3b00,0 0 4px #000;">⚡</span>',
+                iconSize:[15,15], iconAnchor:[7,7]
+            });
+            L.marker([lat,lon],{icon:icono,pane:'satma-radar-rd-glm',interactive:false,keyboard:false}).addTo(capaTronadasRadarRD);
+        });
+        if(!mapa.hasLayer(capaTronadasRadarRD)) capaTronadasRadarRD.addTo(mapa);
+    }
+
+    async function cargarTronadasRadarRD(){
+        try{
+            const r = await fetch(RADAR_RD_GLM_URL + '?t=' + Date.now(), {cache:'no-store'});
+            if(!r.ok) throw new Error('HTTP ' + r.status);
+            const data = await r.json();
+            if(!data || !Array.isArray(data.flashes)) throw new Error('JSON GLM inválido');
+            radarRDGLMData = data;
+            if(radarSeleccionadoSATMA === 'RD') dibujarTronadasRadarRD();
+        }catch(e){
+            console.warn('Tronadas GLM Radar RD no disponibles:', e);
+        }
+    }
+
     function quitarRadarRD(){
         if(capaRadarRD && mapa.hasLayer(capaRadarRD)) mapa.removeLayer(capaRadarRD);
     }
@@ -3669,6 +3713,7 @@ let datosEstaciones = [];
 
             if(capaRadar && mapa.hasLayer(capaRadar)) mapa.removeLayer(capaRadar);
             quitarRadarRD();
+            quitarTronadasRadarRD();
 
             mostrarControlesRadarA(false);
             const controlesRD = document.getElementById('radar-rd-controles');
@@ -3687,6 +3732,7 @@ let datosEstaciones = [];
             detenerMovimientoRadarRD();
             if(controlesRD) controlesRD.style.display = 'none';
             quitarRadarRD();
+            quitarTronadasRadarRD();
 
             radarVisible = true;
             mostrarControlesRadarA(true);
@@ -3711,6 +3757,11 @@ let datosEstaciones = [];
             }else{
                 mostrarRadarRD(radarRDIndice >= 0 ? radarRDIndice : undefined);
             }
+            if(!radarRDGLMData) cargarTronadasRadarRD();
+            else{
+                dibujarTronadasRadarRD();
+                cargarTronadasRadarRD();
+            }
         }
     }
 
@@ -3734,12 +3785,14 @@ let datosEstaciones = [];
         mostrarFrameRadar(radarFrameIndice >= 0 ? radarFrameIndice : radarFrames.length - 1, true);
     }
 
-    // v16_175: precargar Radar RD y arrancar con el mapa limpio, sin radares activos.
+    // v16_176: precargar Radar RD + GLM y arrancar con el mapa limpio.
     cargarRadarRD();
+    cargarTronadasRadarRD();
     radarSeleccionadoSATMA = 'NINGUNO';
     radarVisible = false;
     if(capaRadar && mapa.hasLayer(capaRadar)) mapa.removeLayer(capaRadar);
     quitarRadarRD();
+    quitarTronadasRadarRD();
 
     actualizarBotonesRadaresSATMA();
     mostrarControlesRadarA(false);
@@ -5041,6 +5094,7 @@ let datosEstaciones = [];
     setInterval(cargar, 120000);
     setInterval(cargarRadarRainViewer, 300000);
     setInterval(cargarRadarRD, 60000);
+    setInterval(cargarTronadasRadarRD, 20000);
     setInterval(cargarSismosCombinados, 300000);
 
     // ===== Boletín automático de lluvias de la última hora =====
