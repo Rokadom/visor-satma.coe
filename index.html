@@ -11,7 +11,7 @@
     <!-- v16_146: acceso de Temperaturas/Viento/Viento superior/Presión corregido a la ruta RRFS real V41_7_13. -->
     <!-- v16_147: elimina parámetros ?producto y ?t de la ruta file:/// para compatibilidad con Chrome/Windows 7. -->
     <!-- v16_148: Temperaturas/Viento/Viento superior/Presión usan herramientas.html local del COE, sin RRFS. -->
-    <!-- v16_176: Radar RD online incorpora tronadas NOAA GOES-19 GLM; refresco 20 s. -->
+    <!-- v16_177: Radar RD online GLM robusto local/GitHub Pages; refresco 20 s y marcador compatible. -->
     <!-- v16_175: Radar RD corregido para fuente local/online y precarga independiente. Radar A conserva RainViewer y su opacidad. -->
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
@@ -3530,22 +3530,42 @@ let datosEstaciones = [];
                 html:'<span style="display:block;color:#ffd600;font-size:15px;font-weight:900;line-height:15px;text-shadow:-1px -1px 0 #8a3b00,1px -1px 0 #8a3b00,-1px 1px 0 #8a3b00,1px 1px 0 #8a3b00,0 0 4px #000;">⚡</span>',
                 iconSize:[15,15], iconAnchor:[7,7]
             });
+            L.circleMarker([lat,lon],{
+                pane:'satma-radar-rd-glm', radius:3, color:'#ff6d00', weight:1,
+                fillColor:'#ffd600', fillOpacity:0.95, interactive:false
+            }).addTo(capaTronadasRadarRD);
             L.marker([lat,lon],{icon:icono,pane:'satma-radar-rd-glm',interactive:false,keyboard:false}).addTo(capaTronadasRadarRD);
         });
         if(!mapa.hasLayer(capaTronadasRadarRD)) capaTronadasRadarRD.addTo(mapa);
     }
 
     async function cargarTronadasRadarRD(){
-        try{
-            const r = await fetch(RADAR_RD_GLM_URL + '?t=' + Date.now(), {cache:'no-store'});
-            if(!r.ok) throw new Error('HTTP ' + r.status);
-            const data = await r.json();
-            if(!data || !Array.isArray(data.flashes)) throw new Error('JSON GLM inválido');
-            radarRDGLMData = data;
-            if(radarSeleccionadoSATMA === 'RD') dibujarTronadasRadarRD();
-        }catch(e){
-            console.warn('Tronadas GLM Radar RD no disponibles:', e);
+        // v16_177: GLM robusto local + GitHub Pages. Prueba la ruta normal y
+        // una ruta absoluta construida desde el directorio del visor.
+        const urls = [RADAR_RD_GLM_URL];
+        if(!RADAR_RD_ES_LOCAL){
+            const alternativa = new URL('radar/nowcast/rayos_glm.json', document.baseURI).href;
+            if(!urls.includes(alternativa)) urls.push(alternativa);
         }
+
+        let ultimoError = null;
+        for(const url of urls){
+            try{
+                const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), {
+                    cache:'no-store',
+                    headers:{'Accept':'application/json'}
+                });
+                if(!r.ok) throw new Error('HTTP ' + r.status + ' · ' + url);
+                const data = await r.json();
+                if(!data || !Array.isArray(data.flashes)) throw new Error('JSON GLM inválido · ' + url);
+                radarRDGLMData = data;
+                if(radarSeleccionadoSATMA === 'RD') dibujarTronadasRadarRD();
+                return;
+            }catch(e){
+                ultimoError = e;
+            }
+        }
+        console.warn('Tronadas GLM Radar RD no disponibles:', ultimoError);
     }
 
     function quitarRadarRD(){
