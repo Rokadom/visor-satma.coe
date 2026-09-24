@@ -181,6 +181,7 @@ input[type=range]{width:155px}
  <div id="convTime">Barrido: --</div>
  <div><button id="convToggle" type="button">ACTIVADO</button><span id="convLayerInfo">Top 5 · prueba tropical conservadora · granizo ≥55 dBZ persistente</span></div>
  <div id="convSummary">Esperando análisis...</div>
+ <div id="convHailStatus" style="margin:6px 0;padding:6px 7px;border:1px solid #6d596f;border-radius:5px;background:#17121b;font-weight:900;color:#d8e2e8">Granizo: analizando celdas...</div>
  <div id="convList"></div>
  <div style="margin-top:9px;font-weight:900;color:#9fe5ff;border-top:1px solid #375365;padding-top:8px">BOLETÍN RADAR AUTOMÁTICO</div>
  <div id="bulletinRadar">Esperando datos...</div>
@@ -1567,6 +1568,21 @@ function render(tracks,current){
      return provinceAt(p.lat,p.lon)||'';
    }).filter(Boolean))];
    const hailText=hail.length ? (' GRANIZO POSIBLE (SEÑAL RADAR): '+(hailProvs.length?hailProvs.join(', '):'celda convectiva identificada')+'. Requiere confirmación ambiental.') : '';
+   const hailBox=document.getElementById('convHailStatus');
+   if(hailBox){
+     if(hail.length){
+       hailBox.textContent='⚠ GRANIZO POSIBLE · '+hail.length+' celda'+(hail.length===1?'':'s')+
+         (hailProvs.length?' · '+hailProvs.join(', '):'')+' · ≥55 dBZ persistente';
+       hailBox.style.color='#fff';
+       hailBox.style.background='#8b166f';
+       hailBox.style.borderColor='#ffd7fa';
+     }else{
+       hailBox.textContent='Granizo: sin señal que cumpla el criterio ≥55 dBZ persistente';
+       hailBox.style.color='#cfd9df';
+       hailBox.style.background='#17121b';
+       hailBox.style.borderColor='#6d596f';
+     }
+   }
    bulletin.textContent='BOLETÍN RADAR · '+ftime(data.frames[idx])+'\n'+
      (rows.length?('Se muestran las '+rows.length+' celdas convectivas más fuertes con seguimiento suficiente. '+
      (ups?ups+' muestran intensificación. ':'')+(downs?downs+' muestran debilitamiento. ':'')+
@@ -1584,7 +1600,7 @@ function render(tracks,current){
  }
  function schedule(){if(timer)clearTimeout(timer);timer=setTimeout(analyze,350)}
  openBtn.onclick=()=>{panel.classList.toggle('show');openBtn.classList.toggle('on',panel.classList.contains('show'));if(panel.classList.contains('show'))schedule()};
- toggle.onclick=()=>{active=!active;toggle.textContent=active?'ACTIVADO':'DESACTIVADO';toggle.style.background=active?'#168a3b':'#8d2f2f';trackLayer.clearLayers();if(!active){sum.textContent='Seguimiento de celdas desactivado. El potencial de granizo permanece automático.';list.innerHTML='';bulletin.textContent='El potencial de granizo continúa funcionando automáticamente.';}schedule()};
+ toggle.onclick=()=>{active=!active;toggle.textContent=active?'ACTIVADO':'DESACTIVADO';toggle.style.background=active?'#168a3b':'#8d2f2f';trackLayer.clearLayers();if(!active){sum.textContent='Seguimiento de celdas desactivado.';list.innerHTML='';const hb=document.getElementById('convHailStatus');if(hb)hb.textContent='Granizo: active Celdas convectivas para analizar.';bulletin.textContent='Celdas convectivas desactivadas.';}schedule()};
  const base=window.applyLayers||(typeof applyLayers==='function'?applyLayers:null);
  if(base){const wrap=function(){const r=base.apply(this,arguments);schedule();return r};window.applyLayers=wrap;try{applyLayers=wrap}catch(e){}}
  schedule();
