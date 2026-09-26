@@ -3,14 +3,14 @@
   "check_seconds": 180,
   "updating": false,
   "publishing": true,
-  "publish_pending": true,
+  "publish_pending": false,
   "last_check_epoch": 1790461669,
   "last_update_epoch": 1790461683,
-  "last_publish_start_epoch": 1790461683,
-  "last_publish_end_epoch": 1790461488,
+  "last_publish_start_epoch": 1790461689,
+  "last_publish_end_epoch": 1790461689,
   "latest_remote": "1790461560019.png",
   "last_processed_remote": "1790461560019.png",
-  "last_published_remote": "1790461200007.png",
+  "last_published_remote": "1790461560019.png",
   "generation": 81,
-  "message": "Barrido local listo. Enviando barrido mas reciente a GitHub..."
+  "message": "Publicando GitHub: 1790461560019.png"
 }
