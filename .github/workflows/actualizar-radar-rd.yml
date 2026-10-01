@@ -1,0 +1,59 @@
+name: Actualizar Radar RD automatico
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: radar-rd-automatico
+  cancel-in-progress: true
+
+jobs:
+  actualizar-y-publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Actualizar Radar RD desde IDAC
+        run: python radar/github_actualizar_radar.py
+
+      - name: Guardar radar actualizado en main
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add radar/radar_rd.json radar/capas/eco_auto_*.png
+          if git diff --cached --quiet; then
+            echo "No hay cambios nuevos del radar."
+          else
+            git commit -m "Actualizar Radar RD automaticamente"
+            git push origin HEAD:main
+          fi
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Desactivar Jekyll
+        run: touch .nojekyll
+
+      - name: Empaquetar sitio
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "."
+
+      - name: Publicar GitHub Pages
+        uses: actions/deploy-pages@v4
