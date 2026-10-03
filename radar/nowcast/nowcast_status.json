@@ -3,10 +3,10 @@
   "source": "NOAA GOES-19 GLM-L2-LCFA",
   "poll_seconds": 20,
   "window_minutes": 5,
-  "last_check_utc": "2026-10-03T17:27:48.206809Z",
-  "last_file": "OR_GLM-L2-LCFA_G19_s20262761727000_e20262761727200_c20262761727222.nc",
-  "last_file_scan_start_utc": "2026-10-03T17:27:00Z",
-  "last_success_utc": "2026-10-03T17:27:48.206809Z",
-  "count": 51,
-  "message": "GLM activo. 51 detecciones en los ultimos 5 min."
+  "last_check_utc": "2026-10-03T17:31:10.927344Z",
+  "last_file": "OR_GLM-L2-LCFA_G19_s20262761730200_e20262761730400_c20262761730419.nc",
+  "last_file_scan_start_utc": "2026-10-03T17:30:20Z",
+  "last_success_utc": "2026-10-03T17:31:10.927344Z",
+  "count": 55,
+  "message": "GLM activo. 55 detecciones en los ultimos 5 min."
 }
