@@ -1,6 +1,6 @@
 {
   "source": "NOAA GOES-19 GLM-L2-LCFA",
-  "generated_utc": "2026-10-05T16:11:11.041439Z",
+  "generated_utc": "2026-10-05T16:14:34.530639Z",
   "window_minutes": 5,
   "bounds": {
     "lat_min": 14.0,
@@ -8,6 +8,16 @@
     "lon_min": -75.5,
     "lon_max": -63.0
   },
-  "count": 0,
-  "flashes": []
+  "count": 1,
+  "flashes": [
+    {
+      "id": "OR_GLM-L2-LCFA_G19_s20262781613200_e20262781613400_c20262781613418.nc:23",
+      "lat": 18.40544,
+      "lon": -66.6711,
+      "time_utc": "2026-10-05T16:13:20.915542Z",
+      "file": "OR_GLM-L2-LCFA_G19_s20262781613200_e20262781613400_c20262781613418.nc",
+      "energy": 3.6285004270967744e-14,
+      "quality_flag": 0
+    }
+  ]
 }
