@@ -12,6 +12,7 @@
     <!-- v16_147: elimina parámetros ?producto y ?t de la ruta file:/// para compatibilidad con Chrome/Windows 7. -->
     <!-- v16_148: Temperaturas/Viento/Viento superior/Presión usan herramientas.html local del COE, sin RRFS. -->
     <!-- v16_177: Radar RD online GLM robusto local/GitHub Pages; refresco 20 s y marcador compatible. -->
+    <!-- v16_178: Tropical sin Dolly fija; Sistemas NHC consulta dinámicamente ciclones activos (capas 5/6/7 NOAA/NHC). -->
     <!-- v16_175: Radar RD corregido para fuente local/online y precarga independiente. Radar A conserva RainViewer y su opacidad. -->
     <!-- v16_130: etiquetas de lluvia con color de escala y nombres de estaciones en blanco. -->
     <!-- v16_94: límites provinciales internos continuos, sin fragmentos blancos y sin contorno costero exterior.
@@ -1763,57 +1764,57 @@ background:rgba(18,18,18,.985);border-bottom:1px solid #4b5563
 
 
 
-<style id="satma-dolly-estilos">
-#tropical-btn-dolly{
-  background:#7b4f2c !important;
-  border-color:#a9784d !important;
+<style id="satma-sistemas-nhc-estilos">
+#tropical-btn-sistemas-nhc{
+  background:#7b1f1f !important;
+  border-color:#c85a5a !important;
   color:#fff !important;
   font-weight:900 !important;
 }
-#tropical-btn-dolly:hover{background:#8d5c35 !important;}
-#tropical-btn-dolly.activo{
-  background:#a76c3a !important;
-  border-color:#ffd7ad !important;
-  box-shadow:0 0 0 1px rgba(255,215,173,.45) inset,0 0 8px rgba(167,108,58,.55);
+#tropical-btn-sistemas-nhc:hover{background:#922b2b !important;}
+#tropical-btn-sistemas-nhc.activo{
+  background:#b71c1c !important;
+  border-color:#ffcdd2 !important;
+  box-shadow:0 0 0 1px rgba(255,205,210,.45) inset,0 0 8px rgba(183,28,28,.55);
 }
-#dolly-controles{
-  display:none;margin:6px 0 8px;padding:7px 8px;border:1px solid #7b4f2c;
-  border-radius:6px;background:rgba(53,31,18,.72);font-size:.62rem;line-height:1.35;color:#fff;
+#sistemas-nhc-controles{
+  display:none;margin:6px 0 8px;padding:7px 8px;border:1px solid #8e3333;
+  border-radius:6px;background:rgba(58,16,16,.76);font-size:.62rem;line-height:1.35;color:#fff;
 }
-#dolly-estado{margin-top:3px;color:#f0dfcf;}
-.dolly-punto-icono{background:transparent!important;border:0!important;}
-.dolly-punto-negro{
+#sistemas-nhc-estado{margin-top:3px;color:#f5dddd;}
+.nhc-sistema-punto-icono{background:transparent!important;border:0!important;}
+.nhc-sistema-punto{
   display:block;width:14px;height:14px;border-radius:50%;background:#000;border:2px solid #fff;
   box-shadow:0 0 0 1px rgba(0,0,0,.85),0 1px 4px rgba(0,0,0,.75);
 }
-.leaflet-tooltip.dolly-pronostico-etiqueta{
+.leaflet-tooltip.nhc-sistema-pronostico-etiqueta{
   display:block!important;visibility:visible!important;opacity:1!important;z-index:9999!important;
   background:transparent!important;border:0!important;box-shadow:none!important;color:#fff!important;
   font:900 15px/1.05 Arial,sans-serif!important;letter-spacing:.1px;
   text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 5px #000;
   white-space:nowrap;padding:0!important;pointer-events:none!important;
 }
-.leaflet-tooltip.dolly-pronostico-etiqueta:before{display:none!important;}
-.dolly-etiqueta-pane{z-index:790!important;pointer-events:none!important;}
-.dolly-puntos-pane{z-index:780!important;}
-@media(max-width:768px){.leaflet-tooltip.dolly-pronostico-etiqueta{font-size:12px!important;}}
+.leaflet-tooltip.nhc-sistema-pronostico-etiqueta:before{display:none!important;}
+.nhc-sistema-etiqueta-pane{z-index:790!important;pointer-events:none!important;}
+.nhc-sistema-puntos-pane{z-index:780!important;}
+@media(max-width:768px){.leaflet-tooltip.nhc-sistema-pronostico-etiqueta{font-size:12px!important;}}
 </style>
 
 <div id="tropical-panel" aria-label="Capas tropicales">
   <div class="tropical-cabecera"><div class="tropical-titulo">TROPICAL · Capas integradas</div><button class="tropical-cerrar" type="button" onclick="cerrarPanelTropical()">×</button></div>
   <div class="tropical-capas">
     <button id="tropical-btn-nhc" class="tropical-capa-btn" type="button" onclick="alternarNHCTropical()">Cono NHC</button>
-    <button id="tropical-btn-dolly" class="tropical-capa-btn" type="button" onclick="alternarTormentaDolly()" title="Mostrar/ocultar cono oficial NHC de la Tormenta Tropical Dolly">Tormenta Dolly</button>
+    <button id="tropical-btn-sistemas-nhc" class="tropical-capa-btn" type="button" onclick="alternarSistemasNHC()" title="Mostrar/ocultar los ciclones tropicales activos publicados por el NHC">Sistemas NHC</button>
     <button id="tropical-btn-atcf" class="tropical-capa-btn" type="button" onclick="alternarDatosTropicalATCF()" title="Posiciones BEST Track ATCF del NHC">Datos Tropical</button>
     <button id="tropical-btn-ecaie" class="tropical-capa-btn" type="button" onclick="alternarECAIE()">ECAIE</button>
     <button id="tropical-btn-ecens" class="tropical-capa-btn" type="button" onclick="alternarECENS()">ECENS</button>
     <button id="tropical-btn-gefs" class="tropical-capa-btn" type="button" onclick="alternarWNExtra('gefs')">GEFS</button>
     <button id="tropical-btn-genc" class="tropical-capa-btn" type="button" onclick="alternarWNExtra('genc')">GENC</button>
   </div>
-  <div id="dolly-controles">
-    <div style="font-weight:900;letter-spacing:.03em">TORMENTA TROPICAL DOLLY · CONO NHC</div>
-    <div id="dolly-estado">Pulse “Tormenta Dolly” para cargar el cono oficial del NHC.</div>
-    <div style="margin-top:3px;color:#d8c0ab">Cono, trayectoria y puntos de pronóstico · actualización automática.</div>
+  <div id="sistemas-nhc-controles">
+    <div style="font-weight:900;letter-spacing:.03em">SISTEMAS TROPICALES ACTIVOS · NHC/NOAA</div>
+    <div id="sistemas-nhc-estado">Pulse “Sistemas NHC” para consultar los ciclones tropicales activos.</div>
+    <div style="margin-top:3px;color:#e1bcbc">Cono, trayectoria y puntos de pronóstico · consulta directa y actualización automática.</div>
   </div>
   <div id="atcf-controles" style="display:none;margin:6px 0 8px;padding:7px 8px;border:1px solid #555;border-radius:6px;background:rgba(0,0,0,.55);font-size:.62rem;line-height:1.35;color:#fff">
     <div style="font-weight:900;letter-spacing:.03em">DATOS TROPICAL · ATCF BEST TRACK</div>
@@ -3568,17 +3569,61 @@ let datosEstaciones = [];
         console.warn('Tronadas GLM Radar RD no disponibles:', ultimoError);
     }
 
+function quitarMascaraGrisIzquierda(pixels,w,h){
+ const n=w*h,seen=new Uint8Array(n),queue=new Int32Array(n);let removed=0;
+ function gris(p){const j=p*4,r=pixels[j],g=pixels[j+1],b=pixels[j+2];
+  return pixels[j+3]>0&&Math.max(r,g,b)-Math.min(r,g,b)<=18&&Math.min(r,g,b)>=50&&Math.max(r,g,b)<=250;
+ }
+ // El PNG puede tener margen transparente: buscar componentes, no solo su borde.
+ for(let seed=0;seed<n;seed++){
+  if(seen[seed])continue;seen[seed]=1;if(!gris(seed))continue;
+  let head=0,tail=1,minX=seed%w;queue[0]=seed;
+  function add(q){if(seen[q])return;seen[q]=1;if(gris(q)){queue[tail++]=q;minX=Math.min(minX,q%w)}}
+  while(head<tail){const q=queue[head++],x=q%w,y=Math.floor(q/w);
+   if(x>0)add(q-1);if(x<w-1)add(q+1);if(y>0)add(q-w);if(y<h-1)add(q+w);
+  }
+  // Solo areas grises extensas del sector izquierdo; conservar marcas pequenas.
+  if(minX<w*.35&&tail>=Math.max(16,Math.ceil(n*.005))){
+   for(let k=0;k<tail;k++)pixels[queue[k]*4+3]=0;removed+=tail;
+  }
+ }
+ return removed;
+}
+    let revisionRadarRD = 0;
+    const cacheRadarRD = new Map();
+    function limitesRadarRD(frame){
+        const b = frame.bounds || (radarRDData && radarRDData.radar_bounds);
+        if(Array.isArray(b) && b.length===2 && b.every(p=>Array.isArray(p)&&p.length===2&&p.every(Number.isFinite))) return b;
+        return frame.source === 'IDAC SDQ / POP / PUJ' ? [[14.33,-75.13],[23.75,-64.22]] : RADAR_RD_BOUNDS;
+    }
+    function imagenRadarRD(frame, url){
+        if(cacheRadarRD.has(url)) return cacheRadarRD.get(url);
+        const job = new Promise((resolve,reject)=>{
+            const im=new Image(); im.crossOrigin='anonymous';
+            im.onload=()=>{try{
+                if(frame.source !== 'IDAC SDQ / POP / PUJ'){resolve(url);return;}
+                const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;
+                const ctx=c.getContext('2d');ctx.drawImage(im,0,0);
+                const rgba=ctx.getImageData(0,0,c.width,c.height);
+                quitarMascaraGrisIzquierda(rgba.data,c.width,c.height);
+                ctx.putImageData(rgba,0,0);resolve(c.toDataURL('image/png'));
+            }catch(e){reject(e)}};
+            im.onerror=()=>reject(new Error('No se pudo cargar la capa del radar'));im.src=url;
+        });
+        cacheRadarRD.set(url,job);
+        while(cacheRadarRD.size>30)cacheRadarRD.delete(cacheRadarRD.keys().next().value);
+        job.catch(()=>cacheRadarRD.delete(url));return job;
+    }
+
     function quitarRadarRD(){
+        revisionRadarRD++;
         if(capaRadarRD && mapa.hasLayer(capaRadarRD)) mapa.removeLayer(capaRadarRD);
     }
 
     function obtenerFramesRadarRD(){
         if(!radarRDData) return [];
-        if(Array.isArray(radarRDData.frames)) return radarRDData.frames;
-        if(Array.isArray(radarRDData.radar)) return radarRDData.radar;
-        if(Array.isArray(radarRDData.capas)) return radarRDData.capas;
-        if(Array.isArray(radarRDData)) return radarRDData;
-        return [];
+        const frames = radarRDData.frames || radarRDData.radar || radarRDData.capas || (Array.isArray(radarRDData)?radarRDData:[]);
+        return Array.isArray(frames) ? frames.slice().sort((a,b)=>epochRadarRD(a)-epochRadarRD(b)) : [];
     }
 
     function rutaCapaRadarRD(frame){
@@ -3589,6 +3634,8 @@ let datosEstaciones = [];
 
     function epochRadarRD(frame){
         if(!frame) return 0;
+        const timestamp = Date.parse(frame.timestamp || '');
+        if(Number.isFinite(timestamp)) return timestamp;
         const a = String(frame.token || '');
         let m = a.match(/(\d{13})/);
         if(m) return Number(m[1]);
@@ -3611,18 +3658,15 @@ let datosEstaciones = [];
         if(hora){
             if(e){
                 const d = new Date(e);
-                hora.textContent = 'Hora: ' + d.toLocaleTimeString('es-DO',{
-                    timeZone:'UTC', hour:'2-digit', minute:'2-digit',
-                    second:'2-digit', hour12:false
-                }) + ' UTC';
+                hora.textContent = d.toISOString().slice(11,16) + ' UTC';
             }else{
-                hora.textContent = 'Hora: --:-- UTC';
+                hora.textContent = '--:-- UTC';
             }
         }
         if(cuadro) cuadro.textContent = total ? ('Cuadro ' + (radarRDIndice+1) + '/' + total) : 'Cuadro --/--';
     }
 
-    function mostrarRadarRD(indice){
+    async function mostrarRadarRD(indice){
         if(radarSeleccionadoSATMA !== 'RD') return;
 
         const frames = obtenerFramesRadarRD();
@@ -3638,19 +3682,20 @@ let datosEstaciones = [];
         const ruta = rutaCapaRadarRD(frame);
         if(!ruta) return;
 
-        quitarRadarRD();
+        const revision = ++revisionRadarRD;
+        const bounds = limitesRadarRD(frame);
         const srcBase = /^https?:\/\//i.test(ruta)
             ? ruta
             : RADAR_RD_CAPAS_BASE + String(ruta).replace(/^capas\//,'');
-        const src = srcBase + (srcBase.includes('?') ? '&' : '?') + 't=' + Date.now();
-
-        capaRadarRD = L.imageOverlay(src, RADAR_RD_BOUNDS, {
-            pane:'satma-radar-rd',
-            opacity:0.92,
-            interactive:false
-        }).addTo(mapa);
-
-        actualizarInfoRadarRD(frame, frames.length);
+        try{
+            const imagen = await imagenRadarRD(frame,srcBase);
+            if(revision!==revisionRadarRD || radarSeleccionadoSATMA!=='RD') return;
+            if(capaRadarRD && mapa.hasLayer(capaRadarRD)) mapa.removeLayer(capaRadarRD);
+            capaRadarRD=L.imageOverlay(imagen,bounds,{
+                pane:'satma-radar-rd',opacity:0.92,interactive:false
+            }).addTo(mapa);
+            actualizarInfoRadarRD(frame,frames.length);
+        }catch(e){console.warn('Radar RD: se conserva la ultima capa disponible.',e);}
     }
 
     function detenerMovimientoRadarRD(){
@@ -5113,7 +5158,7 @@ let datosEstaciones = [];
 
     setInterval(cargar, 120000);
     setInterval(cargarRadarRainViewer, 300000);
-    setInterval(cargarRadarRD, 60000);
+    setInterval(cargarRadarRD, 20000);
     setInterval(cargarTronadasRadarRD, 20000);
     setInterval(cargarSismosCombinados, 300000);
 
@@ -6762,7 +6807,7 @@ function alternarECAIE(){
 
 function alternarNHCTropical(){toggleTropicalNHC();sincronizarNHCPanel();actualizarEstadoBotonTropical();}
 function sincronizarNHCPanel(){document.getElementById('tropical-btn-nhc')?.classList.toggle('activo',!!tropicalNHCActivo);}
-function actualizarEstadoBotonTropical(){const b=document.getElementById('btn-ecmwf');b?.classList.toggle('activo',!!tropicalNHCActivo||dollyActivo||ecaieActivo||ecensActivo||WN_EXTRA.gefs.active||WN_EXTRA.genc.active);}
+function actualizarEstadoBotonTropical(){const b=document.getElementById('btn-ecmwf');b?.classList.toggle('activo',!!tropicalNHCActivo||sistemasNHCActivo||ecaieActivo||ecensActivo||WN_EXTRA.gefs.active||WN_EXTRA.genc.active);}
 function abrirPanelTropical(){document.getElementById('tropical-panel')?.classList.toggle('visible');sincronizarNHCPanel();actualizarEstadoBotonTropical();}
 function cerrarPanelTropical(){document.getElementById('tropical-panel')?.classList.remove('visible');}
 function cambiarHoraECAIE(delta){
@@ -7055,7 +7100,7 @@ function restaurarVistaECENS(){
 
 (function configurarTropicalIntegrado(){
  const b=document.getElementById('btn-ecmwf');
- if(b){b.removeAttribute('onclick');b.title='Abrir controles Tropical: Cono NHC, Tormenta Dolly, ECAIE, ECENS, GEFS y GENC';b.addEventListener('click',abrirPanelTropical);}
+ if(b){b.removeAttribute('onclick');b.title='Abrir controles Tropical: Cono NHC, Sistemas NHC, Datos Tropical, ECAIE, ECENS, GEFS y GENC';b.addEventListener('click',abrirPanelTropical);}
  document.getElementById('ecaie-ampliar')?.addEventListener('click',ampliarVistaECAIE);
  document.getElementById('ecaie-vista-anterior')?.addEventListener('click',restaurarVistaECAIE);
  document.getElementById('ecens-ampliar')?.addEventListener('click',ampliarVistaECENS);
@@ -7133,70 +7178,65 @@ function restaurarVistaECENS(){
   .satma-atcf-etiqueta.leaflet-tooltip:before{border-top-color:#222}
 </style>
 
-<script id="satma-dolly-cono-script">
-/* ===== SATMA · Tormenta Tropical Dolly (AL042026) · cono oficial NHC ===== */
-let dollyActivo=false;
-let dollyGrupo=null;
-let dollyCargando=false;
-let dollyTimer=null;
-const DOLLY_INTERVALO_MS=10*60*1000;
-const DOLLY_GIS_BASE='https://mapservices.weather.noaa.gov/tropical/rest/services/tropical/NHC_tropical_weather_summary/MapServer';
+<script id="satma-sistemas-nhc-script">
+/* ===== SATMA · Sistemas tropicales activos NHC/NOAA =====
+   Sin nombres codificados: consulta en tiempo real las capas Forecast Points (5),
+   Forecast Track (6) y Forecast Cone (7) del servicio Tropical Weather Summary.
+*/
+let sistemasNHCActivo=false;
+let sistemasNHCGrupo=null;
+let sistemasNHCCargando=false;
+let sistemasNHCTimer=null;
+let sistemasNHCUltimaCarga=null;
+const SISTEMAS_NHC_INTERVALO_MS=10*60*1000;
+const SISTEMAS_NHC_GIS_BASE='https://mapservices.weather.noaa.gov/tropical/rest/services/tropical/NHC_tropical_weather_summary/MapServer';
 
-function dollyEstado(texto,error=false){
-  const e=document.getElementById('dolly-estado');
-  if(e){e.textContent=texto;e.style.color=error?'#ffb4a8':'#f0dfcf';}
+function sistemasNHCEstado(texto,error=false){
+  const e=document.getElementById('sistemas-nhc-estado');
+  if(e){e.textContent=texto;e.style.color=error?'#ffb4a8':'#f5dddd';}
 }
-function dollyQuery(layerId){
+function sistemasNHCQuery(layerId){
   const p=new URLSearchParams({
-    where:"stormname='DOLLY' OR stormname='Dolly'",
-    outFields:'*',returnGeometry:'true',outSR:'4326',f:'geojson',_ts:String(Date.now())
+    where:'1=1',outFields:'*',returnGeometry:'true',outSR:'4326',f:'geojson',_ts:String(Date.now())
   });
-  return `${DOLLY_GIS_BASE}/${layerId}/query?${p.toString()}`;
+  return `${SISTEMAS_NHC_GIS_BASE}/${layerId}/query?${p.toString()}`;
 }
-async function dollyFetch(layerId){
-  const r=await fetch(dollyQuery(layerId),{cache:'no-store'});
+async function sistemasNHCFetch(layerId){
+  const r=await fetch(sistemasNHCQuery(layerId),{cache:'no-store'});
   if(!r.ok) throw new Error('NHC GIS HTTP '+r.status);
   const j=await r.json();
   if(j?.error) throw new Error(j.error.message||'Error NHC GIS');
   return j;
 }
-async function dollyFetchPuntos(){
-  let j=await dollyFetch(5);
-  if(j?.features?.length) return j;
-  // Respaldo: algunos avisos cambian la forma de identificar la tormenta en Forecast Points.
-  const p=new URLSearchParams({where:'1=1',outFields:'*',returnGeometry:'true',outSR:'4326',f:'geojson',_ts:String(Date.now())});
-  const r=await fetch(`${DOLLY_GIS_BASE}/5/query?${p.toString()}`,{cache:'no-store'});
-  if(!r.ok) throw new Error('NHC GIS HTTP '+r.status);
-  const all=await r.json();
-  if(all?.error) throw new Error(all.error.message||'Error NHC GIS');
-  const claves=['DOLLY','AL042026','AL04'];
-  all.features=(all.features||[]).filter(f=>{
-    const txt=JSON.stringify(f?.properties||{}).toUpperCase();
-    return claves.some(k=>txt.includes(k));
-  });
-  return all;
+function sistemasNHCNombre(p={}){
+  return String(p.stormname||p.STORMNAME||'Sistema tropical').trim()||'Sistema tropical';
 }
-function dollyPopup(p={}){
-  const nombre=p.stormname||'Dolly';
-  const tipo=p.stormtype||'Tormenta Tropical';
-  const adv=p.advisnum?`<br>Aviso NHC: ${p.advisnum}`:'';
+function sistemasNHCTipo(p={}){
+  return String(p.stormtype||p.STORMTYPE||p.tcdvlp||p.TCDVLP||'Ciclón tropical').trim()||'Ciclón tropical';
+}
+function sistemasNHCPopup(p={}){
+  const nombre=sistemasNHCNombre(p);
+  const tipo=sistemasNHCTipo(p);
+  const adv=(p.advisnum!==undefined&&p.advisnum!==null&&String(p.advisnum).trim()!=='')?`<br>Aviso NHC: ${p.advisnum}`:'';
   const fecha=p.advdate?`<br>${p.advdate}`:'';
-  return `<b>${tipo} ${nombre}</b>${adv}${fecha}<br><span style="font-size:.67rem;color:#ccc">Fuente: NHC/NOAA</span>`;
+  const viento=Number.isFinite(Number(p.maxwind))?`<br>Viento máx.: ${Number(p.maxwind)} kt`:'';
+  const pres=Number.isFinite(Number(p.mslp))&&Number(p.mslp)>0?` · ${Number(p.mslp)} hPa`:'';
+  return `<b>${tipo} ${nombre}</b>${adv}${fecha}${viento}${pres}<br><span style="font-size:.67rem;color:#ccc">Fuente: NHC/NOAA · datos activos</span>`;
 }
-function dollyPuntoIcono(){
+function sistemasNHCPuntoIcono(){
   return L.divIcon({
-    className:'dolly-punto-icono',
-    html:'<span class="dolly-punto-negro"></span>',
+    className:'nhc-sistema-punto-icono',
+    html:'<span class="nhc-sistema-punto"></span>',
     iconSize:[18,18],iconAnchor:[9,9]
   });
 }
-function dollyValorProp(p,nombres){
-  for(const n of nombres){if(p && p[n]!==undefined && p[n]!==null && String(p[n]).trim()!=='')return p[n];}
+function sistemasNHCValorProp(p,nombres){
+  for(const n of nombres){if(p&&p[n]!==undefined&&p[n]!==null&&String(p[n]).trim()!=='')return p[n];}
   return null;
 }
-function dollyParseFechaFlexible(v){
+function sistemasNHCParseFecha(v){
   if(v===undefined||v===null||String(v).trim()==='')return null;
-  if(typeof v==='number' || /^\d{10,13}$/.test(String(v).trim())){
+  if(typeof v==='number'||/^\d{10,13}$/.test(String(v).trim())){
     let n=Number(v);
     if(Number.isFinite(n)){
       if(String(Math.trunc(Math.abs(n))).length<=10)n*=1000;
@@ -7205,143 +7245,157 @@ function dollyParseFechaFlexible(v){
   }
   const txt=String(v).trim();
   let d=new Date(txt);if(!isNaN(d))return d;
-  let m=txt.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})?/);
+  const m=txt.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})?/);
   if(m){d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+(m[5]||0)));if(!isNaN(d))return d;}
-  // Formatos frecuentes NHC, p.ej. "11 AM AST Thu Aug 27 2026" / "Thu Aug 27 11 AM AST 2026".
   const limpio=txt.replace(/\b(AST|ADT|EDT|EST|UTC|GMT)\b/gi,'').replace(/\s+/g,' ').trim();
   d=new Date(limpio);if(!isNaN(d))return d;
   return null;
 }
-function dollyHorasPronostico(p={}){
-  // En Forecast Points del NHC, TAU es la cantidad de horas desde la hora válida/base.
-  const v=dollyValorProp(p,['tau','forecastHour','fcsthr','forecast_period']);
+function sistemasNHCHorasPronostico(p={}){
+  const v=sistemasNHCValorProp(p,['tau','forecastHour','fcsthr','forecast_period']);
   if(v===null)return null;
-  const m=String(v).match(/-?\d+(?:\.\d+)?/);
-  if(!m)return null;
-  const n=Number(m[0]);
-  return Number.isFinite(n)?n:null;
+  const m=String(v).match(/-?\d+(?:\.\d+)?/);if(!m)return null;
+  const n=Number(m[0]);return Number.isFinite(n)?n:null;
 }
-function dollyFechaCalculada(p={}){
-  // 1) Si NHC entrega una fecha completa específica para el punto, úsela directamente.
-  const full=dollyValorProp(p,['fldatelbl','fullDateLabel','full_date_label']);
-  const dFull=dollyParseFechaFlexible(full);
-  if(dFull)return dFull;
-
-  // 2) Algunos avisos entregan validtime ya correspondiente al punto.
-  const valid=dollyValorProp(p,['validtime','validTime','valid_time']);
-  const dValid=dollyParseFechaFlexible(valid);
-  const tau=dollyHorasPronostico(p);
-
-  // Si existe una fecha base del aviso, el cálculo preferido es base + TAU.
-  const adv=dollyValorProp(p,['advdate','advisoryDate','advisory_date']);
-  const dAdv=dollyParseFechaFlexible(adv);
-  if(dAdv && tau!==null){
-    return new Date(dAdv.getTime()+tau*3600000);
-  }
-
-  // Si no se pudo leer advdate, use validtime; si TAU es 0, es exacta.
-  // No sumamos TAU sobre validtime porque en algunas salidas NHC validtime ya es la hora del punto.
-  if(dValid)return dValid;
-
-  // 3) Último respaldo: fecha base conocida del Aviso #1 de Dolly + TAU.
-  // 27-08-2026 11 AM AST = 15:00 UTC. Solo se usa si NHC omite las fechas del registro.
-  if(tau!==null){
-    const baseFallback=new Date(Date.UTC(2026,7,27,15,0,0));
-    return new Date(baseFallback.getTime()+tau*3600000);
-  }
-  return null;
+function sistemasNHCFechaPronostico(p={}){
+  const full=sistemasNHCParseFecha(sistemasNHCValorProp(p,['fldatelbl','fullDateLabel','full_date_label']));
+  if(full)return full;
+  const tau=sistemasNHCHorasPronostico(p);
+  const adv=sistemasNHCParseFecha(sistemasNHCValorProp(p,['advdate','advisoryDate','advisory_date']));
+  if(adv&&tau!==null)return new Date(adv.getTime()+tau*3600000);
+  return sistemasNHCParseFecha(sistemasNHCValorProp(p,['validtime','validTime','valid_time']));
 }
-function dollyFormatoEtiquetaFechaHora(d){
-  if(!d || isNaN(d))return null;
-  const tz='America/Puerto_Rico'; // AST, misma hora civil que RD durante este periodo.
+function sistemasNHCFormatoFecha(d){
+  if(!d||isNaN(d))return null;
+  const tz='America/Santo_Domingo';
   const dia=d.toLocaleString('es-DO',{day:'2-digit',timeZone:tz});
   const mes=d.toLocaleString('es-DO',{month:'short',timeZone:tz}).replace('.','');
   const hora=d.toLocaleString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:tz}).replace(':00','').replace(/\s+/g,' ');
   const sem=d.toLocaleString('es-DO',{weekday:'short',timeZone:tz}).replace('.','');
   return `${dia} ${mes} · ${hora} ${sem}`;
 }
-function dollyEtiquetaPronostico(p={}){
-  const d=dollyFechaCalculada(p);
-  const txt=dollyFormatoEtiquetaFechaHora(d);
-  if(txt)return txt;
-
-  // Si por alguna razón la fecha no puede calcularse, aprovecha las etiquetas nativas del NHC.
-  const nativa=dollyValorProp(p,['fldatelbl','datelbl']);
+function sistemasNHCEtiquetaPronostico(p={}){
+  const fecha=sistemasNHCFormatoFecha(sistemasNHCFechaPronostico(p));
+  if(fecha)return fecha;
+  const nativa=sistemasNHCValorProp(p,['fldatelbl','datelbl']);
   if(nativa!==null)return String(nativa);
-  const periodo=dollyHorasPronostico(p);
+  const periodo=sistemasNHCHorasPronostico(p);
   return periodo!==null?`+${periodo} h`:'Pronóstico';
 }
-function dollyCrearGrupo(cono,track,puntos){
-  if(!mapa.getPane('dollyPuntosPane')){const p=mapa.createPane('dollyPuntosPane');p.classList.add('dolly-puntos-pane');p.style.zIndex='780';}
-  if(!mapa.getPane('dollyEtiquetaPane')){const p=mapa.createPane('dollyEtiquetaPane');p.classList.add('dolly-etiqueta-pane');p.style.zIndex='790';}
+function sistemasNHCAsegurarPanes(){
+  if(!mapa.getPane('nhcSistemaPuntosPane')){
+    const p=mapa.createPane('nhcSistemaPuntosPane');p.classList.add('nhc-sistema-puntos-pane');p.style.zIndex='780';
+  }
+  if(!mapa.getPane('nhcSistemaEtiquetaPane')){
+    const p=mapa.createPane('nhcSistemaEtiquetaPane');p.classList.add('nhc-sistema-etiqueta-pane');p.style.zIndex='790';
+  }
+}
+function sistemasNHCCrearGrupo(cono,track,puntos){
+  sistemasNHCAsegurarPanes();
   const g=L.layerGroup();
   if(cono?.features?.length){
     L.geoJSON(cono,{
       style:{color:'#d7191c',weight:2,opacity:.95,fillColor:'#f4f4f4',fillOpacity:.28},
-      onEachFeature:(f,l)=>l.bindPopup(dollyPopup(f.properties||{}))
+      onEachFeature:(f,l)=>l.bindPopup(sistemasNHCPopup(f.properties||{}))
     }).addTo(g);
   }
   if(track?.features?.length){
     L.geoJSON(track,{
       style:{color:'#d7191c',weight:2.5,opacity:1,dashArray:'7 5'},
-      onEachFeature:(f,l)=>l.bindPopup(dollyPopup(f.properties||{}))
+      onEachFeature:(f,l)=>l.bindPopup(sistemasNHCPopup(f.properties||{}))
     }).addTo(g);
   }
   if(puntos?.features?.length){
     L.geoJSON(puntos,{
-      pointToLayer:(f,latlng)=>L.marker(latlng,{icon:dollyPuntoIcono(),pane:'dollyPuntosPane',zIndexOffset:1000,riseOnHover:true}),
+      pointToLayer:(f,latlng)=>L.marker(latlng,{icon:sistemasNHCPuntoIcono(),pane:'nhcSistemaPuntosPane',zIndexOffset:1000,riseOnHover:true}),
       onEachFeature:(f,l)=>{
         const p=f.properties||{};
-        l.bindPopup(dollyPopup(p));
-        const etiqueta=dollyEtiquetaPronostico(p);
-        l.bindTooltip(etiqueta,{permanent:true,direction:'top',offset:[0,-13],className:'dolly-pronostico-etiqueta',opacity:1,pane:'dollyEtiquetaPane',interactive:false});
+        l.bindPopup(sistemasNHCPopup(p));
+        l.bindTooltip(sistemasNHCEtiquetaPronostico(p),{permanent:true,direction:'top',offset:[0,-13],className:'nhc-sistema-pronostico-etiqueta',opacity:1,pane:'nhcSistemaEtiquetaPane',interactive:false});
         l.on('add',()=>{try{l.openTooltip();}catch(e){}});
       }
     }).addTo(g);
   }
   return g;
 }
-async function cargarTormentaDolly(esAuto=false){
-  if(dollyCargando||!dollyActivo) return;
-  dollyCargando=true;
-  if(!esAuto)dollyEstado('Consultando cono oficial de Dolly en NHC/NOAA…');
-  try{
-    // NHC Tropical Weather Summary: 5=Forecast Points, 6=Forecast Track, 7=Forecast Cone.
-    const [puntos,track,cono]=await Promise.all([dollyFetchPuntos(),dollyFetch(6),dollyFetch(7)]);
-    if(!dollyActivo)return;
-    const total=(cono?.features?.length||0)+(track?.features?.length||0)+(puntos?.features?.length||0);
-    if(!total) throw new Error('El servicio NHC todavía no devolvió geometrías para Dolly.');
-    const nuevo=dollyCrearGrupo(cono,track,puntos);
-    if(dollyGrupo && mapa.hasLayer(dollyGrupo))mapa.removeLayer(dollyGrupo);
-    dollyGrupo=nuevo.addTo(mapa);
-    const ahora=new Date();
-    const np=puntos?.features?.length||0;
-    dollyEstado(`Dolly · cono NHC actualizado ${ahora.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'})} · ${np} puntos de pronóstico.`);
-    if(!esAuto){
-      try{
-        const capas=[];nuevo.eachLayer(l=>{if(l.getBounds)capas.push(l.getBounds());else if(l.getLatLng){const x=l.getLatLng();capas.push(L.latLngBounds(x,x));}});
-        if(capas.length){let b=capas[0];for(let i=1;i<capas.length;i++)b.extend(capas[i]);if(b.isValid())mapa.fitBounds(b.pad(.18),{maxZoom:7});}
-      }catch(_e){}
+function sistemasNHCLista(puntos,track,cono){
+  const m=new Map();
+  for(const gj of [puntos,track,cono]){
+    for(const f of (gj?.features||[])){
+      const p=f.properties||{};
+      const nombre=sistemasNHCNombre(p);
+      if(!m.has(nombre.toUpperCase()))m.set(nombre.toUpperCase(),{nombre,tipo:sistemasNHCTipo(p),basin:String(p.basin||'')});
     }
-  }catch(err){
-    console.error('[SATMA Dolly]',err);
-    dollyEstado('No se pudo cargar el cono de Dolly ahora: '+(err?.message||err),true);
-  }finally{dollyCargando=false;}
+  }
+  return [...m.values()];
 }
-function alternarTormentaDolly(){
-  dollyActivo=!dollyActivo;
-  document.getElementById('tropical-btn-dolly')?.classList.toggle('activo',dollyActivo);
-  const c=document.getElementById('dolly-controles');if(c)c.style.display=dollyActivo?'block':'none';
-  if(dollyActivo){
-    cargarTormentaDolly(false);
-    if(dollyTimer)clearInterval(dollyTimer);
-    dollyTimer=setInterval(()=>{if(dollyActivo&&!document.hidden)cargarTormentaDolly(true);},DOLLY_INTERVALO_MS);
+function sistemasNHCEsAtlantico(p={}){
+  const txt=`${p.basin||''} ${p.idp_source||''}`.toUpperCase();
+  return txt.includes('ATLANTIC')||/(^|\s)AL\d/.test(txt)||txt.trim().startsWith('AL');
+}
+function sistemasNHCAjustarVista(puntos,track,cono){
+  try{
+    const atlas=[];
+    for(const gj of [cono,track,puntos]){
+      for(const f of (gj?.features||[]))if(sistemasNHCEsAtlantico(f.properties||{}))atlas.push(f);
+    }
+    const usar=atlas.length?{type:'FeatureCollection',features:atlas}:{type:'FeatureCollection',features:[...(cono?.features||[]),...(track?.features||[]),...(puntos?.features||[])]};
+    if(!usar.features.length)return;
+    const capa=L.geoJSON(usar);
+    const b=capa.getBounds();
+    if(b.isValid())mapa.fitBounds(b.pad(.15),{maxZoom:7});
+  }catch(_e){}
+}
+async function cargarSistemasNHC(esAuto=false){
+  if(sistemasNHCCargando||!sistemasNHCActivo)return;
+  sistemasNHCCargando=true;
+  if(!esAuto)sistemasNHCEstado('Consultando sistemas tropicales activos en NHC/NOAA…');
+  try{
+    const [puntos,track,cono]=await Promise.all([sistemasNHCFetch(5),sistemasNHCFetch(6),sistemasNHCFetch(7)]);
+    if(!sistemasNHCActivo)return;
+    const total=(puntos?.features?.length||0)+(track?.features?.length||0)+(cono?.features?.length||0);
+    const sistemas=sistemasNHCLista(puntos,track,cono);
+    if(!total){
+      if(sistemasNHCGrupo&&mapa.hasLayer(sistemasNHCGrupo))mapa.removeLayer(sistemasNHCGrupo);
+      sistemasNHCGrupo=null;
+      sistemasNHCUltimaCarga=new Date();
+      sistemasNHCEstado('NHC: no hay ciclones tropicales activos con cono de pronóstico en este momento.');
+      return;
+    }
+    const nuevo=sistemasNHCCrearGrupo(cono,track,puntos);
+    if(sistemasNHCGrupo&&mapa.hasLayer(sistemasNHCGrupo))mapa.removeLayer(sistemasNHCGrupo);
+    sistemasNHCGrupo=nuevo.addTo(mapa);
+    sistemasNHCUltimaCarga=new Date();
+    const nombres=sistemas.length?sistemas.map(x=>x.nombre).join(', '):'sistema activo';
+    const hora=sistemasNHCUltimaCarga.toLocaleTimeString('es-DO',{hour:'2-digit',minute:'2-digit'});
+    sistemasNHCEstado(`NHC actualizado ${hora} · ${nombres} · ${(puntos?.features?.length||0)} puntos de pronóstico.`);
+    if(!esAuto)sistemasNHCAjustarVista(puntos,track,cono);
+  }catch(err){
+    console.error('[SATMA Sistemas NHC]',err);
+    sistemasNHCEstado('No se pudo consultar NHC ahora. Se conservará la última capa válida hasta la próxima actualización.',true);
+  }finally{sistemasNHCCargando=false;}
+}
+function alternarSistemasNHC(){
+  sistemasNHCActivo=!sistemasNHCActivo;
+  document.getElementById('tropical-btn-sistemas-nhc')?.classList.toggle('activo',sistemasNHCActivo);
+  const c=document.getElementById('sistemas-nhc-controles');if(c)c.style.display=sistemasNHCActivo?'block':'none';
+  if(sistemasNHCActivo){
+    cargarSistemasNHC(false);
+    if(sistemasNHCTimer)clearInterval(sistemasNHCTimer);
+    sistemasNHCTimer=setInterval(()=>{if(sistemasNHCActivo&&!document.hidden)cargarSistemasNHC(true);},SISTEMAS_NHC_INTERVALO_MS);
   }else{
-    if(dollyTimer){clearInterval(dollyTimer);dollyTimer=null;}
-    if(dollyGrupo&&mapa.hasLayer(dollyGrupo))mapa.removeLayer(dollyGrupo);
+    if(sistemasNHCTimer){clearInterval(sistemasNHCTimer);sistemasNHCTimer=null;}
+    if(sistemasNHCGrupo&&mapa.hasLayer(sistemasNHCGrupo))mapa.removeLayer(sistemasNHCGrupo);
   }
   actualizarEstadoBotonTropical?.();
 }
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&sistemasNHCActivo){
+    const ultima=sistemasNHCUltimaCarga?sistemasNHCUltimaCarga.getTime():0;
+    if(Date.now()-ultima>5*60*1000)cargarSistemasNHC(true);
+  }
+});
+window.addEventListener('online',()=>{if(sistemasNHCActivo)cargarSistemasNHC(true);});
 </script>
 
 <script id="satma-atcf-datos-tropical-script">

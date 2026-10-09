@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<!-- V14 GRANIZO PROBABLE AJUSTADO: IDAC + GFS + GLM -->
 <title>Radar RD · Tiempo real</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -11,6 +12,7 @@ html,body,#map{height:100%;margin:0;background:#07111c;font-family:Arial,sans-se
  background:rgba(3,17,28,.96);color:#fff;border:1px solid #5e788b;border-radius:8px;
  padding:8px 13px;text-align:center;min-width:560px}
 #title{font-weight:900;font-size:17px}#status{font-size:11px;margin-top:3px}
+#radarHealth{font-size:11px;font-weight:700;color:#ffd374;margin-top:4px;max-width:620px}
 #panel{position:absolute;z-index:1003;left:10px;bottom:10px;width:330px;background:rgba(3,17,28,.96);
  color:#fff;border:1px solid #5e788b;border-radius:8px;padding:9px;font-size:11px}
 .row{display:flex;gap:4px;align-items:center;margin:4px 0;flex-wrap:wrap}
@@ -90,6 +92,8 @@ input[type=range]{width:155px}
 #convToggle{background:#168a3b;color:#fff;border:1px solid #7bdc9a;border-radius:5px;padding:5px 9px;font-weight:900;cursor:pointer}
 #convLayerInfo{font-size:10px;color:#b9ccd8;margin-left:5px}
 .conv-cell-label{background:#7b2cbf;color:white;border:1px solid #fff;border-radius:10px;padding:1px 5px;font-weight:900;box-shadow:0 1px 5px #000}
+.hail-auto-label{background:#050505!important;color:#fff!important;border:2px solid #ffd400!important;border-radius:6px!important;padding:2px 6px!important;font-weight:900!important;font-size:12px!important;box-shadow:0 1px 6px #000!important;white-space:nowrap!important}
+.hail-auto-label:before{border-top-color:#ffd400!important}
 @media(max-width:900px){#convPanel{left:8px;right:8px;width:auto;max-height:44vh}#convBtn{bottom:108px}}
 </style>
 
@@ -150,6 +154,7 @@ input[type=range]{width:155px}
 <div id="top">
  <div id="title">RADAR RD · ACTUALIZACIÓN AUTOMÁTICA · TIEMPO REAL</div>
  <div id="status">Cargando capas...</div>
+ <div id="radarHealth">Comprobando la llegada de nuevos barridos IDAC...</div>
 </div>
 <div id="radarIntensityScale" aria-label="Escala de intensidad radar">
  <div class="risTitle">INTENSIDAD RADAR</div>
@@ -179,9 +184,8 @@ input[type=range]{width:155px}
 <div id="convPanel">
  <h3>5 CELDAS CONVECTIVAS MÁS FUERTES</h3>
  <div id="convTime">Barrido: --</div>
- <div><button id="convToggle" type="button">ACTIVADO</button><span id="convLayerInfo">Top 5 · prueba tropical conservadora · granizo ≥55 dBZ persistente</span></div>
+ <div><button id="convToggle" type="button">ACTIVADO</button><span id="convLayerInfo">GRANIZO PROBABLE · radar IDAC + ambiente GFS + actividad GLM</span></div>
  <div id="convSummary">Esperando análisis...</div>
- <div id="convHailStatus" style="margin:6px 0;padding:6px 7px;border:1px solid #6d596f;border-radius:5px;background:#17121b;font-weight:900;color:#d8e2e8">Granizo: analizando celdas...</div>
  <div id="convList"></div>
  <div style="margin-top:9px;font-weight:900;color:#9fe5ff;border-top:1px solid #375365;padding-top:8px">BOLETÍN RADAR AUTOMÁTICO</div>
  <div id="bulletinRadar">Esperando datos...</div>
@@ -258,30 +262,75 @@ function satmaUTC(ms,withSuffix=true){
 // El panel de calibración fue retirado para operación normal.
 // Georreferenciación ajustada al encuadre geográfico real del visor IDAC.
 // Calibrada con referencias visibles de Hispaniola, Puerto Rico y BVI.
-const RADAR_BOUNDS=[[12.743945,-81.767979],[23.863055,-61.158021]]; // calibración IDAC + ajuste fino horizontal adicional 1% (vertical y centro sin cambios)
+// Calibracion de la imagen del IDAC 1920 x 898 - 08/oct/2026.
+// Referencias contrastadas: Cap-Haitien, Gonaives, Mao, Moca,
+// Azua, San Pedro de Macoris, Barahona, Jacmel, Arecibo y Ponce.
+// Se utiliza una unica calibracion para eco, mascaras municipales,
+// seguimiento convectivo, productos y exportacion de video.
+const RADAR_BOUNDS=[[15.133872,-79.042491],[22.521090,-62.306637]];
 const ECHO_OPACITY=.92;
 function currentBounds(){
-  return RADAR_BOUNDS;
+  const f=data&&data.frames&&data.frames[idx];
+  return f&&f.source==='IDAC SDQ / POP / PUJ'?[[14.33,-75.13],[23.75,-64.22]]:RADAR_BOUNDS;
 }
+// Retira solo la mascara gris grande conectada al borde izquierdo del PNG.
+// No altera colores de reflectividad ni desplaza la capa.
+function quitarMascaraGrisIzquierda(pixels,w,h){
+ const n=w*h,seen=new Uint8Array(n),queue=new Int32Array(n);let removed=0;
+ function gris(p){const j=p*4,r=pixels[j],g=pixels[j+1],b=pixels[j+2];
+  return pixels[j+3]>0&&Math.max(r,g,b)-Math.min(r,g,b)<=18&&Math.min(r,g,b)>=50&&Math.max(r,g,b)<=250;
+ }
+ // El PNG puede tener margen transparente: buscar componentes, no solo su borde.
+ for(let seed=0;seed<n;seed++){
+  if(seen[seed])continue;seen[seed]=1;if(!gris(seed))continue;
+  let head=0,tail=1,minX=seed%w;queue[0]=seed;
+  function add(q){if(seen[q])return;seen[q]=1;if(gris(q)){queue[tail++]=q;minX=Math.min(minX,q%w)}}
+  while(head<tail){const q=queue[head++],x=q%w,y=Math.floor(q/w);
+   if(x>0)add(q-1);if(x<w-1)add(q+1);if(y>0)add(q-w);if(y<h-1)add(q+w);
+  }
+  // Solo areas grises extensas del sector izquierdo; conservar marcas pequenas.
+  if(minX<w*.35&&tail>=Math.max(16,Math.ceil(n*.005))){
+   for(let k=0;k<tail;k++)pixels[queue[k]*4+3]=0;removed+=tail;
+  }
+ }
+ return removed;
+}
+const cacheEcosLimpios=new Map();let revisionEcoVisible=0;
+function ecoSinFondoIzquierdo(f){
+ const url='capas/'+f.layer;
+ if(f.source!=='IDAC SDQ / POP / PUJ')return Promise.resolve(url);
+ if(cacheEcosLimpios.has(url))return cacheEcosLimpios.get(url);
+ const job=new Promise((resolve,reject)=>{const im=new Image();
+  im.onload=()=>{try{const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;
+   const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(im,0,0);
+   const rgba=ctx.getImageData(0,0,c.width,c.height);quitarMascaraGrisIzquierda(rgba.data,c.width,c.height);
+   ctx.putImageData(rgba,0,0);resolve(c.toDataURL('image/png'));
+  }catch(e){reject(e)}};
+  im.onerror=()=>reject(new Error('No se pudo cargar '+f.layer));im.src=url;
+ });
+ cacheEcosLimpios.set(url,job);
+ while(cacheEcosLimpios.size>30)cacheEcosLimpios.delete(cacheEcosLimpios.keys().next().value);
+ job.catch(()=>cacheEcosLimpios.delete(url));return job;
+}
+
 function applyLayers(){
  if(!data||!data.frames||!data.frames.length)return;
  const f=data.frames[idx];
  const b=currentBounds();
  if(origLayer){map.removeLayer(origLayer);origLayer=null}
+ const revision=++revisionEcoVisible;
  if(showEcho){
-  const url='capas/'+f.layer;
-  if(!echoLayer){
-   echoLayer=L.imageOverlay(url,b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
-  }else{
-   echoLayer.setBounds(b);
-   echoLayer.setOpacity(ECHO_OPACITY);
-   echoLayer.setUrl(url);
-  }
- }else if(echoLayer){
-  map.removeLayer(echoLayer); echoLayer=null;
- }
+  ecoSinFondoIzquierdo(f).then(url=>{
+   if(revision!==revisionEcoVisible||!showEcho)return;
+   if(!echoLayer){
+    echoLayer=L.imageOverlay(url,b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
+   }else{
+    echoLayer.setBounds(b);echoLayer.setOpacity(ECHO_OPACITY);echoLayer.setUrl(url);
+   }
+  }).catch(e=>{console.error('Capa radar:',e);});
+ }else if(echoLayer){map.removeLayer(echoLayer);echoLayer=null;}
  const _fi0=$('fi'); if(_fi0) _fi0.textContent='';
- const _st0=$('status'); if(_st0) _st0.textContent='Radar propiedad del IDAC, modificado por Claudio Martinez';
+ const _st0=$('status'); if(_st0) _st0.textContent=(f.source==='Barbados Weather'?'Radar · mosaico Barbados Weather · respaldo':'Radar propiedad del IDAC')+', modificado por Claudio Martinez';
 }
 const prev0=$('prev'), next0=$('next');
 if(prev0) prev0.onclick=()=>{if(!data)return;idx=(idx-1+data.frames.length)%data.frames.length;applyLayers()};
@@ -343,7 +392,7 @@ white-space:nowrap}
 #anim115 button{margin:2px;padding:5px 9px;background:#12354a;color:white;
 border:1px solid #8aa5b6;border-radius:4px;cursor:pointer}
 #anim115 .on{background:#f2b800;color:#111;font-weight:bold}
-#aInfo115{display:none!important}
+#aInfo115{display:inline-block;max-width:156px;font-size:10px;color:#bcd9e9;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #time115{display:inline-block;min-width:175px;text-align:center;font-weight:900;font-size:22px;line-height:1.1;
 padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;letter-spacing:.8px}
 #speed115{margin-left:5px}
@@ -400,8 +449,8 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  }
  function clock115(f){
    const e=epoch115(f);
-   if(!e || !Number.isFinite(e)) return '--:--:--';
-   return satmaUTC(e,true);
+   if(!e || !Number.isFinite(e)) return '--:-- UTC';
+   return satmaUTC(e,false).slice(0,5)+' UTC';
  }
  function refresh124(){
    const n=total115(), f=frame115();
@@ -486,151 +535,164 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 <div id="preload123">Precargando ecos: 0/0</div>
 <script>
 (function(){
- // MOTOR DE ANIMACION RD SIMPLIFICADO CON EL PATRON TJUA.
- // No modifica calibracion, productos, granizo, celdas, municipios ni exportacion MP4.
- let ready123=false;
- let loaded123=0;
- let total123=0;
- let cache123=[];
- let timer123=null;
- let playing123=false;
- let delay123=900; // Movimiento suave: cuadros precargados y reloj único
+ // Radar RD SATMA: animacion real, tolerante a cuadros incompletos.
+ // No modifica el JSON, la georreferenciacion ni los intervalos del IDAC.
+ const el = id => document.getElementById(id);
+ const MAX_CACHE = 32;
+ const cache = new Map();
+ let delayMs = 900;
+ let playing = false;
+ let playRequested = false;
+ let timer = null;
+ let preparing = false;
+ let lastKey = '';
+ let pending = 0;
 
- function frameUrl123(f){
-   return 'capas/'+f.layer;
+ function frames(){
+   return data && Array.isArray(data.frames) ? data.frames : [];
  }
- function preload123(){
-   if(!data || !Array.isArray(data.frames) || !data.frames.length){
-     setTimeout(preload123,150);
+ function frameKey(f){ return String((f && (f.layer || f.token)) || ''); }
+ function validIndices(){
+   const result=[],seen = new Set();
+   frames().forEach((f,i)=>{
+     if(!f || !f.layer)return;
+     const key = frameKey(f);
+     if(seen.has(key))return;
+     seen.add(key);
+     const cached=cache.get(key);
+     if(cached && cached.status==='ok') result.push(i);
+   });
+   return result;
+ }
+ function updateInfo(message){
+   const ready=validIndices().length, total=frames().length;
+   const info=el('aInfo115');
+   if(info)info.textContent=message || (ready>=2
+       ? ready+' barridos · movimiento real'
+       : total===0 ? 'Esperando radar'
+       : pending>0 ? 'Preparando '+(total-pending)+'/'+total
+       : ready===1 ? '1 barrido · espere otro' : 'Sin barridos utilizables');
+   const b=el('aPlay115');
+   if(b){
+     b.textContent=playing?'❚❚ Pausa':playRequested?'⌛ Cargando':'▶ Reproducir';
+     b.title=ready>=2 ? 'Animar barridos originales IDAC por orden UTC'
+       : 'Se necesitan 2 o mas barridos IDAC distintos y descargados';
+   }
+   const pb=el('preload123');
+   if(pb)pb.textContent=ready+' barridos descargados de '+total;
+ }
+ function selectNext(direction){
+   const ready=validIndices();
+   if(!ready.length)return false;
+   let at=ready.indexOf(idx);
+   if(at===-1){
+     at=direction>0?-1:0;
+   }
+   idx=ready[(at+direction+ready.length)%ready.length];
+   applyLayers();
+   if(typeof window.refresh124==='function')window.refresh124();
+   updateInfo();
+   return true;
+ }
+ function clearTimer(){if(timer!==null){clearTimeout(timer);timer=null;}}
+ function stop(){
+   playing=false;
+   playRequested=false;
+   clearTimer();
+   updateInfo();
+ }
+ function tick(){
+   if(!playing)return;
+   const ready=validIndices();
+   if(ready.length<2){stop();return;}
+   selectNext(+1);
+   const pause=idx===ready[ready.length-1]?Math.max(1500,delayMs*1.5):delayMs;
+   timer=setTimeout(tick,pause);
+ }
+ function start(){
+   if(validIndices().length<2){
+     playRequested=frames().length>=2 && pending>0;
+     updateInfo();
+     prepare();
      return;
    }
-   total123=data.frames.length;
-   cache123=new Array(total123);
-   (function(){const e=document.getElementById('preload123');if(e)e.textContent='Precargando ecos: 0/'+total123;})();
-
-   data.frames.forEach((f,i)=>{
+   playRequested=false;
+   playing=true;
+   clearTimer();
+   // Mostrar inmediatamente un barrido anterior para confirmar el movimiento.
+   selectNext(+1);
+   updateInfo();
+   timer=setTimeout(tick,delayMs);
+ }
+ function prepare(){
+   const current=frames();
+   if(!current.length){updateInfo();return;}
+   const sig=current.map(frameKey).join('|');
+   // Revalidar la lista cada vez que llega un JSON diferente.
+   lastKey=sig;
+   let newLoads=0;
+   current.forEach(f=>{
+     if(!f || !f.layer)return;
+     const key=frameKey(f);
+     if(cache.has(key))return;
+     newLoads++; pending++;
      const im=new Image();
-     im.onload=im.onerror=function(){
-       loaded123++;
-       cache123[i]=im;
-       (function(){const e=document.getElementById('preload123');if(e)e.textContent='Precargando ecos: '+loaded123+'/'+total123;})();
-       if(loaded123>=total123){
-         // Eliminar barridos consecutivos prácticamente duplicados antes de animar.
-         // Se compara una muestra reducida del eco; NO se interpola ni se inventa movimiento.
-         function firmaImagen123(img){
-           const W=120,H=80,c=document.createElement('canvas'); c.width=W;c.height=H;
-           const x=c.getContext('2d',{willReadFrequently:true});
-           x.clearRect(0,0,W,H); x.drawImage(img,0,0,W,H);
-           return x.getImageData(0,0,W,H).data;
-         }
-         function similitud123(a,b){
-           if(!a||!b||a.length!==b.length)return 0;
-           let iguales=0,total=0;
-           for(let k=0;k<a.length;k+=4){
-             // Ignorar fondo transparente; comparar presencia/color de eco.
-             const aa=a[k+3],ba=b[k+3];
-             if(aa<35&&ba<35)continue;
-             total++;
-             if(Math.abs(a[k]-b[k])<=10 && Math.abs(a[k+1]-b[k+1])<=10 &&
-                Math.abs(a[k+2]-b[k+2])<=10 && Math.abs(aa-ba)<=15) iguales++;
-           }
-           return total?iguales/total:1;
-         }
-         const keep=[], keepImgs=[];
-         let prevSig=null;
-         for(let i=0;i<data.frames.length;i++){
-           const im=cache123[i], sig=im?firmaImagen123(im):null;
-           const sim=(prevSig&&sig)?similitud123(prevSig,sig):0;
-           // 99.8%: sólo descarta cuadros casi idénticos, sin borrar evolución meteorológica real.
-           if(!prevSig || !sig || sim<0.998){
-             keep.push(data.frames[i]); keepImgs.push(im); prevSig=sig;
-           }
-         }
-         if(keep.length>=2 && keep.length<data.frames.length){
-           data.frames=keep; cache123=keepImgs; total123=keep.length;
-           idx=Math.min(idx,total123-1);
-         }
-         ready123=true;
-         const box=document.getElementById('preload123');
-         box.textContent='Ecos listos: '+total123+' barridos útiles · orden cronológico';
-         box.classList.add('ok'); if(typeof window.refresh124==='function') window.refresh124();
-       }
-     };
-     im.src=frameUrl123(f)+'?preload='+Date.now()+'&i='+i;
-   });
- }
-
- function total(){ return data&&Array.isArray(data.frames)?data.frames.length:0; }
- function sync124(){
-   if(typeof window.refresh124==='function') window.refresh124();
- }
- function show(i){
-   const n=total();
-   if(!n)return;
-   idx=(i+n)%n;
-   applyLayers();
-   sync124();
- }
- function next(){
-   const n=total(); if(!n)return;
-   show(idx===n-1?0:idx+1);
- }
-
- function stop(){
-   playing123=false;
-   if(timer123){clearInterval(timer123);timer123=null;}
-   const b=document.getElementById('aPlay115');
-   if(b)b.textContent='▶ Reproducir';
- }
- function startTJUA(){
-   if(!ready123 || total()<2)return;
-   playing123=true;
-   const b=document.getElementById('aPlay115');
-   if(b)b.textContent='❚❚ Pausa';
-   if(timer123)clearInterval(timer123);
-   // Motor simple tipo TJUA: un solo reloj, siempre antiguo → reciente → antiguo.
-   timer123=setInterval(function(){ next(); },delay123);
- }
-
- function replacePlayback(){
-   const play=document.getElementById('aPlay115');
-   const prev=document.getElementById('aPrev115');
-   const nextb=document.getElementById('aNext115');
-   if(!play){setTimeout(replacePlayback,150);return;}
-
-   play.onclick=function(){
-     if(!ready123){
-       (function(){const e=document.getElementById('preload123');if(e)e.textContent='Espere: terminando precarga '+loaded123+'/'+total123;})();
-       return;
+     const item={status:'loading',im};
+     cache.set(key,item);
+     let done=false;
+     const timeout=setTimeout(()=>complete(false),9000);
+     function complete(ok){
+       if(done)return;
+       done=true;
+       clearTimeout(timeout);
+       item.status=ok?'ok':'error';
+       pending=Math.max(0,pending-1);
+       updateInfo();
+       if(playRequested && validIndices().length>=2)start();
      }
-     if(playing123){stop();return;}
-     startTJUA();
-   };
-   if(prev)prev.onclick=function(){stop();show(idx-1);};
-   if(nextb)nextb.onclick=function(){stop();show(idx+1);};
-
-   const slow=document.getElementById('spSlow115');
-   const norm=document.getElementById('spNorm115');
-   const fast=document.getElementById('spFast115');
-   function setSpeed(ms,id){
-     delay123=ms;
-     ['spSlow115','spNorm115','spFast115'].forEach(function(x){var e=document.getElementById(x);if(e)e.classList.remove('on');});
-     var e=document.getElementById(id); if(e)e.classList.add('on');
-     if(playing123){ if(timer123)clearInterval(timer123); timer123=setInterval(function(){next();},delay123); }
+     im.onload=()=>complete(!!(im.naturalWidth&&im.naturalHeight));
+     im.onerror=()=>complete(false);
+     im.src='capas/'+f.layer+'?anim='+encodeURIComponent(key);
+   });
+   // Limitar memoria; no borrar cuadros referenciados por el JSON actual.
+   const keysCurrent=new Set(current.map(frameKey));
+   for(const [k,v] of cache){
+     if(cache.size<=MAX_CACHE)break;
+     if(!keysCurrent.has(k) && v.status!=='loading')cache.delete(k);
    }
-   if(slow)slow.onclick=function(){setSpeed(1600,'spSlow115');};
-   if(norm)norm.onclick=function(){setSpeed(900,'spNorm115');};
-   if(fast)fast.onclick=function(){setSpeed(400,'spFast115');};
-
-   // Los botones originales de la esquina inferior derecha usan el mismo índice maestro.
-   const prevRight=document.getElementById('prev');
-   const nextRight=document.getElementById('next');
-   if(prevRight)prevRight.onclick=function(){stop();show(idx-1);};
-   if(nextRight)nextRight.onclick=function(){stop();show(idx+1);};
+   updateInfo();
+   if(playRequested && validIndices().length>=2)start();
  }
+ function speed(ms,id){
+   delayMs=ms;
+   ['spSlow115','spNorm115','spFast115'].forEach(x=>{
+     const b=el(x);if(b)b.classList.toggle('on',x===id);
+   });
+   if(playing){clearTimer();timer=setTimeout(tick,delayMs);}
+ }
+ const b=el('aPlay115');
+ if(b)b.onclick=()=>playing || playRequested ? stop() : start();
+ const prev=el('aPrev115'), next=el('aNext115');
+ if(prev)prev.onclick=()=>{stop();selectNext(-1);};
+ if(next)next.onclick=()=>{stop();selectNext(+1);};
+ // El visor dispone de dos pares de controles; usar el mismo motor.
+ const prev2=el('prev'),next2=el('next');
+ if(prev2)prev2.onclick=()=>{stop();selectNext(-1);};
+ if(next2)next2.onclick=()=>{stop();selectNext(+1);};
+ const slow=el('spSlow115'), norm=el('spNorm115'), fast=el('spFast115');
+ if(slow)slow.onclick=()=>speed(1600,'spSlow115');
+ if(norm)norm.onclick=()=>speed(900,'spNorm115');
+ if(fast)fast.onclick=()=>speed(400,'spFast115');
 
- preload123();
- replacePlayback();
+ // Llamada por recarga de datos cada 120 s. No reiniciar la animacion en cada revision.
+ window.satmaRadarFramesChanged=function(){
+   prepare();
+   if(playing && validIndices().length<2)stop();
+ };
+ const wait=setInterval(()=>{
+   if(frames().length){clearInterval(wait);prepare();}
+ },200);
+ updateInfo();
 })();
 </script>
 
@@ -638,8 +700,66 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 <script>
 (function(){
  let generation13=null;
+ let displayedGeneration13=null;
  let sig13='';
  let busy13=false;
+ let pollBusy13=false;
+
+ function tokenTime13(token){
+   const c=String(token||'').match(/\/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})\.png/);
+   if(c)return Date.UTC(+c[1],+c[2]-1,+c[3],+c[4],+c[5]);
+   const m=String(token||'').match(/(\d{13}|\d{10})/);
+   if(!m)return 0;
+   return m[1].length===10?Number(m[1])*1000:Number(m[1]);
+ }
+ function utc13(ms){return ms?satmaUTC(ms,false).slice(0,5)+' UTC':'--:-- UTC';}
+ function showMonitorHealth13(s){
+   const el=document.getElementById('radarHealth');
+   if(!el)return;
+   const fs=data&&Array.isArray(data.frames)?data.frames:[];
+   const local=fs.length?radarFrameEpoch(fs[fs.length-1]):0;
+   const remote=tokenTime13(s.latest_remote);
+   const check=Number(s.last_check_epoch||0)*1000;
+   const now=Date.now();
+   const age=check?Math.max(0,Math.round((now-check)/60000)):null;
+   const period=Number(s.check_seconds||60);
+   const source=s.source||"IDAC";
+   let msg='',color='#ffe08a';
+   if(!check || now-check>Math.max(180000,period*5000)){
+     msg='MONITOR SIN REVISIÓN RECIENTE'+(age===null?'':' · hace '+age+' min');
+     color='#ff7777';
+   }else if(remote && local && remote>local+15000){
+     msg='BARRIDO PENDIENTE · '+source+' '+utc13(remote)+' · visor '+utc13(local);
+     color='#ff7777';
+   }else if(local && now-local>15*60000){
+     msg='SIN BARRIDO RECIENTE · visor '+utc13(local)+
+         ' · '+source+' detectado '+utc13(remote)+' · revisión hace '+age+' min';
+     color='#ffca71';
+   }else{
+     msg=source+' '+utc13(remote)+' · visor '+utc13(local)+
+         ' · revisión automática hace '+age+' min';
+     color='#9fe6ab';
+   }
+   if(s.updating)msg+=' · procesando...';
+   if(String(s.message||'').toLowerCase().indexOf('error')>=0){
+     msg+=' · '+String(s.message).slice(0,85);
+     color='#ff7777';
+   }
+   el.textContent=msg;
+   el.style.color=color;
+ }
+
+ async function fetchJSON13(url,timeoutMs){
+   const controller=new AbortController();
+   const timer=setTimeout(()=>controller.abort(),timeoutMs||8000);
+   try{
+     const r=await fetch(url,{cache:'no-store',signal:controller.signal});
+     if(!r.ok)throw new Error('HTTP '+r.status+' · '+url.split('?')[0]);
+     return await r.json();
+   }finally{
+     clearTimeout(timer);
+   }
+ }
 
  function fmtEpoch13(e){
    if(!e)return '--';
@@ -650,35 +770,53 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
    return (j&&Array.isArray(j.frames)) ? j.frames.map(x=>String(x.token||x.layer||'')).join('|') : '';
  }
 
+ // Precargar SOLO el último barrido, con tiempo máximo. Antes se esperaba
+ // indefinidamente a todas las imágenes y se bloqueaba el monitor de la página.
  async function preloadNew13(j){
    const fs=(j&&Array.isArray(j.frames))?j.frames:[];
-   await Promise.all(fs.map((f,i)=>new Promise(resolve=>{
+   if(!fs.length || !fs[fs.length-1].layer)return false;
+   const f=fs[fs.length-1];
+   return await new Promise(resolve=>{
      const im=new Image();
-     im.onload=im.onerror=resolve;
-     im.src='capas/'+f.layer+'?auto13='+Date.now()+'&i='+i;
-   })));
+     let completed=false;
+     const timer=setTimeout(()=>finish(false),6500);
+     function finish(ok){
+       if(completed)return;
+       completed=true;
+       clearTimeout(timer);
+       im.onload=im.onerror=null;
+       resolve(ok);
+     }
+     im.onload=()=>finish(true);
+     im.onerror=()=>finish(false);
+     im.src='capas/'+f.layer+'?auto13='+Date.now();
+   });
  }
 
  async function reloadRadar13(){
    if(busy13)return;
    busy13=true;
    try{
-     const j=await fetch('radar_rd.json?auto13='+Date.now(),{cache:'no-store'}).then(r=>{
-       if(!r.ok)throw new Error('HTTP '+r.status);
-       return r.json();
-     });
+     const j=await fetchJSON13('radar_rd.json?auto13='+Date.now(),8000);
      ordenarBarridosCronologicamente(j);
      const ns=framesSig13(j);
-     if(ns && ns!==sig13){
-       await preloadNew13(j);
+     // También reconocer reprocesamientos del mismo token si cambió generation.
+     const changedGeneration=(displayedGeneration13!==null &&
+       generation13!==null && generation13!==displayedGeneration13);
+     if(ns && (ns!==sig13 || changedGeneration)){
+       if(!(await preloadNew13(j)))
+         throw new Error('Imagen del último barrido no disponible; reintento en 120 s');
        data=j;
        sig13=ns;
        idx=Math.max(0,data.frames.length-1);
        applyLayers();
        if(typeof window.refresh124==='function')window.refresh124();
+       if(typeof window.satmaRadarFramesChanged==='function')window.satmaRadarFramesChanged();
        document.getElementById('autoState13').textContent='Nuevos barridos incorporados al visor.';
        document.getElementById('autoState13').className='line ok';
      }
+     if(displayedGeneration13===null || (ns && ns===sig13))
+       displayedGeneration13=generation13;
    }catch(e){
      document.getElementById('autoState13').textContent='Error recargando visor: '+e.message;
    }finally{
@@ -687,8 +825,10 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  }
 
  async function poll13(){
+   if(pollBusy13)return;
+   pollBusy13=true;
    try{
-     const s=await fetch('auto_status.json?t='+Date.now(),{cache:'no-store'}).then(r=>r.json());
+     const s=await fetchJSON13('auto_status.json?t='+Date.now(),8000);
      const st=document.getElementById('autoState13');
      st.textContent=s.message||'Monitor activo.';
      st.className='line '+(s.updating?'updating':'ok');
@@ -697,12 +837,17 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
      document.getElementById('autoUpdate13').textContent=
        'Última actualización: '+fmtEpoch13(s.last_update_epoch);
 
-     // ONLINE: comprobar radar_rd.json en cada ciclo.
+     // LOCAL Y ONLINE: revisar estado y radar_rd.json cada 120 segundos desde el navegador.
      // Así el visor no depende solamente del contador generation.
      generation13=Number(s.generation||0);
      await reloadRadar13();
+     showMonitorHealth13(s);
    }catch(e){
      document.getElementById('autoState13').textContent='Esperando servidor automático...';
+     const h=document.getElementById('radarHealth');
+     if(h){h.textContent='SIN ESTADO DE MONITOR · '+e.message;h.style.color='#ff7777';}
+   }finally{
+     pollBusy13=false;
    }
  }
 
@@ -724,7 +869,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  },150);
 
  poll13();
- setInterval(poll13,15000);
+ setInterval(poll13,120000);
 })();
 </script>
 
@@ -742,8 +887,6 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 
  let muniLayer=null;
  const muniFeatureStats=new Map();
-  let muniLayer=null;
-  const muniFeatureStats=new Map();
   function ensureMuniLayer(){}
   function refreshMunicipalityLayer(){}
 
@@ -812,7 +955,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
  }
 
  function pixelForLonLat(lon,lat,w,h){
-   const b=RADAR_BOUNDS;
+   const b=currentBounds();
    const west=b[0][1], east=b[1][1], south=b[0][0], north=b[1][0];
    const x=(lon-west)/(east-west)*w;
    const yn=mercY(north), ys=mercY(south), y=mercY(lat);
@@ -822,7 +965,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 
  function buildMask(w,h){
    if(!geo)return false;
-   const key=w+'x'+h+'|'+JSON.stringify(RADAR_BOUNDS);
+   const key=w+'x'+h+'|'+JSON.stringify(currentBounds());
    if(maskCanvas && maskKey===key)return true;
 
    maskCanvas=document.createElement('canvas');
@@ -1081,8 +1224,8 @@ btn.onclick=function(){
  }
 
  function radarRectPx(bbox){
-   const south=RADAR_BOUNDS[0][0], west=RADAR_BOUNDS[0][1];
-   const north=RADAR_BOUNDS[1][0], east=RADAR_BOUNDS[1][1];
+   const south=currentBounds()[0][0], west=currentBounds()[0][1];
+   const north=currentBounds()[1][0], east=currentBounds()[1][1];
    const sw=merc(west,south);
    const ne=merc(east,north);
    const minX=bbox[0], minY=bbox[1], maxX=bbox[2], maxY=bbox[3];
@@ -1327,7 +1470,7 @@ btn.onclick=function(){
  }
  function mercY(lat){const cl=Math.max(-85.05112878,Math.min(85.05112878,lat)),q=Math.sin(cl*Math.PI/180);return .5-Math.log((1+q)/(1-q))/(4*Math.PI)}
  function lonLat(x,y,w,h){
-   const b=RADAR_BOUNDS, west=b[0][1],east=b[1][1],south=b[0][0],north=b[1][0];
+   const b=currentBounds(), west=b[0][1],east=b[1][1],south=b[0][0],north=b[1][0];
    const lon=west+(x/w)*(east-west), yn=mercY(north),ys=mercY(south),my=yn+(y/h)*(ys-yn);
    const lat=(180/Math.PI)*Math.atan(Math.sinh(Math.PI*(1-2*my)));
    return [lat,lon];
@@ -1335,14 +1478,19 @@ btn.onclick=function(){
  function severe(r,g,b,a){
    if(a<40)return 0;
 
-   // 55-60 dBZ aprox.: violeta/magenta. Clase máxima.
+   // V13: los píxeles negros NO se usan para diagnosticar granizo.
+   // El detector físico se basa en reflectividad, persistencia y ambiente.
+   const mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+   if(mx<=105 && ((r+g+b)/3)<=72 && (mx-mn)<=80) return 0;
+
+   // 55-60 dBZ aprox.: violeta/magenta. Clase máxima de reflectividad coloreada.
    if(r>135 && b>135 && g<105) return 5;
 
    // ~50 dBZ: rojo intenso.
    if(r>185 && g<85 && b<135) return 4;
 
    // ~40-45 dBZ: naranja / naranja-rojo.
-   if(r>185 && g>=80 && g<190 && b<90) return 3;
+   if(r>185 && g>=80 && g<220 && b<110) return 3;
 
    return 0;
  }
@@ -1390,20 +1538,32 @@ btn.onclick=function(){
    const seen=new Uint8Array(sw*sh), out=[], qx=new Int32Array(sw*sh),qy=new Int32Array(sw*sh);
    for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){
      const p=y*sw+x;if(seen[p]||mask[p]<3)continue;
-     let q0=0,q1=0,c=0,sx=0,sy=0,peak=0;
+     let q0=0,q1=0,c=0,sx=0,sy=0,peak=0,blackCount=0,sbx=0,sby=0;
      qx[q1]=x;qy[q1++]=y;seen[p]=1;
      while(q0<q1){
-       const cx=qx[q0],cy=qy[q0++],cp=cy*sw+cx;c++;sx+=cx;sy+=cy;peak=Math.max(peak,mask[cp]);
+       const cx=qx[q0],cy=qy[q0++],cp=cy*sw+cx,cls=mask[cp];
+       c++;sx+=cx;sy+=cy;
+       if(cls===6){blackCount++;sbx+=cx;sby+=cy}
+       else peak=Math.max(peak,cls);
        for(let yy=Math.max(0,cy-1);yy<=Math.min(sh-1,cy+1);yy++)for(let xx=Math.max(0,cx-1);xx<=Math.min(sw-1,cx+1);xx++){
          const np=yy*sw+xx;if(!seen[np]&&mask[np]>=3){seen[np]=1;qx[q1]=xx;qy[q1++]=yy}
        }
      }
      if(c>=4){
        const px=(sx/c+.5)*scale,py=(sy/c+.5)*scale,ll=lonLat(px,py,w,h);
-       out.push({lat:ll[0],lon:ll[1],area:c*scale*scale,peak});
+       let hailLat=null,hailLon=null;
+       if(blackCount>0){
+         const hp=(sbx/blackCount+.5)*scale,hq=(sby/blackCount+.5)*scale,hll=lonLat(hp,hq,w,h);
+         hailLat=hll[0];hailLon=hll[1];
+       }
+       out.push({lat:ll[0],lon:ll[1],area:c*scale*scale,peak,blackCount,hailLat,hailLon});
      }
    }
-   return out.sort((a,b)=>b.area-a.area).slice(0,20);
+   const result=out.sort((a,b)=>b.area-a.area).slice(0,20);
+   // Patrón de granizo inspirado en la representación de Windy:
+   // los puntos negros son una capa de tipo de precipitación, no reflectividad negra.
+   result.windyHail=detectWindyHail(img);
+   return result;
  }
  async function readFrame(f){
    return await new Promise(resolve=>{
@@ -1522,6 +1682,160 @@ btn.onclick=function(){
    return 'reflectividad inferior';
  }
 
+ function detectWindyHail(img){
+   // V12.3: detectar ZONAS de granizo, no solo un grupo compacto de puntos.
+   // Criterio aprendido del patron observado en IDAC/Windy:
+   // - marcas negras reales o huecos oscuros embebidos en la celda;
+   // - soporte convectivo alrededor (amarillo/naranja/rojo, >=40-45 dBZ aprox.);
+   // - agrupar marcas cercanas aunque no se toquen pixel a pixel.
+   // Así una franja completa con el mismo patron recibe una sola etiqueta GRANIZO.
+   const w=img.width,h=img.height,d=img.data;
+   const scale=Math.max(1,Math.ceil(Math.max(w,h)/900));
+   const sw=Math.ceil(w/scale),sh=Math.ceil(h/scale);
+   const dark=new Uint8Array(sw*sh), hole=new Uint8Array(sw*sh), refl=new Uint8Array(sw*sh);
+
+   for(let yy=0;yy<sh;yy++)for(let xx=0;xx<sw;xx++){
+     let bestRefl=0,hasDark=false,transparent=0,total=0;
+     const y0=yy*scale,y1=Math.min(h,y0+scale),x0=xx*scale,x1=Math.min(w,x0+scale);
+     for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+       const k=(y*w+x)*4,a=d[k+3]; total++;
+       if(a<35){transparent++;continue}
+       const c=severe(d[k],d[k+1],d[k+2],a);
+       if(c===6)hasDark=true;
+       else bestRefl=Math.max(bestRefl,c);
+     }
+     const q=yy*sw+xx;
+     dark[q]=hasDark?1:0;
+     hole[q]=(total && transparent/total>=0.70)?1:0;
+     refl[q]=bestRefl;
+   }
+
+   // Hueco oscuro aceptado solo cuando queda realmente metido dentro del eco convectivo.
+   const embedded=new Uint8Array(sw*sh);
+   const SURROUND=6;
+   for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){
+     const p=y*sw+x;
+     if(dark[p]){embedded[p]=1;continue}
+     if(!hole[p])continue;
+     let hits=0,L=0,Ri=0,U=0,Dn=0,q1=0,q2=0,q3=0,q4=0;
+     for(let yy=Math.max(0,y-SURROUND);yy<=Math.min(sh-1,y+SURROUND);yy++)for(let xx=Math.max(0,x-SURROUND);xx<=Math.min(sw-1,x+SURROUND);xx++){
+       const c=refl[yy*sw+xx];
+       if(c<3)continue;
+       hits++;
+       if(xx<x)L++; if(xx>x)Ri++; if(yy<y)U++; if(yy>y)Dn++;
+       if(xx<x&&yy<y)q1++; else if(xx>x&&yy<y)q2++; else if(xx<x&&yy>y)q3++; else if(xx>x&&yy>y)q4++;
+     }
+     const quadrants=(q1>0)+(q2>0)+(q3>0)+(q4>0);
+     const opposed=(L>0&&Ri>0)||(U>0&&Dn>0);
+     if(hits>=5 && quadrants>=3 && opposed)embedded[p]=1;
+   }
+
+   // Unir puntos/trazos próximos. Windy/IDAC pueden presentar el granizo como una
+   // sucesion de puntos o barras separadas dentro de la MISMA franja convectiva.
+   const bridged=new Uint8Array(sw*sh);
+   const BRIDGE=4; // une marcas separadas hasta ~8 celdas del muestreo
+   for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){
+     if(!embedded[y*sw+x])continue;
+     for(let yy=Math.max(0,y-BRIDGE);yy<=Math.min(sh-1,y+BRIDGE);yy++)for(let xx=Math.max(0,x-BRIDGE);xx<=Math.min(sw-1,x+BRIDGE);xx++){
+       // El puente solo puede atravesar la propia zona de eco o una pequeña interrupcion interna.
+       if(refl[yy*sw+xx]>=2 || embedded[yy*sw+xx] || Math.abs(xx-x)<=2 || Math.abs(yy-y)<=2){
+         bridged[yy*sw+xx]=1;
+       }
+     }
+   }
+
+   const seen=new Uint8Array(sw*sh),out=[];
+   const qx=new Int32Array(sw*sh),qy=new Int32Array(sw*sh);
+   for(let y=0;y<sh;y++)for(let x=0;x<sw;x++){
+     const p=y*sw+x;
+     if(seen[p] || !bridged[p])continue;
+
+     let q0=0,q1=0;
+     let seedCount=0,realDarkHits=0,holeHits=0,sbx=0,sby=0;
+     let xmin=sw,xmax=-1,ymin=sh,ymax=-1;
+     const seeds=[];
+     qx[q1]=x;qy[q1++]=y;seen[p]=1;
+     while(q0<q1){
+       const cx=qx[q0],cy=qy[q0++],cp=cy*sw+cx;
+       if(embedded[cp]){
+         seedCount++; if(dark[cp])realDarkHits++; if(hole[cp])holeHits++;
+         sbx+=cx;sby+=cy;seeds.push([cx,cy]);
+         xmin=Math.min(xmin,cx);xmax=Math.max(xmax,cx);ymin=Math.min(ymin,cy);ymax=Math.max(ymax,cy);
+       }
+       for(let yy=Math.max(0,cy-1);yy<=Math.min(sh-1,cy+1);yy++)for(let xx=Math.max(0,cx-1);xx<=Math.min(sw-1,cx+1);xx++){
+         const np=yy*sw+xx;
+         if(!seen[np]&&bridged[np]){seen[np]=1;qx[q1]=xx;qy[q1++]=yy}
+       }
+     }
+
+     // Rechazar ruido. Dos o mas marcas embebidas forman una zona; una marca real
+     // aislada solo se acepta si tiene soporte convectivo muy claro alrededor.
+     if(seedCount===0)continue;
+
+     let reflPeak=0,strongHits=0,convHits=0;
+     const PAD=9;
+     const ax0=Math.max(0,xmin-PAD),ax1=Math.min(sw-1,xmax+PAD);
+     const ay0=Math.max(0,ymin-PAD),ay1=Math.min(sh-1,ymax+PAD);
+     let zsx=0,zsy=0,zcount=0;
+     for(let yy=ay0;yy<=ay1;yy++)for(let xx=ax0;xx<=ax1;xx++){
+       const c=refl[yy*sw+xx];
+       if(c>=2){convHits++; zsx+=xx; zsy+=yy; zcount++;}
+       if(c>=3){strongHits++;reflPeak=Math.max(reflPeak,c)}
+     }
+
+     if(reflPeak<3 || strongHits<6)continue;
+     if(seedCount<2 && !(realDarkHits>=1 && strongHits>=18))continue;
+
+     // Centro de etiqueta: usar el centro de la franja convectiva que rodea las marcas,
+     // no solamente el primer grupo de puntos negros.
+     const cx=zcount?zsx/zcount:sbx/seedCount;
+     const cy=zcount?zsy/zcount:sby/seedCount;
+     const center=lonLat((cx+.5)*scale,(cy+.5)*scale,w,h);
+
+     const dots=[];
+     for(const z of seeds){
+       const ll=lonLat((z[0]+.5)*scale,(z[1]+.5)*scale,w,h);
+       dots.push([ll[0],ll[1],6]);
+       if(dots.length>=260)break;
+     }
+
+     out.push({
+       lat:center[0],lon:center[1],hailLat:center[0],hailLon:center[1],
+       area:(xmax-xmin+1)*(ymax-ymin+1)*scale*scale,
+       peak:reflPeak,blackHits:seedCount,strongHits,convHits,dots,
+       realDarkHits,holeHits,
+       score:seedCount*1500+realDarkHits*1200+strongHits*12+convHits
+     });
+   }
+
+   return out.sort((a,b)=>b.score-a.score).slice(0,8);
+ }
+ function windyHailCells(cells){
+   return (cells && Array.isArray(cells.windyHail)) ? cells.windyHail : [];
+ }
+
+ function drawWindyHail(cells){
+   const hail=windyHailCells(cells);
+   for(const c of hail){
+     // No fabricar puntos negros: se conserva el patron original del IDAC.
+     // Solo se agrega la etiqueta automatica sobre cada ZONA detectada.
+     L.circleMarker([c.hailLat,c.hailLon],{
+       radius:5,color:'#ffd400',weight:2,fillColor:'#050505',fillOpacity:.78,
+       interactive:false
+     }).bindTooltip(
+       '<b>GRANIZO</b>',
+       {
+         permanent:true,
+         direction:'top',
+         offset:[0,-6],
+         className:'hail-auto-label',
+         interactive:false
+       }
+     ).addTo(trackLayer);
+   }
+   return hail;
+ }
+
  function drawHailPotential(tracks,current){
    const hail=hailCandidates(tracks,current);
    for(const t of hail){
@@ -1543,7 +1857,297 @@ btn.onclick=function(){
    return hail;
  }
 
-function render(tracks,current){
+
+ // V13 · DETECTOR FÍSICO DE GRANIZO PROBABLE
+ // Radar IDAC: intensidad + tamaño + persistencia.
+ // Ambiente: GFS/Open-Meteo CAPE, Lifted Index, CIN y altura de 0 °C.
+ // No usa puntos negros ni huecos del PNG para decidir.
+ const hailEnvCache=new Map();
+
+ function frameEpochMs(f){
+   const z=String((f&&f.token)||'');
+   let m=z.match(/(\d{13})/); if(m)return +m[1];
+   m=z.match(/(\d{10})/); return m?+m[1]*1000:Date.now();
+ }
+
+ function nearestHourlyValue(hourly,name,targetMs){
+   if(!hourly || !Array.isArray(hourly.time) || !Array.isArray(hourly[name]))return null;
+   let bi=-1,bd=Infinity;
+   for(let i=0;i<hourly.time.length;i++){
+     const t=Date.parse(hourly.time[i]+'Z');
+     if(!Number.isFinite(t))continue;
+     const d=Math.abs(t-targetMs);
+     if(d<bd){bd=d;bi=i}
+   }
+   if(bi<0 || bd>4*3600*1000)return null;
+   const v=Number(hourly[name][bi]);
+   return Number.isFinite(v)?v:null;
+ }
+
+ async function fetchHailEnvironment(lat,lon,targetMs){
+   // Redondeo espacial y horario para no repetir peticiones por la misma tormenta.
+   const rlat=Math.round(lat*10)/10, rlon=Math.round(lon*10)/10;
+   const hour=Math.round(targetMs/3600000);
+   const key=rlat.toFixed(1)+','+rlon.toFixed(1)+','+hour;
+   const cached=hailEnvCache.get(key);
+   if(cached && Date.now()-cached.saved<20*60*1000)return cached.value;
+
+   const u='https://api.open-meteo.com/v1/gfs?latitude='+encodeURIComponent(rlat)+
+     '&longitude='+encodeURIComponent(rlon)+
+     '&hourly=cape,lifted_index,convective_inhibition,freezing_level_height'+
+     '&past_days=1&forecast_days=2&timezone=GMT';
+
+   const ctl=('AbortController' in window)?new AbortController():null;
+   const timer=ctl?setTimeout(()=>ctl.abort(),8500):null;
+   try{
+     const r=await fetch(u,{cache:'no-store',signal:ctl?ctl.signal:undefined});
+     if(!r.ok)throw new Error('HTTP '+r.status);
+     const j=await r.json(), h=j.hourly||{};
+     const value={
+       cape:nearestHourlyValue(h,'cape',targetMs),
+       li:nearestHourlyValue(h,'lifted_index',targetMs),
+       cin:nearestHourlyValue(h,'convective_inhibition',targetMs),
+       freezing:nearestHourlyValue(h,'freezing_level_height',targetMs),
+       model:'GFS',
+       latitude:rlat,longitude:rlon
+     };
+     hailEnvCache.set(key,{saved:Date.now(),value});
+     return value;
+   }catch(e){
+     try{console.warn('[Granizo probable] ambiente no disponible',e)}catch(_){}
+     return null;
+   }finally{
+     if(timer)clearTimeout(timer);
+   }
+ }
+
+ function radarHailBase(t,current){
+   const p=t.points[t.points.length-1];
+   if(!p || p.frame!==current)return null;
+
+   // V14: el radar abre la puerta, pero NO decide granizo por sí solo.
+   // Se admite desde 40–45 dBZ para no perder núcleos compactos como el
+   // observado en el oeste de Puerto Rico, pero se exige mucha más
+   // actividad eléctrica cuando la reflectividad es menor.
+   if(p.peak<3)return null;
+
+   const recent=t.points.slice(-5);
+   const hits40=recent.filter(q=>q.peak>=3).length;
+   const hits50=recent.filter(q=>q.peak>=4).length;
+   const hits55=recent.filter(q=>q.peak>=5).length;
+
+   if(recent.length<3 || hits40<2)return null;
+
+   // Rechazar ecos minúsculos o en colapso rápido.
+   if(p.area<12)return null;
+   if(p.peak===3 && p.area<18)return null;
+
+   const prev=t.points[t.points.length-2];
+   if(prev && p.area<prev.area*0.50)return null;
+
+   let score=0;
+   if(p.peak>=5)score+=3.0;
+   else if(p.peak>=4)score+=2.1;
+   else score+=1.1;
+
+   if(hits55>=2)score+=1.2;
+   else if(hits50>=2)score+=0.8;
+   if(hits40>=4)score+=0.8;
+   else if(hits40>=3)score+=0.5;
+
+   if(p.area>=120)score+=0.8;
+   else if(p.area>=55)score+=0.55;
+   else score+=0.25;
+
+   if(prev){
+     if(p.area>=prev.area*1.12)score+=0.6;
+     else if(p.area>=prev.area*0.85)score+=0.3;
+   }
+   return {track:t,p,score,hits40,hits50,hits55};
+ }
+
+ function environmentalHailScore(env){
+   if(!env)return null;
+   const {cape,li,cin,freezing}=env;
+   if(cape==null || li==null || freezing==null)return null;
+
+   // El ambiente solo sirve como filtro de plausibilidad.
+   // La discriminación principal de V14 la hace la coincidencia RADAR + GLM.
+   if(cape<500 || li>-0.5 || freezing>5700)return {ok:false,score:0};
+
+   let score=0;
+   if(cape>=2500)score+=1.7;
+   else if(cape>=1500)score+=1.3;
+   else if(cape>=900)score+=0.9;
+   else score+=0.4;
+
+   if(li<=-5)score+=1.3;
+   else if(li<=-3)score+=1.0;
+   else if(li<=-1.5)score+=0.6;
+   else score+=0.25;
+
+   if(freezing<=4200)score+=1.3;
+   else if(freezing<=4700)score+=1.0;
+   else if(freezing<=5200)score+=0.65;
+   else score+=0.25;
+
+   if(cin!=null){
+     const ac=Math.abs(cin);
+     if(ac<=50)score+=0.35;
+     else if(ac<=125)score+=0.15;
+   }
+   return {ok:true,score};
+ }
+
+ const hailGlmCache={saved:0,flashes:[]};
+
+ async function fetchHailGlm(){
+   if(Date.now()-hailGlmCache.saved<15000 && Array.isArray(hailGlmCache.flashes)){
+     return hailGlmCache.flashes;
+   }
+   try{
+     const r=await fetch('nowcast/rayos_glm.json?t='+Date.now(),{cache:'no-store'});
+     if(!r.ok)throw new Error('HTTP '+r.status);
+     const j=await r.json();
+     const rows=Array.isArray(j&&j.flashes)?j.flashes:[];
+     const flashes=[];
+     for(const f of rows){
+       const lat=Number(f.lat),lon=Number(f.lon);
+       const tt=Date.parse(String(f.time_utc||''));
+       if(!Number.isFinite(lat)||!Number.isFinite(lon)||!Number.isFinite(tt))continue;
+       if(f.quality_flag!=null && Number(f.quality_flag)!==0)continue;
+       const age=Math.max(0,(Date.now()-tt)/60000);
+       if(age>10.5)continue;
+       flashes.push({lat,lon,age});
+     }
+     hailGlmCache.saved=Date.now();
+     hailGlmCache.flashes=flashes;
+     return flashes;
+   }catch(e){
+     try{console.warn('[Granizo probable] GLM no disponible',e)}catch(_){}
+     return [];
+   }
+ }
+
+ function glmMetricsAt(lat,lon,flashes){
+   const c={n20:0,n30:0,n40:0,recent5_20:0,recent5_30:0,recent2_30:0,newest:999};
+   for(const f of flashes||[]){
+     const dkm=dist({lat,lon},f);
+     if(dkm<=40)c.n40++;
+     if(dkm<=30){
+       c.n30++;
+       c.newest=Math.min(c.newest,f.age);
+       if(f.age<=5)c.recent5_30++;
+       if(f.age<=2)c.recent2_30++;
+     }
+     if(dkm<=20){
+       c.n20++;
+       if(f.age<=5)c.recent5_20++;
+     }
+   }
+   return c;
+ }
+
+ function glmGateForHail(base,gm){
+   const peak=base.p.peak;
+
+   // Clave para reducir falsos positivos:
+   // cuanto menor es la reflectividad, más actividad eléctrica compacta exigimos.
+   if(peak>=5){
+     if(gm.n30<4 || gm.recent5_30<2)return {ok:false,score:0};
+   }else if(peak>=4){
+     if(gm.n30<7 || gm.n20<3 || gm.recent5_30<3)return {ok:false,score:0};
+   }else{
+     if(gm.n30<10 || gm.n20<5 || gm.recent5_30<4)return {ok:false,score:0};
+   }
+
+   let score=0;
+   if(gm.n30>=20)score+=2.5;
+   else if(gm.n30>=14)score+=2.0;
+   else if(gm.n30>=10)score+=1.6;
+   else if(gm.n30>=7)score+=1.2;
+   else score+=0.8;
+
+   if(gm.recent5_30>=8)score+=1.2;
+   else if(gm.recent5_30>=5)score+=0.8;
+   else score+=0.4;
+
+   if(gm.recent2_30>=3)score+=0.5;
+   if(gm.newest<=2)score+=0.3;
+
+   return {ok:true,score};
+ }
+
+ async function physicalHailCandidates(tracks,current,frame){
+   const base=[];
+   for(const t of tracks){
+     const b=radarHailBase(t,current);
+     if(b)base.push(b);
+   }
+
+   // V14: NO limitar a las 5 celdas más fuertes.
+   // Eso estaba dejando fuera la señal de Puerto Rico observada en Windy.
+   base.sort((a,b)=>(b.p.peak-a.p.peak)||(b.p.area-a.p.area));
+
+   const targetMs=frameEpochMs(frame);
+   const glmFlashes=await fetchHailGlm();
+   const raw=[];
+
+   for(const b of base){
+     const gm=glmMetricsAt(b.p.lat,b.p.lon,glmFlashes);
+     const gs=glmGateForHail(b,gm);
+     if(!gs.ok)continue;
+
+     const env=await fetchHailEnvironment(b.p.lat,b.p.lon,targetMs);
+     const es=environmentalHailScore(env);
+     if(!es || !es.ok)continue;
+
+     const total=b.score+es.score+gs.score;
+
+     // V14: la etiqueta exige RADAR + AMBIENTE + GLM.
+     // Ningún eco aislado puede etiquetarse solo por CAPE o reflectividad.
+     if(total<7.2)continue;
+
+     raw.push({
+       track:b.track,p:b.p,env,glm:gm,score:total,
+       confidence:total>=9.2?'ALTA':'MODERADA'
+     });
+   }
+
+   // Evitar varias etiquetas sobre la misma tormenta.
+   raw.sort((a,b)=>b.score-a.score);
+   const out=[];
+   for(const h of raw){
+     if(out.some(q=>dist(q.p,h.p)<38))continue;
+     out.push(h);
+   }
+   return out;
+ }
+
+ function drawPhysicalHail(hail){
+   for(const h of hail){
+     const p=h.p,e=h.env;
+     const details=
+       '<b>GRANIZO PROBABLE</b><br>'+
+       peakDbzLabel(p.peak)+' · persistente<br>'+
+       'CAPE '+Math.round(e.cape)+' J/kg · LI '+Number(e.li).toFixed(1)+'<br>'+
+       'Nivel 0 °C '+Math.round(e.freezing)+' m'+
+       (e.cin!=null?' · CIN '+Math.round(e.cin)+' J/kg':'')+
+       '<br>GLM 30 km: '+h.glm.n30+' detecciones / 10 min · '+h.glm.recent5_30+' / 5 min'+
+       '<br><span style="font-weight:400">Confianza '+h.confidence+' · Radar IDAC + GFS + GOES-19 GLM</span>';
+
+     L.circleMarker([p.lat,p.lon],{
+       radius:10,color:'#ffd400',weight:3,fillColor:'#8f0000',fillOpacity:.45,
+       interactive:true
+     }).bindTooltip(
+       '<b>GRANIZO PROBABLE</b>',
+       {permanent:true,direction:'top',offset:[0,-8],className:'hail-auto-label',interactive:false}
+     ).bindPopup(details).addTo(trackLayer);
+   }
+ }
+
+
+function render(tracks,current,currentCells,physicalHail){
    const affected=new Map();
    const rows=[];
    const selected=top5CurrentTracks(tracks,current);
@@ -1561,33 +2165,18 @@ function render(tracks,current){
    const ups=rows.filter(r=>r.tr==='Intensifica').length,downs=rows.filter(r=>r.tr==='Debilita').length;
    sum.textContent=rows.length+' celdas principales seguidas · '+ups+' intensificándose · '+downs+' debilitándose.';
    const provs=[...affected.keys()].filter(x=>x!=='Área no identificada');
-   const hail=hailCandidates(tracks,current);
-   try{console.info('[Granizo tropical] candidatos conservadores:',hail.length);}catch(e){}
-   const hailProvs=[...new Set(hail.map(t=>{
-     const p=t.points[t.points.length-1];
-     return provinceAt(p.lat,p.lon)||'';
-   }).filter(Boolean))];
-   const hailText=hail.length ? (' GRANIZO POSIBLE (SEÑAL RADAR): '+(hailProvs.length?hailProvs.join(', '):'celda convectiva identificada')+'. Requiere confirmación ambiental.') : '';
-   const hailBox=document.getElementById('convHailStatus');
-   if(hailBox){
-     if(hail.length){
-       hailBox.textContent='⚠ GRANIZO POSIBLE · '+hail.length+' celda'+(hail.length===1?'':'s')+
-         (hailProvs.length?' · '+hailProvs.join(', '):'')+' · ≥55 dBZ persistente';
-       hailBox.style.color='#fff';
-       hailBox.style.background='#8b166f';
-       hailBox.style.borderColor='#ffd7fa';
-     }else{
-       hailBox.textContent='Granizo: sin señal que cumpla el criterio ≥55 dBZ persistente';
-       hailBox.style.color='#cfd9df';
-       hailBox.style.background='#17121b';
-       hailBox.style.borderColor='#6d596f';
-     }
-   }
+   const ph=Array.isArray(physicalHail)?physicalHail:[];
+   try{console.info('[Granizo probable] candidatos físicos:',ph.length);}catch(e){}
+   const hailProvs=[...new Set(ph.map(h=>provinceAt(h.p.lat,h.p.lon)||'').filter(Boolean))];
+   const hailText=ph.length ? (' GRANIZO PROBABLE: '+ph.length+' núcleo'+(ph.length===1?'':'s')+
+     ' cumple'+(ph.length===1?'':'n')+' simultáneamente radar IDAC, ambiente GFS y actividad eléctrica GLM'+
+     (hailProvs.length?' ('+hailProvs.join(', ')+')':'')+'.') :
+     ' Sin señal suficiente de GRANIZO PROBABLE al exigir radar IDAC + ambiente GFS + actividad eléctrica GLM.';
    bulletin.textContent='BOLETÍN RADAR · '+ftime(data.frames[idx])+'\n'+
      (rows.length?('Se muestran las '+rows.length+' celdas convectivas más fuertes con seguimiento suficiente. '+
      (ups?ups+' muestran intensificación. ':'')+(downs?downs+' muestran debilitamiento. ':'')+
      (provs.length?'Provincias afectadas: '+provs.join(', ')+'.':'No se pudo asociar las celdas actuales a una provincia.')) + hailText
-     :('No se identifican celdas Fuerte/Muy fuerte con trayectoria suficiente en los barridos disponibles.' + hailText));
+     :('No se identifican celdas Fuerte/Muy fuerte con trayectoria suficiente entre las principales.' + hailText));
  }
  async function analyze(){
    if(!data||!data.frames||data.frames.length<2)return;
@@ -1595,12 +2184,18 @@ function render(tracks,current){
    const frames=data.frames.slice(-10), all=[];
    sum.textContent='Analizando los últimos '+frames.length+' barridos...';
    for(const f of frames){all.push(await readFrame(f));if(my!==seq)return}
-   const tracks=track(all), current=frames.length-1;
-   draw(tracks,current);drawHailPotential(tracks,current);render(tracks,current);timeBox.textContent='Barrido: '+ftime(frames[current]);
+   const tracks=track(all), current=frames.length-1, currentCells=all[current]||[];
+   draw(tracks,current);
+   sum.textContent='Combinando radar IDAC, ambiente GFS y actividad eléctrica GOES-19 GLM...';
+   const physicalHail=await physicalHailCandidates(tracks,current,frames[current]);
+   if(my!==seq)return;
+   drawPhysicalHail(physicalHail);
+   render(tracks,current,currentCells,physicalHail);
+   timeBox.textContent='Barrido: '+ftime(frames[current]);
  }
  function schedule(){if(timer)clearTimeout(timer);timer=setTimeout(analyze,350)}
  openBtn.onclick=()=>{panel.classList.toggle('show');openBtn.classList.toggle('on',panel.classList.contains('show'));if(panel.classList.contains('show'))schedule()};
- toggle.onclick=()=>{active=!active;toggle.textContent=active?'ACTIVADO':'DESACTIVADO';toggle.style.background=active?'#168a3b':'#8d2f2f';trackLayer.clearLayers();if(!active){sum.textContent='Seguimiento de celdas desactivado.';list.innerHTML='';const hb=document.getElementById('convHailStatus');if(hb)hb.textContent='Granizo: active Celdas convectivas para analizar.';bulletin.textContent='Celdas convectivas desactivadas.';}schedule()};
+ toggle.onclick=()=>{active=!active;toggle.textContent=active?'ACTIVADO':'DESACTIVADO';toggle.style.background=active?'#168a3b':'#8d2f2f';trackLayer.clearLayers();if(!active){sum.textContent='Seguimiento de celdas desactivado.';list.innerHTML='';bulletin.textContent='Active Celdas convectivas para ejecutar el detector físico de GRANIZO PROBABLE.';}schedule()};
  const base=window.applyLayers||(typeof applyLayers==='function'?applyLayers:null);
  if(base){const wrap=function(){const r=base.apply(this,arguments);schedule();return r};window.applyLayers=wrap;try{applyLayers=wrap}catch(e){}}
  schedule();
