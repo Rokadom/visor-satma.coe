@@ -323,8 +323,8 @@ function ecoSinFondoIzquierdo(f){
  job.catch(()=>cacheEcosLimpios.delete(url));return job;
 }
 
-// Renderizado visual SATMA estilo Windy: mezcla de escalas de suavizado
-// exclusivamente en memoria del navegador, sin escribir el PNG original.
+// Renderizado visual SATMA Smooth nitido: detalle e intensidad casi originales,
+// bordes ligeramente suavizados. Solo memoria del navegador, PNG sin cambios.
 // Si Canvas no soporta los filtros o falla, usa automaticamente el original.
 let ecoSmoothActivo=true;
 const ecosSmoothCache=new Map();
@@ -360,13 +360,14 @@ function ecoVisualSmooth(f){
     if(!cx||!('filter' in cx))throw Error('Filtro Canvas no soportado');
     cx.imageSmoothingEnabled=true;
     cx.imageSmoothingQuality='high';
-    // Capa de transicion: une visualmente los ecos cercanos.
-    cx.filter='blur(6px)'; cx.globalAlpha=0.94;cx.drawImage(im,0,0);
-    // Capa media: mantiene las estructuras convectivas principales.
-    cx.filter='blur(2.8px)';cx.globalAlpha=0.73;cx.drawImage(im,0,0);
-    // Centros: conservan el color fuerte sin dibujar cuadros duros.
-    cx.filter='blur(0.9px)';cx.globalAlpha=0.42;cx.drawImage(im,0,0);
-    cx.filter='none';cx.globalAlpha=1;
+    // SATMA Smooth nitido: halo fino + eco original predominante.
+    // La version anterior (6px / 2.8px) diluia los colores y parecia opaca.
+    // El halo suaviza exclusivamente la apariencia de los bordes.
+    cx.filter='blur(1.6px)';cx.globalAlpha=0.62;cx.drawImage(im,0,0);
+    // El nucleo conserva casi toda la intensidad visual del RGB original.
+    // Sin saturacion ni brillo artificial; el PNG cientifico permanece intacto.
+    cx.filter='none';cx.globalAlpha=0.95;cx.drawImage(im,0,0);
+    cx.globalAlpha=1;
     cv.toBlob(blob=>{
      if(!blob){resolve(original);return;}
      const url=URL.createObjectURL(blob);
