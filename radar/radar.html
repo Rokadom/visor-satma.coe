@@ -102,8 +102,8 @@ img.leaflet-image-layer.satma-eco-smooth {
 #convToggle{background:#168a3b;color:#fff;border:1px solid #7bdc9a;border-radius:5px;padding:5px 9px;font-weight:900;cursor:pointer}
 #convLayerInfo{font-size:10px;color:#b9ccd8;margin-left:5px}
 .conv-cell-label{background:#7b2cbf;color:white;border:1px solid #fff;border-radius:10px;padding:1px 5px;font-weight:900;box-shadow:0 1px 5px #000}
-.hail-auto-label{background:#050505!important;color:#fff!important;border:2px solid #ffd400!important;border-radius:6px!important;padding:2px 6px!important;font-weight:900!important;font-size:12px!important;box-shadow:0 1px 6px #000!important;white-space:nowrap!important}
-.hail-auto-label:before{border-top-color:#ffd400!important}
+.hail-asterisk-icon{background:transparent!important;border:0!important;box-shadow:none!important}
+.hail-asterisk-icon span{display:block;width:22px;height:22px;line-height:22px;text-align:center;color:#f21d1d;font:bold 23px/22px Arial,sans-serif;-webkit-text-stroke:.5px #fff;text-shadow:0 1px 2px #000,1px 0 2px #000,-1px 0 2px #000;cursor:pointer}
 @media(max-width:900px){#convPanel{left:8px;right:8px;width:auto;max-height:44vh}#convBtn{bottom:108px}}
 </style>
 
@@ -1918,24 +1918,22 @@ btn.onclick=function(){
    return (cells && Array.isArray(cells.windyHail)) ? cells.windyHail : [];
  }
 
+ // Asterisco de aviso meteorologico: solo indicador visual, no cambia ecos ni diagnostico.
+ function hailAsteriskIcon(){
+   return L.divIcon({
+     className:'hail-asterisk-icon',
+     html:'<span aria-hidden="true">✱</span>',
+     iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-11]
+   });
+ }
  function drawWindyHail(cells){
    const hail=windyHailCells(cells);
    for(const c of hail){
-     // No fabricar puntos negros: se conserva el patron original del IDAC.
-     // Solo se agrega la etiqueta automatica sobre cada ZONA detectada.
-     L.circleMarker([c.hailLat,c.hailLon],{
-       radius:5,color:'#ffd400',weight:2,fillColor:'#050505',fillOpacity:.78,
-       interactive:false
-     }).bindTooltip(
-       '<b>GRANIZO</b>',
-       {
-         permanent:true,
-         direction:'top',
-         offset:[0,-6],
-         className:'hail-auto-label',
-         interactive:false
-       }
-     ).addTo(trackLayer);
+     L.marker([c.hailLat,c.hailLon],{
+       icon:hailAsteriskIcon(),title:'Granizo posible',keyboard:true
+     }).bindTooltip('Granizo posible · señal radar',{
+       permanent:false,direction:'top',offset:[0,-10]
+     }).addTo(trackLayer);
    }
    return hail;
  }
@@ -2240,13 +2238,16 @@ btn.onclick=function(){
        '<br>GLM 30 km: '+h.glm.n30+' detecciones / 10 min · '+h.glm.recent5_30+' / 5 min'+
        '<br><span style="font-weight:400">Confianza '+h.confidence+' · Radar IDAC + GFS + GOES-19 GLM</span>';
 
+     // Conservar el circulo de referencia y reemplazar la etiqueta fija por asterisco rojo.
      L.circleMarker([p.lat,p.lon],{
        radius:10,color:'#ffd400',weight:3,fillColor:'#8f0000',fillOpacity:.45,
-       interactive:true
-     }).bindTooltip(
-       '<b>GRANIZO PROBABLE</b>',
-       {permanent:true,direction:'top',offset:[0,-8],className:'hail-auto-label',interactive:false}
-     ).bindPopup(details).addTo(trackLayer);
+       interactive:false
+     }).addTo(trackLayer);
+     L.marker([p.lat,p.lon],{
+       icon:hailAsteriskIcon(),title:'Granizo probable',keyboard:true,zIndexOffset:1000
+     }).bindTooltip('Granizo probable',{
+       permanent:false,direction:'top',offset:[0,-11]
+     }).bindPopup(details).addTo(trackLayer);
    }
  }
 
