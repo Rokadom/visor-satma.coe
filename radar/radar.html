@@ -31,6 +31,14 @@ input[type=range]{width:155px}
 #videoStatus{display:inline-block;margin-left:4px;font-size:10px;color:#d7e7ef;max-width:160px;
  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 
+
+/* SATMA Smooth leve: solo la capa de ecos, sin modificar el PNG ni su georreferenciacion.
+   La interpolacion es visual; los valores originales se mantienen para el analisis. */
+img.leaflet-image-layer.satma-eco-smooth {
+  image-rendering: auto !important;
+  filter: blur(0.65px);
+}
+
 #provProductMap{pointer-events:none}
 .prov-product-tip{background:rgba(4,20,31,.96);color:#fff;border:1px solid #7892a3;
  box-shadow:0 2px 8px #0008;font-weight:700}
@@ -323,7 +331,7 @@ function applyLayers(){
   ecoSinFondoIzquierdo(f).then(url=>{
    if(revision!==revisionEcoVisible||!showEcho)return;
    if(!echoLayer){
-    echoLayer=L.imageOverlay(url,b,{opacity:ECHO_OPACITY,interactive:false}).addTo(map);
+    echoLayer=L.imageOverlay(url,b,{opacity:ECHO_OPACITY,interactive:false,className:'satma-eco-smooth'}).addTo(map);
    }else{
     echoLayer.setBounds(b);echoLayer.setOpacity(ECHO_OPACITY);echoLayer.setUrl(url);
    }
