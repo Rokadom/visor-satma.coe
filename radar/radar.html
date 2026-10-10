@@ -267,8 +267,8 @@ function satmaUTC(ms,withSuffix=true){
 // Azua, San Pedro de Macoris, Barahona, Jacmel, Arecibo y Ponce.
 // Se utiliza una unica calibracion para eco, mascaras municipales,
 // seguimiento convectivo, productos y exportacion de video.
-const RADAR_BOUNDS=[[15.133872,-79.042491],[22.521090,-62.306637]];
-const ECHO_OPACITY=.92;
+const RADAR_BOUNDS=[[13.134356,-83.556302],[23.703647,-59.696706]];
+const ECHO_OPACITY=1.0; // conservar colores RGB originales de la reflectividad
 function currentBounds(){
   const f=data&&data.frames&&data.frames[idx];
   return f&&f.source==='IDAC SDQ / POP / PUJ'?[[14.33,-75.13],[23.75,-64.22]]:RADAR_BOUNDS;
