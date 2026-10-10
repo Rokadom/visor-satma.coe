@@ -32,12 +32,14 @@ input[type=range]{width:155px}
  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
 
 
-/* SATMA Smooth moderado: solo la capa de ecos, sin modificar el PNG ni su georreferenciacion.
-   La interpolacion es visual; los valores originales se mantienen para el analisis. */
+/* SATMA Smooth estilo Windy (solo en navegador). Los datos y la geometria no cambian.
+   El PNG visual ya se interpola en Canvas; no volver a difuminar la capa entera. */
 img.leaflet-image-layer.satma-eco-smooth {
   image-rendering: auto !important;
-  filter: blur(1.05px);
+  filter: none !important;
 }
+#ecoSmoothToggle{font-weight:900}
+#ecoSmoothToggle.on{background:#f2b800;color:#111;border-color:#ffe48a}
 
 #provProductMap{pointer-events:none}
 .prov-product-tip{background:rgba(4,20,31,.96);color:#fff;border:1px solid #7892a3;
@@ -321,6 +323,94 @@ function ecoSinFondoIzquierdo(f){
  job.catch(()=>cacheEcosLimpios.delete(url));return job;
 }
 
+// Renderizado visual SATMA estilo Windy: mezcla de escalas de suavizado
+// exclusivamente en memoria del navegador, sin escribir el PNG original.
+// Si Canvas no soporta los filtros o falla, usa automaticamente el original.
+let ecoSmoothActivo=true;
+const ecosSmoothCache=new Map();
+const ECO_SMOOTH_CACHE_MAX=12;
+let ecosSmoothPrepareID=0;
+function limpiarCacheSmooth(){
+ while(ecosSmoothCache.size>ECO_SMOOTH_CACHE_MAX){
+  const primero=ecosSmoothCache.keys().next().value;
+  const obj=ecosSmoothCache.get(primero); ecosSmoothCache.delete(primero);
+  // No invalidar la imagen visible; solo liberar blobs de barridos anteriores.
+  if(obj&&obj.blobURL&&(!echoLayer||echoLayer._url!==obj.blobURL))
+   URL.revokeObjectURL(obj.blobURL);
+ }
+}
+function ecoVisualSmooth(f){
+ const key=String(f&&f.layer||'');
+ if(!key)return Promise.reject(new Error('Barrido sin capa'));
+ if(ecosSmoothCache.has(key)){
+  const viejo=ecosSmoothCache.get(key);
+  ecosSmoothCache.delete(key); ecosSmoothCache.set(key,viejo);
+  return viejo.promesa;
+ }
+ const estado={promesa:null,blobURL:null};
+ estado.promesa=ecoSinFondoIzquierdo(f).then(original=>new Promise(resolve=>{
+  const im=new Image();
+  im.onerror=()=>resolve(original);
+  im.onload=()=>{
+   try{
+    const w=im.naturalWidth,h=im.naturalHeight;
+    if(!w||!h||w*h>6000000)throw Error('Tamano no compatible');
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+    const cx=cv.getContext('2d',{alpha:true});
+    if(!cx||!('filter' in cx))throw Error('Filtro Canvas no soportado');
+    cx.imageSmoothingEnabled=true;
+    cx.imageSmoothingQuality='high';
+    // Capa de transicion: une visualmente los ecos cercanos.
+    cx.filter='blur(6px)'; cx.globalAlpha=0.94;cx.drawImage(im,0,0);
+    // Capa media: mantiene las estructuras convectivas principales.
+    cx.filter='blur(2.8px)';cx.globalAlpha=0.73;cx.drawImage(im,0,0);
+    // Centros: conservan el color fuerte sin dibujar cuadros duros.
+    cx.filter='blur(0.9px)';cx.globalAlpha=0.42;cx.drawImage(im,0,0);
+    cx.filter='none';cx.globalAlpha=1;
+    cv.toBlob(blob=>{
+     if(!blob){resolve(original);return;}
+     const url=URL.createObjectURL(blob);
+     estado.blobURL=url;
+     resolve(url);
+    },'image/png');
+   }catch(err){console.warn('Smooth: mostrando eco original',err);resolve(original);}
+  };
+  im.src=original;
+ })).catch(err=>{
+  ecosSmoothCache.delete(key);
+  console.warn('Smooth: barrido original',err);
+  return ecoSinFondoIzquierdo(f);
+ });
+ ecosSmoothCache.set(key,estado);
+ limpiarCacheSmooth();
+ return estado.promesa;
+}
+function prepararEcosSmooth(){
+ const id=++ecosSmoothPrepareID;
+ if(!ecoSmoothActivo||!data||!Array.isArray(data.frames))return;
+ const lista=data.frames.slice(-10).reverse();
+ let pos=0;
+ function siguiente(){
+  if(id!==ecosSmoothPrepareID||!ecoSmoothActivo||pos>=lista.length)return;
+  const f=lista[pos++];
+  if(!f||!f.layer){setTimeout(siguiente,20);return;}
+  ecoVisualSmooth(f).then(()=>setTimeout(siguiente,35),()=>setTimeout(siguiente,35));
+ }
+ setTimeout(siguiente,100);
+}
+function cambiarEcoSmooth(){
+ ecoSmoothActivo=!ecoSmoothActivo;
+ const boton=document.getElementById('ecoSmoothToggle');
+ if(boton){
+  boton.classList.toggle('on',ecoSmoothActivo);
+  boton.textContent=ecoSmoothActivo?'Smooth ON':'Smooth OFF';
+  boton.setAttribute('aria-pressed',String(ecoSmoothActivo));
+ }
+ ++ecosSmoothPrepareID;
+ applyLayers();
+ if(ecoSmoothActivo)prepararEcosSmooth();
+}
+
 function applyLayers(){
  if(!data||!data.frames||!data.frames.length)return;
  const f=data.frames[idx];
@@ -328,7 +418,7 @@ function applyLayers(){
  if(origLayer){map.removeLayer(origLayer);origLayer=null}
  const revision=++revisionEcoVisible;
  if(showEcho){
-  ecoSinFondoIzquierdo(f).then(url=>{
+  (ecoSmoothActivo?ecoVisualSmooth(f):ecoSinFondoIzquierdo(f)).then(url=>{
    if(revision!==revisionEcoVisible||!showEcho)return;
    if(!echoLayer){
     echoLayer=L.imageOverlay(url,b,{opacity:ECHO_OPACITY,interactive:false,className:'satma-eco-smooth'}).addTo(map);
@@ -365,6 +455,7 @@ async function init(){
   ordenarBarridosCronologicamente(data);
   idx=Math.max(0,(data.frames||[]).length-1);
   applyLayers();
+  prepararEcosSmooth();
   map.fitBounds(NAV_BOUNDS,{animate:false,padding:[0,0]});
   // Esta vista será el máximo alejamiento permitido.
   const zMin=map.getZoom();
@@ -426,6 +517,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 <button id="spNorm115" class="on">Normal</button>
 <button id="spFast115">Rápido</button>
 <button id="downloadVideoBtn" title="Crear video MP4 del radar">Descargar</button><span id="videoStatus"></span>
+<button id="ecoSmoothToggle" type="button" class="on" aria-pressed="true" title="Alternar vista de ecos: Smooth visual u Original sin interpolacion">Smooth ON</button>
 </span>
 <span id="auto13" title="Actualización automática del radar">
  <span class="title">AUTO RADAR</span>
@@ -543,6 +635,8 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
 <div id="preload123">Precargando ecos: 0/0</div>
 <script>
 (function(){
+ const smoothBtn=document.getElementById('ecoSmoothToggle');
+ if(smoothBtn)smoothBtn.addEventListener('click',cambiarEcoSmooth);
  // Radar RD SATMA: animacion real, tolerante a cuadros incompletos.
  // No modifica el JSON, la georreferenciacion ni los intervalos del IDAC.
  const el = id => document.getElementById(id);
@@ -820,6 +914,7 @@ padding:6px 10px;border-radius:5px;background:#102b3b;border:1px solid #8aa5b6;l
        applyLayers();
        if(typeof window.refresh124==='function')window.refresh124();
        if(typeof window.satmaRadarFramesChanged==='function')window.satmaRadarFramesChanged();
+       prepararEcosSmooth();
        document.getElementById('autoState13').textContent='Nuevos barridos incorporados al visor.';
        document.getElementById('autoState13').className='line ok';
      }
