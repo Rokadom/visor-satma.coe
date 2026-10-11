@@ -4,79 +4,6 @@
       "source": "IDAC visor-radar oficial",
       "index": 1,
       "source_index": 0,
-      "url": "https://radar-met.sna.gob.do/weather/resources/1791686280001.png",
-      "token": "1791686280001.png",
-      "layer": "eco_auto_1791686280001.png",
-      "preview": "",
-      "kept_pixels": 15144,
-      "kept_pct": 0.8783,
-      "bbox_px": [
-        832,
-        99,
-        1561,
-        753
-      ],
-      "similarity_to_previous_kept": 1.0,
-      "bounds": [
-        [
-          13.134356,
-          -83.556302
-        ],
-        [
-          23.703647,
-          -59.696706
-        ]
-      ],
-      "calibration_method": "coastline_RD_20261010_1920x898",
-      "time_basis": "source_png_filename_utc",
-      "observation_time_verified": false,
-      "idac_dark_marker_pixels": 0,
-      "idac_dark_marker_bbox_px": null,
-      "idac_dark_marker_detected": false
-    },
-    {
-      "source": "IDAC visor-radar oficial",
-      "index": 2,
-      "source_index": 0,
-      "url": "https://radar-met.sna.gob.do/weather/resources/1791686400001.png",
-      "token": "1791686400001.png",
-      "layer": "eco_auto_1791686400001.png",
-      "preview": "",
-      "kept_pixels": 14359,
-      "kept_pct": 0.8328,
-      "bbox_px": [
-        721,
-        95,
-        1537,
-        761
-      ],
-      "similarity_to_previous_kept": 0.05425,
-      "bounds": [
-        [
-          13.134356,
-          -83.556302
-        ],
-        [
-          23.703647,
-          -59.696706
-        ]
-      ],
-      "calibration_method": "coastline_RD_20261010_1920x898",
-      "time_basis": "source_png_filename_utc",
-      "observation_time_verified": false,
-      "idac_dark_marker_pixels": 4,
-      "idac_dark_marker_bbox_px": [
-        1176,
-        455,
-        1177,
-        457
-      ],
-      "idac_dark_marker_detected": true
-    },
-    {
-      "source": "IDAC visor-radar oficial",
-      "index": 3,
-      "source_index": 0,
       "url": "https://radar-met.sna.gob.do/weather/resources/1791686520001.png",
       "token": "1791686520001.png",
       "layer": "eco_auto_1791686520001.png",
@@ -114,7 +41,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 4,
+      "index": 2,
       "source_index": 0,
       "url": "https://radar-met.sna.gob.do/weather/resources/1791686640001.png",
       "token": "1791686640001.png",
@@ -153,7 +80,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 5,
+      "index": 3,
       "source_index": 0,
       "url": "https://radar-met.sna.gob.do/weather/resources/1791686760001.png",
       "token": "1791686760001.png",
@@ -192,7 +119,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 6,
+      "index": 4,
       "source_index": 0,
       "url": "https://radar-met.sna.gob.do/weather/resources/1791686880001.png",
       "token": "1791686880001.png",
@@ -231,7 +158,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 7,
+      "index": 5,
       "source_index": 0,
       "url": "https://radar-met.sna.gob.do/weather/resources/1791687000000.png",
       "token": "1791687000000.png",
@@ -270,7 +197,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 8,
+      "index": 6,
       "source_index": 0,
       "url": "https://radar-met.sna.gob.do/weather/resources/1791687120001.png",
       "token": "1791687120001.png",
@@ -309,7 +236,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 9,
+      "index": 7,
       "source_index": 0,
       "url": "https://radar-met.sna.gob.do/weather/resources/1791687240001.png",
       "token": "1791687240001.png",
@@ -348,7 +275,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 10,
+      "index": 8,
       "source_index": 0,
       "url": "https://radar-met.sna.gob.do/weather/resources/1791687360000.png",
       "token": "1791687360000.png",
@@ -363,6 +290,84 @@
         763
       ],
       "similarity_to_previous_kept": 0.048629,
+      "bounds": [
+        [
+          13.134356,
+          -83.556302
+        ],
+        [
+          23.703647,
+          -59.696706
+        ]
+      ],
+      "calibration_method": "coastline_RD_20261010_1920x898",
+      "time_basis": "source_png_filename_utc",
+      "observation_time_verified": false,
+      "idac_dark_marker_pixels": 9,
+      "idac_dark_marker_bbox_px": [
+        1175,
+        445,
+        1181,
+        457
+      ],
+      "idac_dark_marker_detected": true
+    },
+    {
+      "source": "IDAC visor-radar oficial",
+      "index": 9,
+      "source_index": 0,
+      "url": "https://radar-met.sna.gob.do/weather/resources/1791687480000.png",
+      "token": "1791687480000.png",
+      "layer": "eco_auto_1791687480000.png",
+      "preview": "",
+      "kept_pixels": 14538,
+      "kept_pct": 0.8432,
+      "bbox_px": [
+        885,
+        98,
+        1518,
+        763
+      ],
+      "similarity_to_previous_kept": 1.0,
+      "bounds": [
+        [
+          13.134356,
+          -83.556302
+        ],
+        [
+          23.703647,
+          -59.696706
+        ]
+      ],
+      "calibration_method": "coastline_RD_20261010_1920x898",
+      "time_basis": "source_png_filename_utc",
+      "observation_time_verified": false,
+      "idac_dark_marker_pixels": 9,
+      "idac_dark_marker_bbox_px": [
+        1175,
+        445,
+        1181,
+        457
+      ],
+      "idac_dark_marker_detected": true
+    },
+    {
+      "source": "IDAC visor-radar oficial",
+      "index": 10,
+      "source_index": 0,
+      "url": "https://radar-met.sna.gob.do/weather/resources/1791687600001.png",
+      "token": "1791687600001.png",
+      "layer": "eco_auto_1791687600001.png",
+      "preview": "",
+      "kept_pixels": 14326,
+      "kept_pct": 0.8309,
+      "bbox_px": [
+        829,
+        64,
+        1534,
+        760
+      ],
+      "similarity_to_previous_kept": 0.052015,
       "bounds": [
         [
           13.134356,
@@ -400,9 +405,9 @@
       -59.696706
     ]
   ],
-  "checked_epoch": 1791687408,
-  "latest_checked_token": "1791687360000.png",
-  "latest_idac_token": "1791687360000.png",
+  "checked_epoch": 1791687647,
+  "latest_checked_token": "1791687600001.png",
+  "latest_idac_token": "1791687600001.png",
   "processor_version": "sna_1920x898_calibrado_20261010",
   "palette_rgb": [
     [
