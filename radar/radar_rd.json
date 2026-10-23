@@ -4,84 +4,6 @@
       "source": "IDAC visor-radar oficial",
       "index": 1,
       "source_index": 0,
-      "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792713240002.png",
-      "token": "1792713240002.png",
-      "layer": "eco_auto_1792713240002.png",
-      "preview": "",
-      "kept_pixels": 46231,
-      "kept_pct": 2.6814,
-      "bbox_px": [
-        848,
-        99,
-        1487,
-        771
-      ],
-      "similarity_to_previous_kept": 1.0,
-      "bounds": [
-        [
-          13.134356,
-          -83.556302
-        ],
-        [
-          23.703647,
-          -59.696706
-        ]
-      ],
-      "calibration_method": "coastline_RD_20261010_1920x898",
-      "time_basis": "source_png_filename_utc",
-      "observation_time_verified": false,
-      "idac_dark_marker_pixels": 14,
-      "idac_dark_marker_bbox_px": [
-        957,
-        333,
-        1181,
-        448
-      ],
-      "idac_dark_marker_detected": true
-    },
-    {
-      "source": "IDAC visor-radar oficial",
-      "index": 2,
-      "source_index": 0,
-      "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792713360003.png",
-      "token": "1792713360003.png",
-      "layer": "eco_auto_1792713360003.png",
-      "preview": "",
-      "kept_pixels": 46090,
-      "kept_pct": 2.6732,
-      "bbox_px": [
-        882,
-        104,
-        1487,
-        771
-      ],
-      "similarity_to_previous_kept": 0.228582,
-      "bounds": [
-        [
-          13.134356,
-          -83.556302
-        ],
-        [
-          23.703647,
-          -59.696706
-        ]
-      ],
-      "calibration_method": "coastline_RD_20261010_1920x898",
-      "time_basis": "source_png_filename_utc",
-      "observation_time_verified": false,
-      "idac_dark_marker_pixels": 6,
-      "idac_dark_marker_bbox_px": [
-        957,
-        333,
-        1181,
-        446
-      ],
-      "idac_dark_marker_detected": true
-    },
-    {
-      "source": "IDAC visor-radar oficial",
-      "index": 3,
-      "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792713480003.png",
       "token": "1792713480003.png",
       "layer": "eco_auto_1792713480003.png",
@@ -119,7 +41,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 4,
+      "index": 2,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792713600001.png",
       "token": "1792713600001.png",
@@ -153,7 +75,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 5,
+      "index": 3,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792713720011.png",
       "token": "1792713720011.png",
@@ -187,7 +109,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 6,
+      "index": 4,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792713840001.png",
       "token": "1792713840001.png",
@@ -221,7 +143,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 7,
+      "index": 5,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792713960001.png",
       "token": "1792713960001.png",
@@ -255,7 +177,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 8,
+      "index": 6,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792714080010.png",
       "token": "1792714080010.png",
@@ -289,7 +211,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 9,
+      "index": 7,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792714200011.png",
       "token": "1792714200011.png",
@@ -328,7 +250,7 @@
     },
     {
       "source": "IDAC visor-radar oficial",
-      "index": 10,
+      "index": 8,
       "source_index": 0,
       "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792714320011.png",
       "token": "1792714320011.png",
@@ -343,6 +265,84 @@
         772
       ],
       "similarity_to_previous_kept": 1.0,
+      "bounds": [
+        [
+          13.134356,
+          -83.556302
+        ],
+        [
+          23.703647,
+          -59.696706
+        ]
+      ],
+      "calibration_method": "coastline_RD_20261010_1920x898",
+      "time_basis": "source_png_filename_utc",
+      "observation_time_verified": false,
+      "idac_dark_marker_pixels": 6,
+      "idac_dark_marker_bbox_px": [
+        1170,
+        426,
+        1172,
+        428
+      ],
+      "idac_dark_marker_detected": true
+    },
+    {
+      "source": "IDAC visor-radar oficial",
+      "index": 9,
+      "source_index": 0,
+      "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792714440008.png",
+      "token": "1792714440008.png",
+      "layer": "eco_auto_1792714440008.png",
+      "preview": "",
+      "kept_pixels": 48345,
+      "kept_pct": 2.804,
+      "bbox_px": [
+        840,
+        103,
+        1498,
+        772
+      ],
+      "similarity_to_previous_kept": 1.0,
+      "bounds": [
+        [
+          13.134356,
+          -83.556302
+        ],
+        [
+          23.703647,
+          -59.696706
+        ]
+      ],
+      "calibration_method": "coastline_RD_20261010_1920x898",
+      "time_basis": "source_png_filename_utc",
+      "observation_time_verified": false,
+      "idac_dark_marker_pixels": 6,
+      "idac_dark_marker_bbox_px": [
+        1170,
+        426,
+        1172,
+        428
+      ],
+      "idac_dark_marker_detected": true
+    },
+    {
+      "source": "IDAC visor-radar oficial",
+      "index": 10,
+      "source_index": 0,
+      "url": "https://www.idac.gob.do/visor-radar/image.php?file=1792714560001.png",
+      "token": "1792714560001.png",
+      "layer": "eco_auto_1792714560001.png",
+      "preview": "",
+      "kept_pixels": 48754,
+      "kept_pct": 2.8277,
+      "bbox_px": [
+        808,
+        100,
+        1498,
+        782
+      ],
+      "similarity_to_previous_kept": 0.23949,
       "bounds": [
         [
           13.134356,
@@ -380,9 +380,9 @@
       -59.696706
     ]
   ],
-  "checked_epoch": 1792714388,
-  "latest_checked_token": "1792714320011.png",
-  "latest_idac_token": "1792714320011.png",
+  "checked_epoch": 1792714628,
+  "latest_checked_token": "1792714560001.png",
+  "latest_idac_token": "1792714560001.png",
   "processor_version": "sna_1920x898_calibrado_20261010",
   "palette_rgb": [
     [
